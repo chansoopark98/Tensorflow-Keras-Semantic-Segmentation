@@ -1,0 +1,6 @@
+tensorflow
+tensorflow-datasets
+imageio
+opencv-python
+pyrealsense2
+tifffile
