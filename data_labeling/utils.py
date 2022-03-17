@@ -12,15 +12,19 @@ def load_imgs(img):
     # mask[200:300, 250:400]= img[200:300, 250:400]
     mask[y:y+h, x:x+w]= img[y:y+h, x:x+w]
     mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-    mask = cv2.medianBlur(mask, 5)
+    mask = cv2.medianBlur(mask, 7)
 
     return mask, img
 
 def canny_edge(img):
     canny = cv2.Canny(img, 25, 255)
-    kernel = np.ones((1,5), np.uint8)  # note this is a horizontal kernel
+    kernel = np.ones((1,3), np.uint8)  
+    v_kernel = np.ones((3,1), np.uint8)  
     canny = cv2.dilate(canny, kernel, iterations=1)
-    canny = cv2.erode(canny, kernel, iterations=1)
+    # canny = cv2.erode(canny, kernel, iterations=1)
+
+    canny = cv2.dilate(canny, v_kernel, iterations=1)
+    # canny = cv2.erode(canny, v_kernel, iterations=1)
 
     return canny
 
@@ -39,8 +43,8 @@ def find_contours(mask, img):
     # msg = "Total holes: {}".format(len(approx)//2)
     # cv2.putText(original, msg, (20, 40), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
     
-    draw_mask = 0
-    draw_hole = 0
+    draw_mask = []
+    draw_hole = []
     zero_mask = np.zeros(img.shape).astype(img.dtype)
 
     for idx in range(len(contour_list)):
@@ -63,12 +67,12 @@ def find_contours(mask, img):
                 draw_mask = zero_mask.copy()
                 cv2.drawContours(draw_mask, contour_list, idx, (255, 255, 255), -1)
                 
-            elif key == 50:
-                draw_hole = zero_mask.copy()
-                cv2.drawContours(draw_hole, contour_list, idx, (255, 255, 255), -1)
+            # elif key == 50:
+            #     draw_hole = zero_mask.copy()
+            #     cv2.drawContours(draw_hole, contour_list, idx, (255, 255, 255), -1)
                 
 
         except:
             print('Out of range!!')
 
-    return draw_mask, draw_hole
+    return draw_mask

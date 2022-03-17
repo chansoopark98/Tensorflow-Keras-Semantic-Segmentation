@@ -33,6 +33,16 @@ class RealSenseCamera:
 
         cfg = self.pipeline.start(config)
 
+        sensor_dep = cfg.get_device().first_depth_sensor() 
+
+        print("min_distance 설정 시도 중")
+        dist = sensor_dep.get_option(rs.option.min_distance) 
+        print("min_distance = %d", dist )
+        print("최소 거리를 새 값으로 설정") 
+        dist = sensor_dep.set_option( rs.option.min_distance, 0.1) 
+        dist = sensor_dep.get_option(rs.option.min_distance) 
+        print("새 min_distance = %d", dist)
+
 
         # Determine intrinsics
         rgb_profile = cfg.get_stream(rs.stream.color)
@@ -40,6 +50,7 @@ class RealSenseCamera:
 
         # Determine depth scale
         self.scale = cfg.get_device().first_depth_sensor().get_depth_scale() # l515 : 0.00025 d435 : 0.001
+        
         # self.scale *= 4.
 
     def get_image_bundle(self):
