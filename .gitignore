@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+/data_labeling/data/
+
 # C extensions
 *.so
 

@@ -5,11 +5,12 @@ from imageio import imread
 # img = cv2.imread('./test.jpeg')
 # img = cv2.imread('./lep_image.png')
 # img = cv2.imread('./sample.jpg')
-img = cv2.imread('./test_img/t6.jpg')
+img = cv2.imread('./test_img/t2.jpg')
 # t2에 팽창연산 안하면 끊기는 문제 발생
 
 img = cv2.resize(img, dsize=(640, 480), interpolation=cv2.INTER_AREA)
-
+cv2.imshow('original', img)
+cv2.waitKey(0)
 original = img.copy()
 mask = np.zeros(img.shape).astype(img.dtype)
 
@@ -127,7 +128,6 @@ img = np.where(output >= 255, img, 0)
 cv2.imshow('img', img)
 cv2.waitKey(0)
 
-        
 # contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 # contours, hierarchy = cv2.findContours(canny, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
 
