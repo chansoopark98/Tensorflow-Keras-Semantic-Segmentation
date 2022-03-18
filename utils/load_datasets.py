@@ -1,7 +1,6 @@
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import tensorflow_datasets as tfds
 import tensorflow as tf
-import tensorflow_addons as tfa
 import numpy as np
 
 AUTO = tf.data.experimental.AUTOTUNE

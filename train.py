@@ -6,7 +6,7 @@ import argparse
 import time
 import os
 import tensorflow as tf
-import tensorflow_addons as tfa
+
 
 # from utils.cityscape_colormap import class_weight
 # from utils.adamW import LearningRateScheduler, poly_decay
