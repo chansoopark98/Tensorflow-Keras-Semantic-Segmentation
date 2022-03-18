@@ -162,8 +162,8 @@ class DatasetGenerator:
         angle = tf.random.uniform([], angle[0], angle[1], tf.float32)
         theta = np.pi * angle / 180
 
-        x = tfa.image.rotate(x, theta, interpolation="bilinear")
-        labels = tfa.image.rotate(labels, theta)
+        # x = tfa.image.rotate(x, theta, interpolation="bilinear")
+        # labels = tfa.image.rotate(labels, theta)
         return (x, labels)
 
     def get_trainData(self, train_data):
