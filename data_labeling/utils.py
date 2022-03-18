@@ -16,19 +16,21 @@ def load_imgs(img):
 
     return mask, img
 
-def canny_edge(img):
+def canny_edge(img, use_vertical=True, use_horizontal=True):
     canny = cv2.Canny(img, 25, 255)
-    kernel = np.ones((1,3), np.uint8)  
-    v_kernel = np.ones((3,1), np.uint8)  
-    canny = cv2.dilate(canny, kernel, iterations=1)
-    # canny = cv2.erode(canny, kernel, iterations=1)
 
-    canny = cv2.dilate(canny, v_kernel, iterations=1)
+    if use_horizontal:
+        kernel = np.ones((1,3), np.uint8) 
+        canny = cv2.dilate(canny, kernel, iterations=1)
+    # canny = cv2.erode(canny, kernel, iterations=1)
+    if use_vertical:
+        v_kernel = np.ones((3,1), np.uint8)  
+        canny = cv2.dilate(canny, v_kernel, iterations=1)
     # canny = cv2.erode(canny, v_kernel, iterations=1)
 
     return canny
 
-def find_contours(mask, img):
+def find_contours(mask, img, color=(255, 255, 255)):
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
     mask = np.where(mask >= 255, mask, 0)
@@ -49,7 +51,7 @@ def find_contours(mask, img):
 
     for idx in range(len(contour_list)):
         draw_img = img.copy()
-        cv2.drawContours(draw_img, contour_list, idx, (255, 255, 255), -1)
+        cv2.drawContours(draw_img, contour_list, idx, color, -1)
         cv2.imshow('Objects Detected', draw_img)
 
         key = cv2.waitKey(0)
@@ -65,7 +67,7 @@ def find_contours(mask, img):
             # 1번 키를 누를 때
             if key == 49:
                 draw_mask = zero_mask.copy()
-                cv2.drawContours(draw_mask, contour_list, idx, (255, 255, 255), -1)
+                cv2.drawContours(draw_mask, contour_list, idx, color, -1)
                 
             # elif key == 50:
             #     draw_hole = zero_mask.copy()
