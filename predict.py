@@ -6,7 +6,8 @@ import argparse
 import time
 import os
 import tensorflow as tf
-import tensorflow_addons as tfa
+from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 # from utils.cityscape_colormap import class_weight
 # from utils.adamW import LearningRateScheduler, poly_decay
@@ -20,7 +21,7 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
@@ -29,6 +30,7 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
+parser.add_argument("--result_dir", type=str,   help="Test result dir", default='./results/')
 parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
 parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
@@ -45,6 +47,7 @@ SAVE_MODEL_NAME = args.model_name
 DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
+RESULT_DIR = args.result_dir
 IMAGE_SIZE = (224, 224)
 # IMAGE_SIZE = (None, None)
 USE_WEIGHT_DECAY = args.use_weightDecay
@@ -58,75 +61,67 @@ if MIXED_PRECISION:
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+os.makedirs(RESULT_DIR, exist_ok=True)
+
 
 TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
 VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
 train_dataset_config = DatasetGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='train')
 # valid_dataset_config = DatasetGenerator(DATASET_DIR, VALID_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', model_name='effnet')
 
-train_data = train_dataset_config.get_trainData(train_dataset_config.train_data)
+test_set = train_dataset_config.get_trainData(train_dataset_config.train_data)
 # train_data = mirrored_strategy.experimental_distribute_dataset(train_data)
 # valid_data = valid_dataset_config.get_validData(valid_dataset_config.valid_data)
 # valid_data = mirrored_strategy.experimental_distribute_dataset(valid_data)
 #
-steps_per_epoch = train_dataset_config.number_train // BATCH_SIZE
+test_steps = train_dataset_config.number_train // BATCH_SIZE
 
-# validation_steps = valid_dataset_config.number_valid // BATCH_SIZE
-print("학습 배치 개수:", steps_per_epoch)
-# print("검증 배치 개수:", validation_steps)
-
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
-
-checkpoint_val_loss = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_best_loss.h5',
-                                      monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-checkpoint_val_miou = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_best_miou.h5',
-                                      monitor='val_output_m_io_u', save_best_only=True, save_weights_only=True,
-                                      verbose=1, mode='max')
-# testCallBack = Scalar_LR('test', TENSORBOARD_DIR)
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR, write_graph=True, write_images=True)
-
-polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
-                                                          decay_steps=EPOCHS,
-                                                          end_learning_rate=0.0001, power=0.9)
-
-lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
-
-if OPTIMIZER_TYPE == 'sgd':
-    optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=base_lr)
-else:
-    # optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-    optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
-                                              weight_decay=0.0001,
-                                              total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
-                                              warmup_proportion=0.1,
-                                              min_lr=0.0001)
-
-
-if MIXED_PRECISION:
-    optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
-
-
-callback = [checkpoint_val_miou, checkpoint_val_loss,  tensorboard, lr_scheduler]
 
 model = base_model(image_size=IMAGE_SIZE)
 
-model.compile(
-    optimizer=optimizer,
-    loss='mse'
-    )
-# tf.keras.losses.BinaryCrossentropy()
-if LOAD_WEIGHT:
-    weight_name = '_1002_best_miou'
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+
+weight_name = '_0318_final_loss'
+model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
+batch_idx = 0
+for x, y in tqdm(test_set, total=test_steps):
+    pred = model.predict_on_batch(x)
 
-history = model.fit(train_data,
-                    validation_data=None,
-                    steps_per_epoch=steps_per_epoch,
-                    # validation_steps=validation_steps,
-                    epochs=EPOCHS,
-                    callbacks=callback)
+    img = x[0]
+    pred = pred[0]
+    label = y[0]
 
-model.save_weights(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_final_loss.h5')
-#
+    rows = 1
+    cols = 3
+    fig = plt.figure()
+
+    
+    img = tf.cast(img, tf.float32)
+
+    ax0 = fig.add_subplot(rows, cols, 1)
+    ax0.imshow(img)
+    ax0.set_title('img')
+    ax0.axis("off")
+
+    ax0 = fig.add_subplot(rows, cols, 2)
+    ax0.imshow(label) 
+    ax0.set_title('label')
+    ax0.axis("off")
+
+    ax1 = fig.add_subplot(rows, cols, 3)
+    ax1.imshow(pred)
+    ax1.set_title('pred')
+    ax1.axis("off")
+
+    batch_idx += 1
+
+    plt.savefig(RESULT_DIR + str(batch_idx) + '_output.png', dpi=300)
+
+
+
+
+
+
+
+

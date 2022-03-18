@@ -51,7 +51,7 @@ def deconv_module(x, channels, kernel_size=3, strides=2, activation='swish', bn_
     return x
 
 
-def unet(input_shape=(512, 512, 1), base_channel=8):
+def unet(input_shape=(300, 300, 3), base_channel=8):
     inputs = Input(shape=input_shape, name='image_input')
     bn_momentum = 0.99
     activation = 'swish'
@@ -60,7 +60,7 @@ def unet(input_shape=(512, 512, 1), base_channel=8):
                 activation=activation, dropout=0.0, prefix='conv1_1')
     conv1_2 = conv_module(x=conv1_1, channels=base_channel, kernel_size=3, strides=1, bn_momentum=bn_momentum,
                 activation=activation, dropout=0.0, prefix='conv1_2')
-    conv1_pool = MaxPooling2D((2, 2))(conv1_2) # 128x128@64
+    conv1_pool = MaxPooling2D((2,2))(conv1_2) # 128x128@64
 
     conv2_1 = conv_module(x=conv1_pool, channels=base_channel * 2, kernel_size=3, strides=1, bn_momentum=bn_momentum,
                 activation=activation, dropout=0.0, prefix='conv2_1')
@@ -85,7 +85,7 @@ def unet(input_shape=(512, 512, 1), base_channel=8):
     conv5_2 = conv_module(x=conv5_1, channels=base_channel * 16, kernel_size=3, strides=1, bn_momentum=bn_momentum,
                 activation=activation, dropout=0.0, prefix='conv5_2')
 
-    deconv_5 = deconv_module(conv5_2, channels=base_channel * 8, kernel_size=2, strides=2, prefix='deconv_os16')
+    deconv_5 = deconv_module(conv5_2, channels=base_channel * 8, kernel_size=3, strides=2, prefix='deconv_os16')
     decoder = Concatenate()([conv4_2, deconv_5])
     decoder = Dropout(0.4)(decoder)
 
@@ -94,7 +94,7 @@ def unet(input_shape=(512, 512, 1), base_channel=8):
     decoder = conv_module(x=decoder, channels=base_channel * 8, kernel_size=3, strides=1, bn_momentum=bn_momentum,
                 activation=activation, dropout=0.0, prefix='decoder_4_2')
 
-    decoder = deconv_module(decoder, channels=base_channel * 4, kernel_size=2, strides=2, prefix='deconv_os8')
+    decoder = deconv_module(decoder, channels=base_channel * 4, kernel_size=3, strides=2, prefix='deconv_os8')
     decoder = Concatenate()([conv3_2, decoder])
     decoder = Dropout(0.4)(decoder)
 
@@ -103,7 +103,7 @@ def unet(input_shape=(512, 512, 1), base_channel=8):
     decoder = conv_module(x=decoder, channels=base_channel * 4, kernel_size=3, strides=1, bn_momentum=bn_momentum,
                 activation=activation, dropout=0.0, prefix='decoder_3_2')
 
-    decoder = deconv_module(decoder, channels=base_channel * 2, kernel_size=2, strides=2, prefix='deconv_os4')
+    decoder = deconv_module(decoder, channels=base_channel * 2, kernel_size=3, strides=2, prefix='deconv_os4')
     decoder = Concatenate()([conv2_2, decoder])
     decoder = Dropout(0.4)(decoder)
 
@@ -112,7 +112,7 @@ def unet(input_shape=(512, 512, 1), base_channel=8):
     decoder = conv_module(x=decoder, channels=base_channel * 2, kernel_size=3, strides=1, bn_momentum=bn_momentum,
                           activation=activation, dropout=0.0, prefix='decoder_2_2')
 
-    decoder = deconv_module(decoder, channels=base_channel, kernel_size=2, strides=2, prefix='deconv_os2')
+    decoder = deconv_module(decoder, channels=base_channel, kernel_size=3, strides=2, prefix='deconv_os2')
     decoder = Concatenate()([conv1_2, decoder])
     decoder = Dropout(0.4)(decoder)
 

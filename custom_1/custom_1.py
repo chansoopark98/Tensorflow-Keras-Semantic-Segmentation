@@ -41,7 +41,7 @@ class Custom1(tfds.core.GeneratorBasedBuilder):
             # These are the features of your dataset like images, labels ...
             'rgb': tfds.features.Image(shape=(None, None, 3)),
             'depth': tfds.features.Tensor(shape=(720, 1280, 1), dtype=tf.float32),
-            'box': tfds.features.Image(shape=(None, None, 1)),
+            'mask': tfds.features.Image(shape=(None, None, 1)),
         }),
         # If there's a common (input, target) tuple from the
         # features, specify them here. They'll be used if
@@ -81,7 +81,7 @@ class Custom1(tfds.core.GeneratorBasedBuilder):
       yield i, {
           'rgb': img_files[i],
           'depth': self._load_tif(label_files[i]),
-          'box' : mask_files[i]
+          'mask' : mask_files[i]
       }
 
   def _load_tif(self, filename: str) -> np.ndarray:
