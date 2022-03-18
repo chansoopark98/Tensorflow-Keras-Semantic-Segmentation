@@ -69,7 +69,7 @@ VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
 train_dataset_config = DatasetGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='train')
 # valid_dataset_config = DatasetGenerator(DATASET_DIR, VALID_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', model_name='effnet')
 
-test_set = train_dataset_config.get_trainData(train_dataset_config.train_data)
+test_set = train_dataset_config.get_testData(train_dataset_config.train_data)
 # train_data = mirrored_strategy.experimental_distribute_dataset(train_data)
 # valid_data = valid_dataset_config.get_validData(valid_dataset_config.valid_data)
 # valid_data = mirrored_strategy.experimental_distribute_dataset(valid_data)
@@ -85,22 +85,29 @@ model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
 batch_idx = 0
-for x, y in tqdm(test_set, total=test_steps):
+for x, y, original in tqdm(test_set, total=test_steps):
     pred = model.predict_on_batch(x)
 
     img = x[0]
     pred = pred[0]
     label = y[0]
+    original = original[0]
+
+    pred = tf.where(pred== 1.0, 1, 0)
+
+    original = tf.cast(original, tf.int32)
+
+    output = original * pred
 
     rows = 1
-    cols = 3
+    cols = 4
     fig = plt.figure()
 
     
     img = tf.cast(img, tf.float32)
 
     ax0 = fig.add_subplot(rows, cols, 1)
-    ax0.imshow(img)
+    ax0.imshow(original)
     ax0.set_title('img')
     ax0.axis("off")
 
@@ -111,6 +118,11 @@ for x, y in tqdm(test_set, total=test_steps):
 
     ax1 = fig.add_subplot(rows, cols, 3)
     ax1.imshow(pred)
+    ax1.set_title('pred')
+    ax1.axis("off")
+
+    ax1 = fig.add_subplot(rows, cols, 4)
+    ax1.imshow(output)
     ax1.set_title('pred')
     ax1.axis("off")
 

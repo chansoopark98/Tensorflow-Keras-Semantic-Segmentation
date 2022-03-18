@@ -55,16 +55,20 @@ class DatasetGenerator:
         img = sample['rgb']
         # depth = sample['depth']
         mask = sample['mask']
+        mask /= 255
 
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
                         method=tf.image.ResizeMethod.BILINEAR)
         mask = tf.image.resize(mask, size=(self.image_size[0], self.image_size[1]),
                         method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
+                        
+        original = img
+        
         img = tf.cast(img, dtype=tf.float32)
-        mask /= 255.
+        mask = tf.cast(mask, dtype=tf.float32)
+
         img = preprocess_input(img, mode='torch')
-        return (img, mask)
+        return (img, mask, original)
 
 
     @tf.function
