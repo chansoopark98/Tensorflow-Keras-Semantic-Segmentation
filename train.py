@@ -45,7 +45,7 @@ SAVE_MODEL_NAME = args.model_name
 DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
-IMAGE_SIZE = (224, 224)
+IMAGE_SIZE = (300, 400)
 # IMAGE_SIZE = (None, None)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
@@ -94,12 +94,12 @@ lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
 if OPTIMIZER_TYPE == 'sgd':
     optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=base_lr)
 else:
-    # optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-    optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
-                                              weight_decay=0.0001,
-                                              total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
-                                              warmup_proportion=0.1,
-                                              min_lr=0.0001)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+    # optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
+    #                                           weight_decay=0.0001,
+    #                                           total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
+    #                                           warmup_proportion=0.1,
+    #                                           min_lr=0.0001)
 
 
 if MIXED_PRECISION:

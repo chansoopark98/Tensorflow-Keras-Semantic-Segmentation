@@ -35,14 +35,14 @@ def conv_module(x, channels, kernel_size=3, strides=1,
         x = Activation(activation, name=prefix+'_activation')(x)
     return x
 
-def deconv_module(x, channels, kernel_size=3, strides=2, activation='swish', bn_momentum=0.99, prefix='name'):
+def deconv_module(x, channels, kernel_size=3, strides=2, activation='swish', bn_momentum=0.99, prefix='name', padding='same'):
     x = Conv2DTranspose(channels,
                       kernel_size=(kernel_size, kernel_size),
                       strides=(strides, strides),
                       use_bias=False,
                       kernel_initializer='he_normal',
                       name=prefix+'_upsampling',
-                      padding='same')(x)
+                      padding=padding)(x)
     x = BatchNormalization(momentum=bn_momentum, name=prefix+'_bn')(x)
     if activation == 'leakyrelu':
         x = Activation(LeakyReLU(0.2), name=prefix+'_activation')(x)
@@ -86,6 +86,7 @@ def unet(input_shape=(300, 300, 3), base_channel=8):
                 activation=activation, dropout=0.0, prefix='conv5_2')
 
     deconv_5 = deconv_module(conv5_2, channels=base_channel * 8, kernel_size=3, strides=2, prefix='deconv_os16')
+    
     decoder = Concatenate()([conv4_2, deconv_5])
     decoder = Dropout(0.4)(decoder)
 
