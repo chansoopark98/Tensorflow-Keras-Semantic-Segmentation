@@ -48,7 +48,8 @@ DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 RESULT_DIR = args.result_dir
-IMAGE_SIZE = (224, 224)
+MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
+IMAGE_SIZE = (480, 640)
 # IMAGE_SIZE = (None, None)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
@@ -62,6 +63,7 @@ if MIXED_PRECISION:
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
+os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 
 
 TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
@@ -127,7 +129,7 @@ for x, y, original in tqdm(test_set, total=test_steps):
     ax1.axis("off")
 
     batch_idx += 1
-
+    tf.keras.preprocessing.image.save_img(MASK_RESULT_DIR + str(batch_idx) + 'output_mask.png', output)
     plt.savefig(RESULT_DIR + str(batch_idx) + '_output.png', dpi=300)
 
 
