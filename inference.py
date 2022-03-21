@@ -11,7 +11,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
-
+import numpy as np
 
 
 
@@ -56,7 +56,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 RESULT_DIR = args.result_dir
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (224, 224)
+IMAGE_SIZE = (480, 640)
 # IMAGE_SIZE = (None, None)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
@@ -83,34 +83,61 @@ batch_idx = 0
 avg_duration = 0
 
 img = cv2.imread('inference_test.png')
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+gray_sclae = cv2.GaussianBlur(gray_sclae, (0, 0), 1.0)
+gray_sclae = cv2.resize(gray_sclae, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_AREA)
 
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 img = tf.image.resize(img, size=IMAGE_SIZE,
                 method=tf.image.ResizeMethod.BILINEAR)
                                 
 img = tf.cast(img, dtype=tf.float32)
-
 img = preprocess_input(img, mode='torch')
 img = tf.expand_dims(img, axis=0)
-
 pred = model.predict_on_batch(img)
+result = pred[0]
 
-for i in range(1000):
-    start = time.perf_counter_ns()
-    img = cv2.imread('inference_test.png')
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+result= result[:, :, 0].astype(np.uint8) 
 
-    img = tf.image.resize(img, size=IMAGE_SIZE,
-                    method=tf.image.ResizeMethod.BILINEAR)
-                                    
-    img = tf.cast(img, dtype=tf.float32)
+gray_sclae *= result
 
-    img = preprocess_input(img, mode='torch')
-    img = tf.expand_dims(img, axis=0)
-
+circles = cv2.HoughCircles(gray_sclae, cv2.HOUGH_GRADIENT, 1, 1, param1=120, param2=10, minRadius=0, maxRadius=5)
+dst = gray_sclae.copy()
     
-    pred = model.predict_on_batch(img)
-    duration = (time.perf_counter_ns() - start) / BATCH_SIZE
-    avg_duration += duration
-    # print(f"inference time : {duration // 1000000}ms.")
-print(f"avg inference time : {(avg_duration / 1000) // 1000000}ms.")
+if circles is not None:
+    for i in  range(circles.shape[1]):
+        cx, cy, radius = circles[0][0]
+        cv2.circle(dst, (int(cx), int(cy)), int(radius), (255, 255, 0), 2, cv2.LINE_AA)
+cv2.imshow('circle detection', dst)
+cv2.waitKey(0)
+
+# for i in range(1000):
+#     start = time.perf_counter_ns()
+
+#     img = cv2.imread('inference_test.png')
+#     gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+#     gray_sclae = cv2.GaussianBlur(gray_sclae, (0, 0), 1.0)
+#     gray_sclae = cv2.resize(gray_sclae, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_AREA)
+
+#     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#     img = tf.image.resize(img, size=IMAGE_SIZE,
+#                     method=tf.image.ResizeMethod.BILINEAR)
+                                    
+#     img = tf.cast(img, dtype=tf.float32)
+#     img = preprocess_input(img, mode='torch')
+#     img = tf.expand_dims(img, axis=0)
+#     pred = model.predict_on_batch(img)
+#     result = pred[0]
+
+#     result= result[:, :, 0].astype(np.uint8) 
+
+#     gray_sclae *= result
+
+#     circles = cv2.HoughCircles(gray_sclae, cv2.HOUGH_GRADIENT, 1, 1, param1=120, param2=10, minRadius=0, maxRadius=5)
+#     dst = gray_sclae.copy()
+#     cx, cy, radius = circles[0][0]
+
+#     duration = (time.perf_counter_ns() - start) / BATCH_SIZE
+#     avg_duration += duration
+#     # print(f"inference time : {duration // 1000000}ms.")
+# print(f"avg inference time : {(avg_duration / 1000) // 1000000}ms.")

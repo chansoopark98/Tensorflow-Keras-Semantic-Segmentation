@@ -15,19 +15,20 @@ logging.basicConfig(level=logging.INFO)
 
 def on_click(event):
     date = str(time.strftime('%m%d%M', time.localtime(time.time())))
-    imwrite(rgb_path + str(i) + date +'.png', rgb)
-    imwrite(depth_path +str(i) + date + '.tif', depth)
+    imwrite(rgb_path + str(i) +'.png', rgb)
+    imwrite(depth_path +str(i) + '.tif', depth)
     print('save')
     plt.close()
 
 
 if __name__ == '__main__':
+    path_name = ''
     # Connect to Camera
     logging.info('Connecting to camera...')
     cam = RealSenseCamera(device_id='f1181780') #0003b661b825 # f0350818 # f1181780
     cam.connect() 
     date = str(time.strftime('%m%d%M', time.localtime(time.time())))
-    save_path = './data_labeling/data/img/'+date+'/'
+    save_path = './data_labeling/data/img/'+date + '_' + path_name +'/'
     rgb_path =  save_path + 'rgb/'
     depth_path = save_path + 'depth/'
     os.makedirs(save_path, exist_ok=True)
