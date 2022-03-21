@@ -22,7 +22,7 @@ def on_click(event):
 
 
 if __name__ == '__main__':
-    path_name = ''
+    path_name = 'gray_30cm'
     # Connect to Camera
     logging.info('Connecting to camera...')
     cam = RealSenseCamera(device_id='f1181780') #0003b661b825 # f0350818 # f1181780
