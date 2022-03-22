@@ -68,21 +68,21 @@ os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 
 TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
 VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
-train_dataset_config = DatasetGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='train')
+test_dataset_config = DatasetGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation')
 # valid_dataset_config = DatasetGenerator(DATASET_DIR, VALID_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', model_name='effnet')
 
-test_set = train_dataset_config.get_testData(train_dataset_config.train_data)
+test_set = test_dataset_config.get_testData(test_dataset_config.valid_data)
 # train_data = mirrored_strategy.experimental_distribute_dataset(train_data)
 # valid_data = valid_dataset_config.get_validData(valid_dataset_config.valid_data)
 # valid_data = mirrored_strategy.experimental_distribute_dataset(valid_data)
 #
-test_steps = train_dataset_config.number_train // BATCH_SIZE
+test_steps = test_dataset_config.number_valid // BATCH_SIZE
 
 
 model = base_model(image_size=IMAGE_SIZE)
 
 
-weight_name = '_0318_final_loss'
+weight_name = '_0322_best_loss'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()

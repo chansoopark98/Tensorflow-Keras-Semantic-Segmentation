@@ -7,6 +7,7 @@ import tensorflow as tf
 import numpy as np
 import io
 import tifffile as tiff
+import natsort
 # TODO(custom_1): Markdown description  that will appear on the catalog page.
 _DESCRIPTION = """
 Description is **formatted** as markdown.
@@ -40,7 +41,6 @@ class Custom1(tfds.core.GeneratorBasedBuilder):
         features=tfds.features.FeaturesDict({
             # These are the features of your dataset like images, labels ...
             'rgb': tfds.features.Image(shape=(None, None, 3)),
-            'depth': tfds.features.Tensor(shape=(720, 1280, 1), dtype=tf.float32),
             'mask': tfds.features.Image(shape=(None, None, 1)),
         }),
         # If there's a common (input, target) tuple from the
@@ -60,27 +60,27 @@ class Custom1(tfds.core.GeneratorBasedBuilder):
 
     # TODO(cornell_grasp): Returns the Dict[split names, Iterator[Key, Example]]
     return {
-        'train': self._generate_examples(img_path=extracted_path/'rgb', depth_path=extracted_path/'depth', mask_path=extracted_path/'mask')
+        'train': self._generate_examples(img_path=extracted_path/'rgb', mask_path=extracted_path/'mask')
     }
 
-  def _generate_examples(self, img_path, depth_path, mask_path):
+  def _generate_examples(self, img_path, mask_path):
     img = os.path.join(img_path, '*.png')
-    label = os.path.join(depth_path,'*.tif')
     mask = os.path.join(mask_path, '*.png')
     
     img_files = glob.glob(img)
-    img_files.sort()
-    label_files = tf.io.gfile.glob(label)
-    label_files.sort()
+    # img_files.sort()
+    img_files = natsort.natsorted(img_files,reverse=True)
+    
     mask_files = glob.glob(mask)
-    mask_files.sort()
+    # mask_files.sort()
+    mask_files = natsort.natsorted(mask_files,reverse=True)
+    
 
 
   
     for i in range(len(img_files)):
       yield i, {
           'rgb': img_files[i],
-          'depth': self._load_tif(label_files[i]),
           'mask' : mask_files[i]
       }
 
