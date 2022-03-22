@@ -9,7 +9,7 @@ import os
 import tensorflow as tf
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from PIL import Image
+import glob
 import cv2
 import numpy as np
 
@@ -28,6 +28,7 @@ import numpy as np
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--result_path",     type=str,   help="test result path", default='./results/')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -45,6 +46,7 @@ parser.add_argument("--mixed_precision",  type=bool,  help="mixed_precision 사�
 parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정", default=True)
 
 args = parser.parse_args()
+RESULT_PATH = args.result_path
 WEIGHT_DECAY = args.weight_decay
 OPTIMIZER_TYPE = args.optimizer
 BATCH_SIZE = args.batch_size
@@ -82,34 +84,81 @@ model.summary()
 batch_idx = 0
 avg_duration = 0
 
-img = cv2.imread('inference_test.png')
-gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-gray_sclae = cv2.GaussianBlur(gray_sclae, (0, 0), 1.0)
-gray_sclae = cv2.resize(gray_sclae, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_AREA)
+img_list = glob.glob(os.path.join(RESULT_PATH,'*.png'))
+img_list.sort()
 
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-img = tf.image.resize(img, size=IMAGE_SIZE,
-                method=tf.image.ResizeMethod.BILINEAR)
-                                
-img = tf.cast(img, dtype=tf.float32)
-img = preprocess_input(img, mode='torch')
-img = tf.expand_dims(img, axis=0)
-pred = model.predict_on_batch(img)
-result = pred[0]
+for i in range(len(img_list)):
+    img = cv2.imread(img_list[i])
+    gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # gray_sclae = cv2.GaussianBlur(gray_sclae, (0, 0), 1.0)
+    # gray_sclae = cv2.resize(gray_sclae, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_AREA)
 
-result= result[:, :, 0].astype(np.uint8) 
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = tf.image.resize(img, size=IMAGE_SIZE,
+                    method=tf.image.ResizeMethod.BILINEAR)
+                                    
+    img = tf.cast(img, dtype=tf.float32)
+    img = preprocess_input(img, mode='torch')
+    img = tf.expand_dims(img, axis=0)
+    pred = model.predict_on_batch(img)
+    result = pred[0]
 
-gray_sclae *= result
+    result= result[:, :, 0].astype(np.uint8)
+    result_mul = result.copy() * 255
+    hh, ww = result_mul.shape
 
-circles = cv2.HoughCircles(gray_sclae, cv2.HOUGH_GRADIENT, 1, 1, param1=120, param2=10, minRadius=0, maxRadius=5)
-dst = gray_sclae.copy()
+    contours = cv2.findContours(result_mul, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    # for cntr in contours:
+    x,y,w,h = cv2.boundingRect(contours[0])
     
-if circles is not None:
-    for i in  range(circles.shape[1]):
-        cx, cy, radius = circles[0][0]
-        cv2.circle(dst, (int(cx), int(cy)), int(radius), (255, 255, 0), 2, cv2.LINE_AA)
-cv2.imshow('circle detection', dst)
-cv2.waitKey(0)
+    center_x = x + (w/2)
+    center_y = y + (h/2)
+
+    gray_sclae *= result
+
+    ROI = gray_sclae.copy()
+    
+    ROI = ROI[y:y+h, x:x+w]
+    print('cropped roi', ROI.shape)
+    cv2.imshow('cropped roi', ROI)
+    cv2.waitKey(0)
+    ROI = cv2.resize(ROI, dsize=(w *4, h*4), interpolation=cv2.INTER_LINEAR)
+    cv2.imshow('resize roi', ROI)
+    cv2.waitKey(0)
+    print('resize roi', ROI.shape)
+
+    circles = cv2.HoughCircles(ROI, cv2.HOUGH_GRADIENT, 1, 1,
+                     param1=50, param2=1, minRadius=1, maxRadius=10)
+        
+    if circles is not None:
+        for i in  range(circles.shape[1]):
+            print('detected circle !!')
+            cx, cy, radius = circles[0][0]
+            cv2.circle(ROI, (int(cx), int(cy)), int(radius), (127, 127, 127), 2, cv2.LINE_AA)
+    
+            ROI[int(cy), int(cx)] = 128
+            cv2.imshow('circle roi', ROI)
+            cv2.waitKey(0)
+    ROI = cv2.resize(ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+    print('rollback roi', ROI.shape)
+    gray_sclae[y:y+h, x:x+w] = ROI
+    
+            
+    
+    cv2.imshow('ROI', ROI)
+    cv2.waitKey(0)
+    dst = gray_sclae.copy()
+    cv2.imshow('circle detection', dst)
+    cv2.waitKey(0)
+        
+    # if circles is not None:
+    #     for i in  range(circles.shape[1]):
+    #         cx, cy, radius = circles[0][0]
+            # cv2.circle(dst, (int(cx), int(cy)), int(radius), (255, 255, 0), 2, cv2.LINE_AA)
+    # cv2.circle(dst, (int(center_x), int(center_y)), int(radius), (255, 255, 0), 2, cv2.LINE_AA)
+    # cv2.drawContours(dst, contours, 0, (127, 127, 127), 2)
+
 
 # for i in range(1000):
 #     start = time.perf_counter_ns()
