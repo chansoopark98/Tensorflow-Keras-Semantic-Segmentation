@@ -1,31 +1,52 @@
 import cv2
 import numpy as np
 
-def load_imgs(img):
+def load_imgs(img, resize=(640, 480)):
     # img = cv2.imread('./data_labeling/test_img/t2.jpg')
-    img = cv2.resize(img, dsize=(640, 480), interpolation=cv2.INTER_AREA)
+    if resize:
+        img = cv2.resize(img, dsize=resize, interpolation=cv2.INTER_AREA)
+    output_img = img.copy()
+
     x, y, w, h = cv2.selectROI(img)
-    
+
+    # img = cv2.GaussianBlur(img, (5,5), 0) # 이미지에 블러 하면 홀은 잘 찾음
+    img = cv2.GaussianBlur(img, (7,7), 0) # 이미지에 블러 하면 홀은 잘 찾음
     mask = np.zeros(img.shape).astype(img.dtype)
 
     # 250, 200 to 400, 300
     # mask[200:300, 250:400]= img[200:300, 250:400]
     mask[y:y+h, x:x+w]= img[y:y+h, x:x+w]
     mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    
     mask = cv2.medianBlur(mask, 7)
 
-    return mask, img
+    return mask, output_img
 
-def canny_edge(img, use_vertical=True, use_horizontal=True):
-    canny = cv2.Canny(img, 25, 255)
+def canny_edge(img_input, use_vertical=True, use_horizontal=True):
 
+    # canny = cv2.Canny(img, 25, 255) # hole is good
+    # white white_plus = 100
+    # gray white_plus = 150
+    img = np.where(np.logical_and(img_input>=1, img_input<=100), img_input+100, img_input)
+    img = np.clip(img, 0, 255)
+    img = img.astype(img_input.dtype)
+    cv2.imshow('np where', img)
+    cv2.waitKey(0)
+    canny = cv2.Canny(img_input, 25, 100) # hole is good
+
+    cv2.imshow('canny', canny)
+    cv2.waitKey(0)
     if use_horizontal:
-        kernel = np.ones((1,3), np.uint8) 
+        kernel = np.ones((1,5), np.uint8) 
         canny = cv2.dilate(canny, kernel, iterations=1)
-    # canny = cv2.erode(canny, kernel, iterations=1)
+        kernel = np.ones((1,3), np.uint8) 
+        canny = cv2.erode(canny, kernel, iterations=1)
+
     if use_vertical:
-        v_kernel = np.ones((3,1), np.uint8)  
+        v_kernel = np.ones((5,1), np.uint8)  
         canny = cv2.dilate(canny, v_kernel, iterations=1)
+        # canny = cv2.erode(canny, kernel, iterations=1)
+
     # canny = cv2.erode(canny, v_kernel, iterations=1)
 
     return canny
