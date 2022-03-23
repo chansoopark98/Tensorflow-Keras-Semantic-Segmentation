@@ -89,6 +89,7 @@ img_list.sort()
 
 for i in range(len(img_list)):
     img = cv2.imread(img_list[i])
+    original = img.copy()
     gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # gray_sclae = cv2.GaussianBlur(gray_sclae, (0, 0), 1.0)
     # gray_sclae = cv2.resize(gray_sclae, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_AREA)
@@ -130,27 +131,50 @@ for i in range(len(img_list)):
 
     circles = cv2.HoughCircles(ROI, cv2.HOUGH_GRADIENT, 1, 1,
                      param1=50, param2=1, minRadius=1, maxRadius=10)
-        
+    
+    zero_img = np.zeros(gray_sclae.shape)
     if circles is not None:
-        for i in  range(circles.shape[1]):
-            print('detected circle !!')
-            cx, cy, radius = circles[0][0]
-            cv2.circle(ROI, (int(cx), int(cy)), int(radius), (127, 127, 127), 2, cv2.LINE_AA)
-    
-            ROI[int(cy), int(cx)] = 128
-            cv2.imshow('circle roi', ROI)
-            cv2.waitKey(0)
+        # for i in  range(circles.shape[1]):
+        print('detected circle !!')
+        zero_ROI = np.zeros(ROI.shape)
+
+        cx, cy, radius = circles[0][0]
+        cv2.circle(ROI, (int(cx), int(cy)), int(radius * 3), (0, 0, 0), 2, cv2.LINE_AA)
+        # cv2.circle(zero_ROI, (int(cx), int(cy)), int(radius * 3), (255, 255, 255), 2, cv2.LINE_AA)
+
+        zero_ROI[int(cy)-5:int(cy)+5, int(cx)-5:int(cx)+5] = 255
+        cv2.imshow('zero roi', zero_ROI)
+        cv2.waitKey(0)
+
     ROI = cv2.resize(ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
-    print('rollback roi', ROI.shape)
-    gray_sclae[y:y+h, x:x+w] = ROI
+    zero_ROI = cv2.resize(zero_ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+    cv2.imshow('resized zero_ROI', zero_ROI)
+    cv2.waitKey(0)
     
-            
+    print('rollback roi', ROI.shape)
+    
+    
+    # gray_sclae[y:y+h, x:x+w] = ROI
+    zero_img[y:y+h, x:x+w] = zero_ROI
+    cv2.imshow('zero_img', zero_img)
+    cv2.waitKey(0)
+    
+    yx_coords = np.mean(np.column_stack(np.where(zero_img == 255)),axis=0)
+
+    print('final_center xy = ', yx_coords[1], yx_coords[0])
     
     cv2.imshow('ROI', ROI)
     cv2.waitKey(0)
     dst = gray_sclae.copy()
     cv2.imshow('circle detection', dst)
     cv2.waitKey(0)
+
+    cv2.circle(original, (int(yx_coords[1]), int(yx_coords[0])), int(radius), (255, 0, 0), 3, cv2.LINE_AA)
+    cv2.imshow('final output', original)
+    cv2.waitKey(0)
+    
+    
+
         
     # if circles is not None:
     #     for i in  range(circles.shape[1]):
