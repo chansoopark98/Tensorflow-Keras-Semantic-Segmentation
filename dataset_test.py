@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # train_dataset_config = Dataset(DATASET_DIR, IMAGE_SIZE, batch_size=1, mode='train', dataset='CustomCeleba')
     train_data = train_dataset_config.get_testData(train_dataset_config.train_data)
 
-    for img, mask in train_data.take(10):
+    for img, mask, original in train_data.take(10):
 
 
         rows = 1
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         fig = plt.figure()
 
         ax0 = fig.add_subplot(rows, cols, 1)
-        ax0.imshow(img[0]/ 255.)
+        ax0.imshow(img[0])
         ax0.set_title('rgb->lab->rgb')
         ax0.axis("off")
 
