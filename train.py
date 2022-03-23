@@ -8,6 +8,7 @@ import argparse
 import time
 import os
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 
 # from utils.cityscape_colormap import class_weight
@@ -22,7 +23,7 @@ import tensorflow as tf
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-bce-16_E-10_Optim-sgd')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-dice_B-16_E-10_Optim-RAdam')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -95,12 +96,12 @@ lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
 if OPTIMIZER_TYPE == 'sgd':
     optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=base_lr)
 else:
-    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-    # optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
-    #                                           weight_decay=0.0001,
-    #                                           total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
-    #                                           warmup_proportion=0.1,
-    #                                           min_lr=0.0001)
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+    optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
+                                              weight_decay=0.00001,
+                                              total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
+                                              warmup_proportion=0.1,
+                                              min_lr=0.0001)
 
 
 if MIXED_PRECISION:
