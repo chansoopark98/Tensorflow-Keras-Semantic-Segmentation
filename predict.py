@@ -82,7 +82,7 @@ test_steps = test_dataset_config.number_valid // BATCH_SIZE
 model = base_model(image_size=IMAGE_SIZE)
 
 
-weight_name = '_0322_best_loss'
+weight_name = '_0322_L-dice_B-16_E-10_Optim-adam_best_iou'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()

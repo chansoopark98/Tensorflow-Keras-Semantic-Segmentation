@@ -23,12 +23,12 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-dice_B-16_E-10_Optim-RAdam')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-bce_B-16_E-100_Optim-Adam_Act-relu')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
-parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='sgd')
+parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
@@ -82,7 +82,7 @@ reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr
 checkpoint_val_loss = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_best_loss.h5',
                                       monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 checkpoint_val_iou = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_best_iou.h5',
-                                      monitor='iou_coef', save_best_only=True, save_weights_only=True,
+                                      monitor='val_iou_coef', save_best_only=True, save_weights_only=True,
                                       verbose=1, mode='max')
 
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR+MODEL_PREFIX, write_graph=True, write_images=True)
@@ -96,12 +96,12 @@ lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
 if OPTIMIZER_TYPE == 'sgd':
     optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=base_lr)
 else:
-    # optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-    optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
-                                              weight_decay=0.00001,
-                                              total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
-                                              warmup_proportion=0.1,
-                                              min_lr=0.0001)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
+    # optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
+    #                                           weight_decay=0.00001,
+    #                                           total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
+    #                                           warmup_proportion=0.1,
+    #                                           min_lr=0.0001)
 
 
 if MIXED_PRECISION:
@@ -115,6 +115,7 @@ model = base_model(image_size=IMAGE_SIZE)
 model.compile(
     optimizer=optimizer,
     loss=bce_loss,
+    # loss='mse',
     metrics=[iou_coef, dice_coef]
     )
 # tf.keras.losses.BinaryCrossentropy()
