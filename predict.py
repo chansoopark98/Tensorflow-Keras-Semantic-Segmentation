@@ -82,7 +82,7 @@ test_steps = test_dataset_config.number_valid // BATCH_SIZE
 model = base_model(image_size=IMAGE_SIZE)
 
 
-weight_name = '_0322_L-dice_B-16_E-10_Optim-adam_best_iou'
+weight_name = '_0323_L-mse_B-16_E-100_Optim-Adam_best_iou'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
@@ -94,13 +94,11 @@ for x, y, original in tqdm(test_set, total=test_steps):
     pred = pred[0]
     label = y[0]
     original = original[0]
-
-    pred = tf.where(pred== 1.0, 1, 0)
+    pred = tf.where(pred==1.0, 1, 0)
 
     original = tf.cast(original, tf.int32)
-
-    output = original * pred
-
+    output = (original * pred)
+    
     rows = 1
     cols = 4
     fig = plt.figure()
@@ -125,7 +123,7 @@ for x, y, original in tqdm(test_set, total=test_steps):
 
     ax1 = fig.add_subplot(rows, cols, 4)
     ax1.imshow(output)
-    ax1.set_title('pred')
+    ax1.set_title('output')
     ax1.axis("off")
 
     batch_idx += 1
