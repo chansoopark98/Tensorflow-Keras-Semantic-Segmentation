@@ -8,6 +8,7 @@ __pycache__/
 /results/*
 /checkpoints/
 /tensorboard/
+/test_imgs/
 # C extensions
 *.so
 
