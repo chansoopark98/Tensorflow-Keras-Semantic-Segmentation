@@ -13,6 +13,11 @@ import glob
 import cv2
 import numpy as np
 
+from data_labeling.utils import canny_edge
+
+
+
+
 # from utils.cityscape_colormap import class_weight
 # from utils.adamW import LearningRateScheduler, poly_decay
 # import tensorflow_addons
@@ -62,16 +67,6 @@ LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
 DISTRIBUTION_MODE = args.distribution_mode
 
-ROI_PATH = MASK_RESULT_DIR + 'roi_mask/'
-ROI_INPUT_PATH = ROI_PATH + 'input/'
-ROI_GT_PATH = ROI_PATH + 'gt/'
-ROI_CHECK_GT_PATH = ROI_PATH + 'check_gt/'
-
-SEMANTIC_PATH = MASK_RESULT_DIR + 'semantic_mask/'
-SEMANTIC_INPUT_PATH = SEMANTIC_PATH + 'input/'
-SEMANTIC_GT_PATH = SEMANTIC_PATH + 'gt/'
-SEMANTIC_CHECK_GT_PATH = SEMANTIC_PATH + 'check_gt/'
-
 if MIXED_PRECISION:
     policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
     mixed_precision.set_policy(policy)
@@ -80,12 +75,6 @@ os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
 os.makedirs(MASK_RESULT_DIR, exist_ok=True)
-
-DEBUG_RESULT_DIR = RESULT_DIR +'debug_result/'
-os.makedirs(DEBUG_RESULT_DIR, exist_ok=True)
-
-dataset_config = DatasetGenerator(DATASET_DIR, (480, 640), BATCH_SIZE, mode='all')
-data = dataset_config.get_testData(dataset_config.data)
 
 model = segmentation_model(image_size=IMAGE_SIZE)
 
@@ -96,24 +85,40 @@ weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
-i = 1
+batch_idx = 0
+avg_duration = 0
 
-for x, gt, original in data.take(dataset_config.number_all):
-    gt = gt.numpy()[0, :, :, 0]
-    cv2.imwrite(DEBUG_RESULT_DIR+'gt.png', gt)
-    original = original.numpy()[0]
-    cv2.imwrite(DEBUG_RESULT_DIR+'rgb.png', original)
-    gray_scale = cv2.cvtColor(original, cv2.COLOR_RGB2GRAY)
-    
+img_list = glob.glob(os.path.join(RESULT_PATH,'*.png'))
+img_list.sort()
+
+img = cv2.imread(img_list[0])
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+img = tf.image.resize(img, size=IMAGE_SIZE,
+                method=tf.image.ResizeMethod.BILINEAR)   
+img = tf.cast(img, dtype=tf.float32)
+img = preprocess_input(img, mode='torch')
+img = tf.expand_dims(img, axis=0)
+pred = model.predict_on_batch(img)
+
+for i in range(len(img_list)):
+    start = time.perf_counter_ns()
+    img = cv2.imread(img_list[i])
+    original = img.copy()
+    gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = tf.image.resize(img, size=IMAGE_SIZE,
+                    method=tf.image.ResizeMethod.BILINEAR)
                                     
-    pred = model.predict_on_batch(x)
+    img = tf.cast(img, dtype=tf.float32)
+    img = preprocess_input(img, mode='torch')
+    img = tf.expand_dims(img, axis=0)
+    pred = model.predict_on_batch(img)
     pred = np.where(pred>=1.0, 1, 0)
     result = pred[0]
-    
 
     result= result[:, :, 0].astype(np.uint8)
     result_mul = result.copy() * 255
-    cv2.imwrite(DEBUG_RESULT_DIR+'dl_pred.png', result_mul)
     hh, ww = result_mul.shape
 
     contours, _ = cv2.findContours(result_mul, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -127,56 +132,89 @@ for x, gt, original in data.take(dataset_config.number_all):
     try:
         x,y,w,h = cv2.boundingRect(circle_contour[0])
     except:
+        print('no holse')
         continue
-        
+    
     center_x = x + (w/2)
     center_y = y + (h/2)
-    
-    gray_scale *= result
 
-    ROI = gray_scale.copy()[y:y+h, x:x+w]
-    cv2.imwrite(DEBUG_RESULT_DIR+'bbox_roi.png', ROI)
+    gray_sclae *= result
+
+    ROI = gray_sclae.copy()[y:y+h, x:x+w]
     ROI = cv2.resize(ROI, dsize=(w *4, h*4), interpolation=cv2.INTER_LINEAR)
-    cv2.imwrite(DEBUG_RESULT_DIR+'resized bbox_roi.png', ROI)
-    ROI = cv2.GaussianBlur(ROI, (3, 3), 0)
-    cv2.imwrite(DEBUG_RESULT_DIR+'blur resized bbox_roi.png', ROI)
-    # _, ROI = cv2.threshold(ROI,100,255,cv2.THRESH_BINARY)
-    _, ROI = cv2.threshold(ROI,200,255,cv2.THRESH_BINARY)
-    cv2.imwrite(DEBUG_RESULT_DIR+'binary threshold.png', ROI)
+
+    _, ROI = cv2.threshold(ROI,100,255,cv2.THRESH_BINARY)
+
+    circles = cv2.HoughCircles(ROI, cv2.HOUGH_GRADIENT, 1, 1,
+                     param1=50, param2=1, minRadius=1, maxRadius=10)
     
-    zero_img = np.zeros(gray_scale.shape)
+    zero_img = np.zeros(gray_sclae.shape)
+
     zero_ROI = np.zeros(ROI.shape)
-
-    contours, _ = cv2.findContours(ROI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    min_area = 999999
-    
-    out_contour = []
-    i = 0
-    draw_contours = ROI.copy()
-    draw_contours = np.expand_dims(draw_contours, axis=-1)
-    draw_contours = np.concatenate([draw_contours, draw_contours ,draw_contours], axis =-1)
-    for contour in contours:
-        cv2.drawContours(draw_contours, contours, i, (0, 0, 255), 2)
+    if circles is not None:
+        cx, cy, radius = circles[0][0]
+        cv2.circle(ROI, (int(cx), int(cy)), int(radius * 3), (0, 0, 0), 2, cv2.LINE_AA)
+        zero_ROI[int(cy)-5:int(cy)+5, int(cx)-5:int(cx)+5] = 255
         
-        area = cv2.contourArea(contour)
-        i += 1
-        if min_area >= area:
-            min_area = area
-            out_contour = [contour]
-    cv2.imwrite(DEBUG_RESULT_DIR+'draw_contours.png', draw_contours)
-    draw_img = ROI.copy()
-    cv2.drawContours(draw_img, out_contour, 0, (127, 127, 127), -1)       
-    cv2.imwrite(DEBUG_RESULT_DIR+'draw contour.png', draw_img)
+    ROI = cv2.resize(ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+    zero_ROI = cv2.resize(zero_ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+        
+    zero_img[y:y+h, x:x+w] = zero_ROI
+    
+    yx_coords = np.mean(np.column_stack(np.where(zero_img == 255)),axis=0)
+    
+    duration = (time.perf_counter_ns() - start) / BATCH_SIZE
+    avg_duration += duration
 
-    draw_img = cv2.resize(draw_img, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
-    cv2.imwrite(DEBUG_RESULT_DIR+'resized draw contour.png', draw_img)
-    draw_img = np.where(draw_img==127, 2, draw_img)
-    draw_img = np.where(draw_img==255, 1, draw_img)
+    if np.isnan(yx_coords[0]) != True:
+        cv2.circle(original, (int(yx_coords[1]), int(yx_coords[0])), int(radius), (255, 0, 0), 3, cv2.LINE_AA)
+
+    cv2.imshow('final result', original)
+    cv2.waitKey(0)
+    print(f"inference time : {duration // 1000000}ms.")
+print(f"avg inference time : {(avg_duration / 1000) // 1000000}ms.")
 
     
 
-    cropped_gt = draw_img.copy()
-    cropped_gt = np.where(cropped_gt==2, 1, 0)
-    gt[y:y+h, x:x+w] += cropped_gt
-    cv2.imwrite(DEBUG_RESULT_DIR+'final.png', gt * 127)
-    break
+
+
+
+
+    # if circles is not None:
+    #     for i in  range(circles.shape[1]):
+    #         cx, cy, radius = circles[0][0]
+            # cv2.circle(dst, (int(cx), int(cy)), int(radius), (255, 255, 0), 2, cv2.LINE_AA)
+    # cv2.circle(dst, (int(center_x), int(center_y)), int(radius), (255, 255, 0), 2, cv2.LINE_AA)
+    # cv2.drawContours(dst, contours, 0, (127, 127, 127), 2)
+
+
+# for i in range(1000):
+#     start = time.perf_counter_ns()
+
+#     img = cv2.imread('inference_test.png')
+#     gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+#     gray_sclae = cv2.GaussianBlur(gray_sclae, (0, 0), 1.0)
+#     gray_sclae = cv2.resize(gray_sclae, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_AREA)
+
+#     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#     img = tf.image.resize(img, size=IMAGE_SIZE,
+#                     method=tf.image.ResizeMethod.BILINEAR)
+                                    
+#     img = tf.cast(img, dtype=tf.float32)
+#     img = preprocess_input(img, mode='torch')
+#     img = tf.expand_dims(img, axis=0)
+#     pred = model.predict_on_batch(img)
+#     result = pred[0]
+
+#     result= result[:, :, 0].astype(np.uint8) 
+
+#     gray_sclae *= result
+
+#     circles = cv2.HoughCircles(gray_sclae, cv2.HOUGH_GRADIENT, 1, 1, param1=120, param2=10, minRadius=0, maxRadius=5)
+#     dst = gray_sclae.copy()
+#     cx, cy, radius = circles[0][0]
+
+#     duration = (time.perf_counter_ns() - start) / BATCH_SIZE
+#     avg_duration += duration
+#     # print(f"inference time : {duration // 1000000}ms.")
+# print(f"avg inference time : {(avg_duration / 1000) // 1000000}ms.")
