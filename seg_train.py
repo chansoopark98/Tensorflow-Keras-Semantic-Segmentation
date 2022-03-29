@@ -1,9 +1,9 @@
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
-from models.model_builder import segmentation_model
-from utils.load_datasets import DatasetGenerator
-from utils.loss import bce_loss, dice_loss, total_loss
-from utils.metrics import iou_coef, dice_coef
+from models.model_builder import semantic_model
+from utils.load_semantic_datasets import SemanticGenerator
+from utils.loss import ce_loss
+from utils.metrics import MIoU
 import argparse
 import time
 import os
@@ -23,7 +23,8 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-bce_B-16_E-100_Optim-Adam_Act-leakyrelu')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-ce_B-16_E-100_Optim-Adam_Act-relu')
+parser.add_argument("--data_type",     type=str,   help="Data type: set please 'roi' or 'full'", default='full')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -41,6 +42,7 @@ parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모�
 
 args = parser.parse_args()
 MODEL_PREFIX = args.model_prefix
+DATA_TYPE = args.data_type
 WEIGHT_DECAY = args.weight_decay
 OPTIMIZER_TYPE = args.optimizer
 BATCH_SIZE = args.batch_size
@@ -51,7 +53,6 @@ DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 IMAGE_SIZE = (480, 640)
-# IMAGE_SIZE = (None, None)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -63,11 +64,12 @@ if MIXED_PRECISION:
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+os.makedirs(CHECKPOINT_DIR + args.model_name, exist_ok=True)
 
 TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
 VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
-train_dataset_config = DatasetGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='train')
-valid_dataset_config = DatasetGenerator(DATASET_DIR, VALID_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation')
+train_dataset_config = SemanticGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='train', data_type=DATA_TYPE)
+valid_dataset_config = SemanticGenerator(DATASET_DIR, VALID_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', data_type=DATA_TYPE)
 
 train_data = train_dataset_config.get_trainData(train_dataset_config.train_data)
 # train_data = mirrored_strategy.experimental_distribute_dataset(train_data)
@@ -79,13 +81,13 @@ validation_steps = valid_dataset_config.number_valid // BATCH_SIZE
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
-checkpoint_val_loss = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_best_loss.h5',
+checkpoint_val_loss = ModelCheckpoint(CHECKPOINT_DIR + args.model_name+ '/_' + SAVE_MODEL_NAME + '_best_loss.h5',
                                       monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-checkpoint_val_iou = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_best_iou.h5',
-                                      monitor='val_iou_coef', save_best_only=True, save_weights_only=True,
+checkpoint_val_iou = ModelCheckpoint(CHECKPOINT_DIR + args.model_name +'/_' + SAVE_MODEL_NAME + '_best_iou.h5',
+                                      monitor='val_m_io_u', save_best_only=True, save_weights_only=True,
                                       verbose=1, mode='max')
 
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR+MODEL_PREFIX, write_graph=True, write_images=True)
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR +'semantic/' +MODEL_PREFIX, write_graph=True, write_images=True)
 
 polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
                                                           decay_steps=EPOCHS,
@@ -110,15 +112,16 @@ if MIXED_PRECISION:
 
 callback = [checkpoint_val_iou, checkpoint_val_loss,  tensorboard, lr_scheduler]
 
-model = segmentation_model(image_size=IMAGE_SIZE)
+model = semantic_model(image_size=IMAGE_SIZE)
+
+mIoU = MIoU(3)
 
 model.compile(
     optimizer=optimizer,
-    loss=bce_loss,
-    # loss='mse',
-    metrics=[iou_coef, dice_coef]
+    loss=ce_loss,
+    metrics=[mIoU]
     )
-# tf.keras.losses.BinaryCrossentropy()
+
 if LOAD_WEIGHT:
     weight_name = '_1002_best_miou'
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
@@ -133,4 +136,3 @@ history = model.fit(train_data,
                     callbacks=callback)
 
 model.save_weights(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_final_loss.h5')
-#

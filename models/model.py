@@ -51,7 +51,7 @@ def deconv_module(x, channels, kernel_size=3, strides=2, activation='swish', bn_
     return x
 
 
-def unet(input_shape=(300, 300, 3), base_channel=8):
+def unet(input_shape=(300, 300, 3), base_channel=8, output_channel=1, use_logits=False):
     inputs = Input(shape=input_shape, name='image_input')
     bn_momentum = 0.99
     activation = 'leakyrelu'
@@ -122,7 +122,15 @@ def unet(input_shape=(300, 300, 3), base_channel=8):
     decoder = conv_module(x=decoder, channels=base_channel, kernel_size=3, strides=1, bn_momentum=bn_momentum,
                           activation=activation, dropout=0.0, prefix='decoder_1_2')
 
-    outputs = Conv2D(1,
+    if use_logits:
+        outputs = Conv2D(output_channel,
+                    kernel_size=(3, 3),
+                    strides=(1, 1),
+                    use_bias=True,
+                    kernel_initializer='he_normal',
+                    padding='same')(decoder)
+    else:
+        outputs = Conv2D(output_channel,
                     kernel_size=(3, 3),
                     strides=(1, 1),
                     use_bias=True,

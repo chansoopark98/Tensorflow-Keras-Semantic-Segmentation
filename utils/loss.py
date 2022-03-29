@@ -23,8 +23,11 @@ def total_loss(y_true, y_pred):
     bce_loss = losses.binary_crossentropy(y_true=y_true, y_pred=y_pred, from_logits=False)
     return dice_loss + bce_loss
 
-    
 
+def ce_loss(y_true, y_pred):
+    ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(y_true=y_true, y_pred=y_pred)
+
+    return ce_loss
 
 
 

@@ -1,6 +1,6 @@
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
-from models.model_builder import base_model
+from models.model_builder import segmentation_model, semantic_model
 from utils.load_datasets import DatasetGenerator
 import argparse
 import time
@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--predict_type",     type=int,   help="추론 태스크 선택 (segmentation or semantic", default='semantic')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -38,6 +39,7 @@ parser.add_argument("--mixed_precision",  type=bool,  help="mixed_precision 사�
 parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정", default=True)
 
 args = parser.parse_args()
+PREDICT_TYPE = args.predict_type
 WEIGHT_DECAY = args.weight_decay
 OPTIMIZER_TYPE = args.optimizer
 BATCH_SIZE = args.batch_size
@@ -79,10 +81,14 @@ test_set = test_dataset_config.get_testData(test_dataset_config.valid_data)
 test_steps = test_dataset_config.number_valid // BATCH_SIZE
 
 
-model = base_model(image_size=IMAGE_SIZE)
+if PREDICT_TYPE == 'segmentation':
+    model = segmentation_model(image_size=IMAGE_SIZE)
+else:
+    model = semantic_model(image_size=IMAGE_SIZE)
 
 
-weight_name = '_0323_L-mse_B-16_E-100_Optim-Adam_best_iou'
+# weight_name = '_0323_L-mse_B-16_E-100_Optim-Adam_best_iou'
+weight_name = '0329/_0329_L-ce_B-16_E-100_Optim-Adam_best_iou'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
@@ -94,11 +100,13 @@ for x, y, original in tqdm(test_set, total=test_steps):
     pred = pred[0]
     label = y[0]
     original = original[0]
-    pred = tf.where(pred==1.0, 1, 0)
 
-    original = tf.cast(original, tf.int32)
-    output = (original * pred)
-    
+    if PREDICT_TYPE == 'segmentation':
+        pred = tf.where(pred==1.0, 1, 0)
+        original = tf.cast(original, tf.int32)
+        output = (original * pred)
+ 
+
     rows = 1
     cols = 4
     fig = plt.figure()

@@ -1,7 +1,7 @@
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
-from models.model_builder import base_model
+from models.model_builder import segmentation_model
 from utils.load_datasets import DatasetGenerator
 import argparse
 import time
@@ -76,7 +76,7 @@ os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
 os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 
-model = base_model(image_size=IMAGE_SIZE)
+model = segmentation_model(image_size=IMAGE_SIZE)
 
 
 weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
