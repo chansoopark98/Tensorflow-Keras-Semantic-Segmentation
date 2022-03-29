@@ -51,6 +51,8 @@ class DatasetGenerator:
 
         if mode == 'train':
             self.train_data, self.number_train = self._load_train_datasets()
+        elif mode == 'all':
+            self.data, self.number_all = self._load_all_datasets()
         else:
             self.valid_data, self.number_valid = self._load_valid_datasets()
 
@@ -73,6 +75,16 @@ class DatasetGenerator:
         print("학습 데이터 개수", number_train)
 
         return train_data, number_train
+
+    def _load_all_datasets(self):
+        data = tfds.load('Custom1',
+                               data_dir=self.data_dir, split='train')
+
+
+        number_all = data.reduce(0, lambda x, _: x + 1).numpy()
+        print("전체 데이터 개수", number_all)
+
+        return data, number_all
 
 
     def load_test(self, sample):

@@ -62,6 +62,16 @@ LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
 DISTRIBUTION_MODE = args.distribution_mode
 
+ROI_PATH = MASK_RESULT_DIR + 'roi_mask/'
+ROI_INPUT_PATH = ROI_PATH + 'input/'
+ROI_GT_PATH = ROI_PATH + 'gt/'
+ROI_CHECK_GT_PATH = ROI_PATH + 'check_gt/'
+
+SEMANTIC_PATH = MASK_RESULT_DIR + 'semantic_mask/'
+SEMANTIC_INPUT_PATH = SEMANTIC_PATH + 'input/'
+SEMANTIC_GT_PATH = SEMANTIC_PATH + 'gt/'
+SEMANTIC_CHECK_GT_PATH = SEMANTIC_PATH + 'check_gt/'
+
 if MIXED_PRECISION:
     policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
     mixed_precision.set_policy(policy)
@@ -70,6 +80,20 @@ os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
 os.makedirs(MASK_RESULT_DIR, exist_ok=True)
+
+os.makedirs(ROI_PATH, exist_ok=True)
+os.makedirs(ROI_INPUT_PATH, exist_ok=True)
+os.makedirs(ROI_GT_PATH, exist_ok=True)
+
+os.makedirs(SEMANTIC_PATH, exist_ok=True)
+os.makedirs(SEMANTIC_INPUT_PATH, exist_ok=True)
+os.makedirs(SEMANTIC_GT_PATH, exist_ok=True)
+
+os.makedirs(ROI_CHECK_GT_PATH, exist_ok=True)
+os.makedirs(SEMANTIC_CHECK_GT_PATH, exist_ok=True)
+
+dataset_config = DatasetGenerator(DATASET_DIR, (480, 640), BATCH_SIZE, mode='all')
+data = dataset_config.get_testData(dataset_config.data)
 
 model = base_model(image_size=IMAGE_SIZE)
 
@@ -80,36 +104,16 @@ weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
-batch_idx = 0
-avg_duration = 0
-ng_time = 0
+i = 1
 
-img_list = glob.glob(os.path.join(RESULT_PATH,'*.png'))
-img_list.sort()
 
-img = cv2.imread(img_list[0])
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-img = tf.image.resize(img, size=IMAGE_SIZE,
-                method=tf.image.ResizeMethod.BILINEAR)   
-img = tf.cast(img, dtype=tf.float32)
-img = preprocess_input(img, mode='torch')
-img = tf.expand_dims(img, axis=0)
-pred = model.predict_on_batch(img)
-
-for i in range(len(img_list)):
-    start = time.perf_counter_ns()
-    img = cv2.imread(img_list[i])
-    original = img.copy()
-    gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = tf.image.resize(img, size=IMAGE_SIZE,
-                    method=tf.image.ResizeMethod.BILINEAR)
+for x, gt, original in data.take(dataset_config.number_all):
+    gt = gt.numpy()[0, :, :, 0]
+    original = original.numpy()[0]
+    gray_scale = cv2.cvtColor(original, cv2.COLOR_RGB2GRAY)
+    
                                     
-    img = tf.cast(img, dtype=tf.float32)
-    img = preprocess_input(img, mode='torch')
-    img = tf.expand_dims(img, axis=0)
-    pred = model.predict_on_batch(img)
+    pred = model.predict_on_batch(x)
     pred = np.where(pred>=1.0, 1, 0)
     result = pred[0]
 
@@ -128,47 +132,80 @@ for i in range(len(img_list)):
     try:
         x,y,w,h = cv2.boundingRect(circle_contour[0])
     except:
-        duration = (time.perf_counter_ns() - start) / BATCH_SIZE
-        avg_duration += duration
-        ng_time += 1
         continue
         
     center_x = x + (w/2)
     center_y = y + (h/2)
-
-    gray_sclae *= result
-
-    ROI = gray_sclae.copy()[y:y+h, x:x+w]
-    ROI = cv2.resize(ROI, dsize=(w *4, h*4), interpolation=cv2.INTER_LINEAR)
-
-    _, ROI = cv2.threshold(ROI,100,255,cv2.THRESH_BINARY)
-
-    circles = cv2.HoughCircles(ROI, cv2.HOUGH_GRADIENT, 1, 1,
-                     param1=50, param2=1, minRadius=1, maxRadius=10)
     
-    zero_img = np.zeros(gray_sclae.shape)
+    gray_scale *= result
+
+    ROI = gray_scale.copy()[y:y+h, x:x+w]
+    ROI = cv2.resize(ROI, dsize=(w *4, h*4), interpolation=cv2.INTER_LINEAR)
+    ROI = cv2.GaussianBlur(ROI, (3, 3), 0)
+    # _, ROI = cv2.threshold(ROI,100,255,cv2.THRESH_BINARY)
+    _, ROI = cv2.threshold(ROI,200,255,cv2.THRESH_BINARY)
+    
+    circles = cv2.HoughCircles(ROI, cv2.HOUGH_GRADIENT, 1, 1,
+                     param1=127, param2=1, minRadius=1, maxRadius=9)
+    
+    zero_img = np.zeros(gray_scale.shape)
     zero_ROI = np.zeros(ROI.shape)
 
     if circles is not None:
         cx, cy, radius = circles[0][0]
-        cv2.circle(ROI, (int(cx), int(cy)), int(radius), (0, 0, 0), -1, cv2.LINE_AA)
+        contours, _ = cv2.findContours(ROI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        min_area = 999999
         
-        zero_ROI[int(cy)-5:int(cy)+5, int(cx)-5:int(cx)+5] = 255
-        
-    zero_ROI = cv2.resize(zero_ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST) 
-    zero_img[y:y+h, x:x+w] = zero_ROI
+        out_contour = []
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if min_area >= area:
+                min_area = area
+                out_contour = [contour]
+            
+
+        draw_img = ROI.copy()
+        cv2.drawContours(draw_img, out_contour, 0, (127, 127, 127), -1)
+        cv2.imshow('draw_img', draw_img)
+        cv2.waitKey(0)
+
+        key = cv2.waitKey(0)
+        print(key)
+        cv2.destroyAllWindows()
+            
+        delete_idx = abs(48 - key)
+            
+        if delete_idx == 65:
+            continue
+            
+        try:
+            # 1번 키를 누를 때
+            if key == 49:
+                print('save')
+                save_draw_img = draw_img.copy()
+
+                save_draw_img = np.where(save_draw_img == 255, 1, save_draw_img)
+                save_draw_img = np.where(save_draw_img == 127, 2, save_draw_img)
+
+                draw_img = cv2.resize(draw_img, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+                draw_img = np.where(draw_img==127, 2, draw_img)
+                draw_img = np.where(draw_img==255, 1, draw_img)
+
+                cv2.imwrite(ROI_INPUT_PATH +str(i) +'_rgb.png', original[y:y+h, x:x+w])
+                cv2.imwrite(ROI_GT_PATH +str(i) +'_semantic_mask.png', draw_img)
+                cv2.imwrite(ROI_CHECK_GT_PATH +str(i) +'_semantic_mask.png', draw_img * 127)
+                
+                # zero_img[y:y+h, x:x+w] = draw_img
+                cropped_gt = draw_img.copy()
+                cropped_gt = np.where(cropped_gt==2, 1, 0)
+                gt[y:y+h, x:x+w] += cropped_gt
+                cv2.imwrite(SEMANTIC_INPUT_PATH +str(i) +'_rgb.png', original)
+                cv2.imwrite(SEMANTIC_GT_PATH +str(i) +'_semantic_mask.png', gt)
+                cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(i) +'_semantic_mask.png', gt* 127)
+                    
+                i += 1
+
+                
+        except:
+            print('Out of range!!')
     
-    yx_coords = np.mean(np.column_stack(np.where(zero_img == 255)),axis=0)
-    
-    duration = (time.perf_counter_ns() - start) / BATCH_SIZE
-    avg_duration += duration
-
-    if np.isnan(yx_coords[0]) != True:
-        cv2.circle(original, (int(yx_coords[1]), int(yx_coords[0])), int(radius), (255, 0, 0), 3, cv2.LINE_AA)
-
-    cv2.imshow('final result', original)
-    cv2.waitKey(0)
-    # print(f"inference time : {duration // 1000000}ms.")
-
-print(f"avg inference time : {(avg_duration / len(img_list)) // 1000000}ms.")
-print(f"No good images : {ng_time}.")
