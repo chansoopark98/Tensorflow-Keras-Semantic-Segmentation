@@ -1,5 +1,5 @@
-from models.model_builder import segmentation_model
-from utils.load_datasets import DatasetGenerator
+from models.model_builder import semantic_model
+from utils.load_semantic_datasets import SemanticGenerator
 import argparse
 import time
 import os
@@ -33,34 +33,31 @@ os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
 VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
 
-test_dataset_config = DatasetGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation')
+test_dataset_config = SemanticGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', data_type='full')
 test_set = test_dataset_config.get_testData(test_dataset_config.valid_data)
 test_steps = test_dataset_config.number_valid // BATCH_SIZE
 
-model = segmentation_model(image_size=IMAGE_SIZE)
+model = semantic_model(image_size=IMAGE_SIZE)
 
-weight_name = '_0323_L-mse_B-16_E-100_Optim-Adam_best_iou'
+weight_name = '0329/_0329_L-ce_B-16_E-100_Optim-Adam_Act-relu_best_iou'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-model.summary()
 
+model.summary()
 batch_idx = 0
 for x, y, original in tqdm(test_set, total=test_steps):
     pred = model.predict_on_batch(x)
 
     img = x[0]
     pred = pred[0]
+    pred = tf.argmax(pred, axis=-1)
     label = y[0]
     original = original[0]
 
     rows = 1
-    cols = 4
+    cols = 3
 
     fig = plt.figure()
 
-    pred = tf.where(pred==1.0, 1, 0)
-    original = tf.cast(original, tf.int32)
-    output = (original * pred)
-        
     ax0 = fig.add_subplot(rows, cols, 1)
     ax0.imshow(original)
     ax0.set_title('img')
@@ -76,11 +73,8 @@ for x, y, original in tqdm(test_set, total=test_steps):
     ax1.set_title('pred')
     ax1.axis("off")
 
-    ax1 = fig.add_subplot(rows, cols, 4)
-    ax1.imshow(output)
-    ax1.set_title('output')
-    ax1.axis("off")
 
     batch_idx += 1
-    tf.keras.preprocessing.image.save_img(MASK_RESULT_DIR + str(batch_idx) + 'output_mask.png', output)
     plt.savefig(RESULT_DIR + str(batch_idx) + '_output.png', dpi=300)
+
+

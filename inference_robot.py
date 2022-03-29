@@ -13,6 +13,11 @@ import glob
 import cv2
 import numpy as np
 
+from data_labeling.utils import canny_edge
+
+
+
+
 # from utils.cityscape_colormap import class_weight
 # from utils.adamW import LearningRateScheduler, poly_decay
 # import tensorflow_addons
@@ -82,7 +87,6 @@ model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 model.summary()
 batch_idx = 0
 avg_duration = 0
-ng_time = 0
 
 img_list = glob.glob(os.path.join(RESULT_PATH,'*.png'))
 img_list.sort()
@@ -128,11 +132,9 @@ for i in range(len(img_list)):
     try:
         x,y,w,h = cv2.boundingRect(circle_contour[0])
     except:
-        duration = (time.perf_counter_ns() - start) / BATCH_SIZE
-        avg_duration += duration
-        ng_time += 1
+        print('no holse')
         continue
-        
+    
     center_x = x + (w/2)
     center_y = y + (h/2)
 
@@ -147,15 +149,16 @@ for i in range(len(img_list)):
                      param1=50, param2=1, minRadius=1, maxRadius=10)
     
     zero_img = np.zeros(gray_sclae.shape)
-    zero_ROI = np.zeros(ROI.shape)
 
+    zero_ROI = np.zeros(ROI.shape)
     if circles is not None:
         cx, cy, radius = circles[0][0]
-        cv2.circle(ROI, (int(cx), int(cy)), int(radius), (0, 0, 0), -1, cv2.LINE_AA)
-        
+        cv2.circle(ROI, (int(cx), int(cy)), int(radius * 3), (0, 0, 0), 2, cv2.LINE_AA)
         zero_ROI[int(cy)-5:int(cy)+5, int(cx)-5:int(cx)+5] = 255
         
-    zero_ROI = cv2.resize(zero_ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST) 
+    ROI = cv2.resize(ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+    zero_ROI = cv2.resize(zero_ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+        
     zero_img[y:y+h, x:x+w] = zero_ROI
     
     yx_coords = np.mean(np.column_stack(np.where(zero_img == 255)),axis=0)
@@ -168,7 +171,50 @@ for i in range(len(img_list)):
 
     cv2.imshow('final result', original)
     cv2.waitKey(0)
-    # print(f"inference time : {duration // 1000000}ms.")
+    print(f"inference time : {duration // 1000000}ms.")
+print(f"avg inference time : {(avg_duration / 1000) // 1000000}ms.")
 
-print(f"avg inference time : {(avg_duration / len(img_list)) // 1000000}ms.")
-print(f"No good images : {ng_time}.")
+    
+
+
+
+
+
+    # if circles is not None:
+    #     for i in  range(circles.shape[1]):
+    #         cx, cy, radius = circles[0][0]
+            # cv2.circle(dst, (int(cx), int(cy)), int(radius), (255, 255, 0), 2, cv2.LINE_AA)
+    # cv2.circle(dst, (int(center_x), int(center_y)), int(radius), (255, 255, 0), 2, cv2.LINE_AA)
+    # cv2.drawContours(dst, contours, 0, (127, 127, 127), 2)
+
+
+# for i in range(1000):
+#     start = time.perf_counter_ns()
+
+#     img = cv2.imread('inference_test.png')
+#     gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+#     gray_sclae = cv2.GaussianBlur(gray_sclae, (0, 0), 1.0)
+#     gray_sclae = cv2.resize(gray_sclae, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_AREA)
+
+#     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#     img = tf.image.resize(img, size=IMAGE_SIZE,
+#                     method=tf.image.ResizeMethod.BILINEAR)
+                                    
+#     img = tf.cast(img, dtype=tf.float32)
+#     img = preprocess_input(img, mode='torch')
+#     img = tf.expand_dims(img, axis=0)
+#     pred = model.predict_on_batch(img)
+#     result = pred[0]
+
+#     result= result[:, :, 0].astype(np.uint8) 
+
+#     gray_sclae *= result
+
+#     circles = cv2.HoughCircles(gray_sclae, cv2.HOUGH_GRADIENT, 1, 1, param1=120, param2=10, minRadius=0, maxRadius=5)
+#     dst = gray_sclae.copy()
+#     cx, cy, radius = circles[0][0]
+
+#     duration = (time.perf_counter_ns() - start) / BATCH_SIZE
+#     avg_duration += duration
+#     # print(f"inference time : {duration // 1000000}ms.")
+# print(f"avg inference time : {(avg_duration / 1000) // 1000000}ms.")
