@@ -133,4 +133,3 @@ history = model.fit(train_data,
                     callbacks=callback)
 
 model.save_weights(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_final_loss.h5')
-#

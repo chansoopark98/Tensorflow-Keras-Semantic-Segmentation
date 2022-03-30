@@ -23,8 +23,8 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='CE-B16-E100-C16-SWISH-ADAM')
-parser.add_argument("--data_type",     type=str,   help="Data type: set please 'roi' or 'full'", default='full')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='roi-CE-B16-E100-C8-SWISH-ADAM')
+parser.add_argument("--data_type",     type=str,   help="Data type: set please 'roi' or 'full'", default='roi')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -52,7 +52,8 @@ SAVE_MODEL_NAME = args.model_name + '_' + args.model_prefix
 DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
-IMAGE_SIZE = (480, 640)
+# IMAGE_SIZE = (480, 640)
+IMAGE_SIZE = (128, 128)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision

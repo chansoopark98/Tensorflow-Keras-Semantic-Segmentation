@@ -97,6 +97,9 @@ class SemanticGenerator:
         img = tf.cast(original, tf.float32)
 
         labels = tf.cast(sample['gt'], tf.int64)
+        if self.data_type == '2':
+            img = tf.image.resize_with_crop_or_pad(img, 128, 128)
+            labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
 
         img = preprocess_input(img, mode='torch')
 
@@ -107,6 +110,10 @@ class SemanticGenerator:
     def preprocess(self, sample):
         img = tf.cast(sample['rgb'], tf.float32)
         labels = tf.cast(sample['gt'], tf.int64)
+
+        if self.data_type == '2':
+            img = tf.image.resize_with_crop_or_pad(img, 128, 128)
+            labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
 
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_saturation(img, 0.5, 1.5)
@@ -126,8 +133,11 @@ class SemanticGenerator:
     def preprocess_valid(self, sample):
         original = sample['rgb']
         img = tf.cast(original, tf.float32)
-        
         labels = tf.cast(sample['gt'], tf.int64)
+
+        if self.data_type == '2':
+            img = tf.image.resize_with_crop_or_pad(img, 128, 128)
+            labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
 
         img = preprocess_input(img, mode='torch')
 

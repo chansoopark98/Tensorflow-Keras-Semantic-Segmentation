@@ -24,7 +24,8 @@ DATASET_DIR = args.dataset_dir
 RESULT_DIR = args.result_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (480, 640)
+# IMAGE_SIZE = (480, 640)
+IMAGE_SIZE = (128, 128)
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -33,13 +34,14 @@ os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
 VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
 
-test_dataset_config = SemanticGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', data_type='full')
+test_dataset_config = SemanticGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', data_type='roi')
 test_set = test_dataset_config.get_testData(test_dataset_config.valid_data)
 test_steps = test_dataset_config.number_valid // BATCH_SIZE
 
 model = semantic_model(image_size=IMAGE_SIZE)
 
-weight_name = '0329/_0329_L-ce_B-16_E-100_Optim-Adam_Act-relu_best_iou'
+# weight_name = '0329/_0329_CE-B16-E100-C16-RELU-ADAM_best_iou'
+weight_name = '0330/_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
 
 model.summary()
