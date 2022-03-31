@@ -5,7 +5,7 @@ import time
 import cv2
 import numpy as np
 import tensorflow as tf
-from utils.realsense_camera import RealSenseCamera
+from utils.pyrealsense_camera import RealSenseCamera
 
 tf.keras.backend.clear_session()
 
@@ -18,8 +18,8 @@ parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉�
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
 CHECKPOINT_DIR = args.checkpoint_dir
-# IMAGE_SIZE = (480, 640)
-IMAGE_SIZE = (720, 1280)
+IMAGE_SIZE = (480, 640)
+# IMAGE_SIZE = (720, 1280)
 # IMAGE_SIZE = (128, 128)
 
 def interlace(imgL, imgR, h, w):
@@ -56,11 +56,22 @@ if __name__ == '__main__':
 
         pred = model.predict_on_batch(img)
         pred = tf.argmax(pred[0], axis=-1)
+
+        # Calculate x,y coordinates
+        yx_coords = np.mean(np.column_stack(np.where(pred == 2)),axis=0)
+
+        
+
+        # For visualization
         output = pred.numpy() * 127
         output = output.astype(np.uint8)
         
         rgb =rgb.astype(np.uint8)
         rgb = cv2.cvtColor(rgb,cv2.COLOR_RGB2BGR)
+        
+        if np.isnan(yx_coords[0]) != True:
+            cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+
         output = cv2.cvtColor(output,cv2.COLOR_GRAY2RGB)
         concat = cv2.hconcat([rgb, output])
         concat = cv2.resize(concat, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_NEAREST)
