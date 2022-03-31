@@ -23,19 +23,37 @@ class RealSenseCamera:
         self.intrinsics = None
 
     def connect(self):
+        ctx = rs.context()
+        devices = ctx.query_devices()
+        for dev in devices:
+            dev.hardware_reset()
+            
         # Start and configure
         self.pipeline = rs.pipeline()
         config = rs.config()
         config.enable_device(str(self.device_id))
-        config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, self.fps)
+        # config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, self.fps)
+        config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, self.fps)
         config.enable_stream(rs.stream.color, self.width, self.height, rs.format.rgb8, self.fps)
         # config.enable_stream(rs.stream.color, 640, 480, rs.format.rgb8, self.fps)
 
         cfg = self.pipeline.start(config)
 
-
         # Determine intrinsics
+        # Get the sensor once at the beginning. (Sensor index: 1)
+
+        sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1].set_option(rs.option.exposure, 1.000)
+
+
+        # Set the exposure anytime during the operation
+        # cfg.set_option(rs.option.exposure, 1000.000)
+
+        
+
+        # rgb_profile = cfg.get_stream(rs.stream.color)
         rgb_profile = cfg.get_stream(rs.stream.color)
+
+        
         self.intrinsics = rgb_profile.as_video_stream_profile().get_intrinsics()
 
         # Determine depth scale
@@ -45,20 +63,25 @@ class RealSenseCamera:
     def get_image_bundle(self):
         frames = self.pipeline.wait_for_frames()
 
-        align = rs.align(rs.stream.color)
-        aligned_frames = align.process(frames)
-        color_frame = aligned_frames.first(rs.stream.color)
-        aligned_depth_frame = aligned_frames.get_depth_frame()
+        
+        
+        color_frame = frames.get_color_frame()
 
-        depth_image = np.asarray(aligned_depth_frame.get_data(), dtype=np.float32)
-        depth_image *= self.scale
+        # align = rs.align(rs.stream.color)
+        # aligned_frames = align.process(frames)
+        # color_frame = aligned_frames.first(rs.stream.color)
+        
+        # # aligned_depth_frame = aligned_frames.get_depth_frame()
+
+        # # depth_image = np.asarray(aligned_depth_frame.get_data(), dtype=np.float32)
+        # # depth_image *= self.scale
         color_image = np.asanyarray(color_frame.get_data())
 
-        depth_image = np.expand_dims(depth_image, axis=2)
+        # depth_image = np.expand_dims(depth_image, axis=2)
 
         return {
             'rgb': color_image,
-            'aligned_depth': depth_image,
+            # 'aligned_depth': depth_image,
         }
 
     def plot_image_bundle(self):
@@ -78,7 +101,7 @@ class RealSenseCamera:
 
 
 if __name__ == '__main__':
-    cam = RealSenseCamera(device_id='f0350818') #0003b661b825 # f0350818
+    cam = RealSenseCamera(device_id='f1231507') #0003b661b825 # f0350818 # f1231507 # 0003b9fa147c
     cam.connect()
     while True:
         cam.plot_image_bundle()
