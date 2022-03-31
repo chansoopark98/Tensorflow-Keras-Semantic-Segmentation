@@ -3,6 +3,7 @@ from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import argparse
 import time
 import cv2
+import numpy as np
 import tensorflow as tf
 from utils.realsense_camera import RealSenseCamera
 
@@ -17,37 +18,53 @@ parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉�
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
 CHECKPOINT_DIR = args.checkpoint_dir
-IMAGE_SIZE = (480, 640)
+# IMAGE_SIZE = (480, 640)
+IMAGE_SIZE = (720, 1280)
 # IMAGE_SIZE = (128, 128)
 
-model = semantic_model(image_size=IMAGE_SIZE)
+def interlace(imgL, imgR, h, w):
+    inter = np.empty((h, w, 3), imgL.dtype)
+    inter[:h:2, :w, :] = imgL[:h:2, :w, :]
+    inter[1:h:2, :w, :] = imgR[1:h:2, :w, :]
 
-weight_name = '_0329_CE-B16-E100-C16-RELU-ADAM_best_iou'
-# weight_name = '0330/_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
-model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-
+    return inter
 
 if __name__ == '__main__':
-    cam = RealSenseCamera(device_id='f1181780') #0003b661b825 # f0350818 # f1181780
+    model = semantic_model(image_size=IMAGE_SIZE)
+    weight_name = '_0329_CE-B16-E100-C16-RELU-ADAM_best_iou'
+    # weight_name = '0330/_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
+    model.load_weights(weight_name + '.h5')
+    # null = tf.zeros([1,480, 640,3])
+    # model.predict_on_batch(null)
+    cam = RealSenseCamera(device_id='f0350818', width=IMAGE_SIZE[1], height=IMAGE_SIZE[0]) #0003b661b825 # f0350818 # f1181780 # f1231507
     cam.connect() 
 
     while True:
         image_bundle = cam.get_image_bundle()
-        img  = image_bundle['rgb']
-        depth = image_bundle['aligned_depth']
+        rgb  = image_bundle['rgb']
+        # rrgb = image_bundle['rgb']
+        
+        # rgb = interlace(lrgb, rrgb,IMAGE_SIZE[0], IMAGE_SIZE[1])
 
-        img = tf.image.resize(img, size=IMAGE_SIZE,
-                method=tf.image.ResizeMethod.BILINEAR)   
-        img = tf.cast(img, dtype=tf.float32)
+        # sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        # rgb = cv2.filter2D(rgb, -1, sharpen_kernel)
+
+        # depth = image_bundle['aligned_depth']
+        img = tf.cast(rgb, dtype=tf.float32)
         img = preprocess_input(img, mode='torch')
         img = tf.expand_dims(img, axis=0)
 
         pred = model.predict_on_batch(img)
-        pred = tf.argmax(pred, axis=-1)
-
-        cv2.imshow('test', pred[0])
+        pred = tf.argmax(pred[0], axis=-1)
+        output = pred.numpy() * 127
+        output = output.astype(np.uint8)
         
-
-
-
-
+        rgb =rgb.astype(np.uint8)
+        rgb = cv2.cvtColor(rgb,cv2.COLOR_RGB2BGR)
+        output = cv2.cvtColor(output,cv2.COLOR_GRAY2RGB)
+        concat = cv2.hconcat([rgb, output])
+        concat = cv2.resize(concat, dsize=(IMAGE_SIZE[1], IMAGE_SIZE[0]), interpolation=cv2.INTER_NEAREST)
+        cv2.imshow('test', concat)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+       
