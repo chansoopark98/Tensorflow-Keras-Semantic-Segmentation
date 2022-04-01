@@ -73,7 +73,7 @@ if __name__ == '__main__':
     roi_model = semantic_model(image_size=(128, 128))
 
     weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
-    roi_weight_name = '0330/_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
+    roi_weight_name = '_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
     roi_model.load_weights(CHECKPOINT_DIR + roi_weight_name + '.h5')
     
