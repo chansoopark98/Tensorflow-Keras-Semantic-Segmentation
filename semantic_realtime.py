@@ -74,11 +74,10 @@ if __name__ == '__main__':
 
     weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
     roi_weight_name = '_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-    roi_model.load_weights(CHECKPOINT_DIR + roi_weight_name + '.h5')
+    model.load_weights(weight_name + '.h5')
+    roi_model.load_weights(roi_weight_name + '.h5')
     
     img = tf.zeros([480, 640, 3])
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = tf.image.resize(img, size=IMAGE_SIZE,
                     method=tf.image.ResizeMethod.BILINEAR)   
     img = tf.cast(img, dtype=tf.float32)
@@ -94,11 +93,12 @@ if __name__ == '__main__':
     roi_pred = roi_model.predict_on_batch(roi_img)
 
 
-    cam = RealSenseCamera(device_id='f0350818', width=IMAGE_SIZE[1], height=IMAGE_SIZE[0]) #0003b661b825 # f0350818 # f1181780 # f1231507
+    cam = RealSenseCamera(device_id='944622074360', width=IMAGE_SIZE[1], height=IMAGE_SIZE[0]) #0003b661b825 # f0350818 # f1181780 # f1231507 # 944622074360
     cam.connect() 
 
     previous_yx = [0, 0]
     while True:
+        x,y,w,h = 0, 0, 0, 0
         image_bundle = cam.get_image_bundle()
         rgb  = image_bundle['rgb']
         
@@ -121,49 +121,65 @@ if __name__ == '__main__':
         contours, _ = cv2.findContours(result, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         circle_contour = []
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            
-            if area >= 1000:
-                circle_contour.append(contour)
+        if len(contours) != 0:
+            for contour in contours:
+                area = cv2.contourArea(contour)
                 
-        try:
-            x,y,w,h = cv2.boundingRect(circle_contour[0])
-        except:
-            continue
+                if area >= 1000:
+                    circle_contour.append(contour)
+
+            if len(circle_contour) != 0:
+                x,y,w,h = cv2.boundingRect(circle_contour[0])
             
-        center_x = x + (w/2)
-        center_y = y + (h/2)
 
-        # gray_sclae *= result
-        # img = tf.multiply(img, pred)
+            if x != 0:
+                cropped_input_img = rgb.copy()[y:y+h, x:x+w]
+                ROI = tf.image.resize_with_crop_or_pad(cropped_input_img, 128, 128)
+                ROI = tf.cast(ROI, dtype=tf.float32)
+                ROI = preprocess_input(ROI, mode='torch')
+                ROI = tf.expand_dims(ROI, axis=0)
+                ROI_PRED = roi_model.predict_on_batch(ROI)
+                ROI_PRED = tf.math.argmax(ROI_PRED, axis=-1)
+                ROI_PRED = tf.cast(ROI_PRED[0], tf.int32)
+                
+                zero_img = np.zeros((rgb.shape[0], rgb.shape[1]))
 
-        cropped_input_img = rgb.copy()[y:y+h, x:x+w]
-        ROI = tf.image.resize_with_crop_or_pad(cropped_input_img, 128, 128)
-        ROI = tf.cast(ROI, dtype=tf.float32)
-        ROI = preprocess_input(ROI, mode='torch')
-        ROI = tf.expand_dims(ROI, axis=0)
-        ROI_PRED = roi_model.predict_on_batch(ROI)
-        ROI_PRED = tf.math.argmax(ROI_PRED, axis=-1)
-        ROI_PRED = tf.cast(ROI_PRED[0], tf.int32)
+                ROI_PRED = tf.where(ROI_PRED==2, 127, 0)
+                print('before crop', ROI_PRED.shape)
+                ROI_PRED = crop_center(ROI_PRED.numpy(), w, h)
+                
+                print('w :', w , 'h :', h)        
+                print('x :', x , 'y :', y)        
+                print('ROI_PRED', ROI_PRED.shape)
+                
 
+                
+                if 512+64 >= x >= 128-64:
+                    if 352+64 >= y >= 128-64:
 
-        zero_img = np.zeros(rgb.shape)
+                        if y+h >= 480:
+                            new_h = 480
+                        else:
+                            new_h = y+h
+                        
+                        if x+w >= 640:
+                            new_w = 640
+                        else:
+                            new_w = x+w
 
-        ROI_PRED = tf.where(ROI_PRED==2, 127, 0)
-        ROI_PRED = crop_center(ROI_PRED.numpy(), w, h)
-        
-        
-        zero_img[y:y+h, x:x+w] = ROI_PRED
-        yx_coords = np.mean(np.column_stack(np.where(zero_img == 127)),axis=0)
-        
-        if np.isnan(yx_coords[0]) != True:
-            previous_yx = yx_coords
-            cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+                        # zero_img[y:new_h, x:new_w] = ROI_PRED
+                        zero_img[y:y+ROI_PRED.shape[0], x:x+ROI_PRED.shape[1]] = ROI_PRED
+
+                        yx_coords = np.mean(np.column_stack(np.where(zero_img == 127)),axis=0)
             
+                        if np.isnan(yx_coords[0]) != True:
+                            previous_yx = yx_coords
+                            cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+        
+        rgb = cv2.cvtColor(rgb,cv2.COLOR_RGB2BGR)
         cv2.imshow('Output', rgb)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-        print('x :', previous_yx[1], 'y :', previous_yx[0])
+        # print('x :', previous_yx[1], 'y :', previous_yx[0])
        
