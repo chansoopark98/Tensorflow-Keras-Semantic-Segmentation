@@ -1,7 +1,7 @@
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
-from models.model_builder import segmentation_model
+from models.model_builder import segmentation_model, semantic_model
 from utils.load_datasets import DatasetGenerator
 import argparse
 import time
@@ -21,6 +21,11 @@ import numpy as np
 # LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
 # LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python gan_train.py
 
+def crop_center(img,cropx,cropy):
+    y,x = img.shape
+    startx = x//2-(cropx//2)
+    starty = y//2-(cropy//2)    
+    return img[starty:starty+cropy,startx:startx+cropx]
 
 tf.keras.backend.clear_session()
 
@@ -72,12 +77,13 @@ os.makedirs(RESULT_DIR, exist_ok=True)
 os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 
 model = segmentation_model(image_size=IMAGE_SIZE)
-
+roi_model = semantic_model(image_size=(128, 128))
 
 weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
-
+roi_weight_name = '0330/_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
 # weight_name = '_0318_final_loss'
 model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+roi_model.load_weights(CHECKPOINT_DIR + roi_weight_name + '.h5')
 
 model.summary()
 batch_idx = 0
@@ -96,9 +102,18 @@ img = preprocess_input(img, mode='torch')
 img = tf.expand_dims(img, axis=0)
 pred = model.predict_on_batch(img)
 
+
+roi_img = tf.zeros([128, 128, 3])
+roi_img = tf.cast(roi_img, dtype=tf.float32)
+roi_img = preprocess_input(roi_img, mode='torch')
+roi_img = tf.expand_dims(roi_img, axis=0)
+roi_pred = roi_model.predict_on_batch(roi_img)
+
+
 for i in range(len(img_list)):
     start = time.perf_counter_ns()
     img = cv2.imread(img_list[i])
+    input_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     original = img.copy()
     gray_sclae = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -112,12 +127,13 @@ for i in range(len(img_list)):
     pred = model.predict_on_batch(img)
     pred = np.where(pred>=1.0, 1, 0)
     result = pred[0]
+    
+    pred = pred[0]
 
-    result= result[:, :, 0].astype(np.uint8)
-    result_mul = result.copy() * 255
-    hh, ww = result_mul.shape
+    result= result[:, :, 0].astype(np.uint8)  * 255   
 
-    contours, _ = cv2.findContours(result_mul, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(result, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
     circle_contour = []
     for contour in contours:
         area = cv2.contourArea(contour)
@@ -136,38 +152,64 @@ for i in range(len(img_list)):
     center_x = x + (w/2)
     center_y = y + (h/2)
 
-    gray_sclae *= result
+    # gray_sclae *= result
+    # img = tf.multiply(img, pred)
 
-    ROI = gray_sclae.copy()[y:y+h, x:x+w]
-    ROI = cv2.resize(ROI, dsize=(w *4, h*4), interpolation=cv2.INTER_LINEAR)
+    cropped_input_img = input_img.copy()[y:y+h, x:x+w]
+    ROI = tf.image.resize_with_crop_or_pad(cropped_input_img, 128, 128)
+    # ROI = cv2.resize(cropped_input_img, dsize=(128, 128), interpolation=cv2.INTER_LINEAR)
+    # ROI = cv2.resize(ROI, dsize=(w *4, h*4), interpolation=cv2.INTER_LINEAR)
+    ROI = tf.cast(ROI, dtype=tf.float32)
+    ROI = preprocess_input(ROI, mode='torch')
+    ROI = tf.expand_dims(ROI, axis=0)
+    ROI_PRED = roi_model.predict_on_batch(ROI)
+    ROI_PRED = tf.math.argmax(ROI_PRED, axis=-1)
+    ROI_PRED = tf.cast(ROI_PRED[0], tf.int32)
 
-    _, ROI = cv2.threshold(ROI,100,255,cv2.THRESH_BINARY)
 
-    circles = cv2.HoughCircles(ROI, cv2.HOUGH_GRADIENT, 1, 1,
-                     param1=50, param2=1, minRadius=1, maxRadius=10)
-    
     zero_img = np.zeros(gray_sclae.shape)
-    zero_ROI = np.zeros(ROI.shape)
 
-    if circles is not None:
-        cx, cy, radius = circles[0][0]
-        cv2.circle(ROI, (int(cx), int(cy)), int(radius), (0, 0, 0), -1, cv2.LINE_AA)
-        
-        zero_ROI[int(cy)-5:int(cy)+5, int(cx)-5:int(cx)+5] = 255
-        
-    zero_ROI = cv2.resize(zero_ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST) 
-    zero_img[y:y+h, x:x+w] = zero_ROI
+    ROI_PRED = tf.where(ROI_PRED==2, 127, 0)
+    ROI_PRED = crop_center(ROI_PRED.numpy(), w, h)
     
-    yx_coords = np.mean(np.column_stack(np.where(zero_img == 255)),axis=0)
     
-    duration = (time.perf_counter_ns() - start) / BATCH_SIZE
-    avg_duration += duration
-
+    zero_img[y:y+h, x:x+w] = ROI_PRED
+    
+    yx_coords = np.mean(np.column_stack(np.where(zero_img == 127)),axis=0)
     if np.isnan(yx_coords[0]) != True:
-        cv2.circle(original, (int(yx_coords[1]), int(yx_coords[0])), int(radius), (255, 0, 0), 3, cv2.LINE_AA)
+        cv2.circle(input_img, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+        cv2.imshow('result output', input_img)
+        cv2.waitKey(0)
+    
+    
+    # # _, ROI = cv2.threshold(ROI,100,255,cv2.THRESH_BINARY)
+    
 
-    cv2.imshow('final result', original)
-    cv2.waitKey(0)
+    # circles = cv2.HoughCircles(ROI, cv2.HOUGH_GRADIENT, 1, 1,
+    #                  param1=50, param2=1, minRadius=1, maxRadius=10)
+    
+    # zero_img = np.zeros(gray_sclae.shape)
+    # zero_ROI = np.zeros(ROI.shape)
+
+    # if circles is not None:
+    #     cx, cy, radius = circles[0][0]
+    #     cv2.circle(ROI, (int(cx), int(cy)), int(radius), (0, 0, 0), -1, cv2.LINE_AA)
+        
+    #     zero_ROI[int(cy)-5:int(cy)+5, int(cx)-5:int(cx)+5] = 255
+        
+    # zero_ROI = cv2.resize(zero_ROI, dsize=(w, h), interpolation=cv2.INTER_NEAREST) 
+    # zero_img[y:y+h, x:x+w] = zero_ROI
+    
+    # yx_coords = np.mean(np.column_stack(np.where(zero_img == 255)),axis=0)
+    
+    # duration = (time.perf_counter_ns() - start) / BATCH_SIZE
+    # avg_duration += duration
+
+    # if np.isnan(yx_coords[0]) != True:
+    #     cv2.circle(original, (int(yx_coords[1]), int(yx_coords[0])), int(radius), (255, 0, 0), 3, cv2.LINE_AA)
+
+    # cv2.imshow('final result', original)
+    # cv2.waitKey(0)
     # print(f"inference time : {duration // 1000000}ms.")
 
 print(f"avg inference time : {(avg_duration / len(img_list)) // 1000000}ms.")
