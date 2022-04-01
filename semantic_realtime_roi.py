@@ -93,7 +93,9 @@ if __name__ == '__main__':
     roi_pred = roi_model.predict_on_batch(roi_img)
 
 
-    cam = RealSenseCamera(device_id='944622074360', width=IMAGE_SIZE[1], height=IMAGE_SIZE[0]) #0003b661b825 # f0350818 # f1181780 # f1231507 # 944622074360
+    # 944622074360 D435i
+    # f1181780 park pc l515
+    cam = RealSenseCamera(device_id='f0350818', width=IMAGE_SIZE[1], height=IMAGE_SIZE[0], fps=30) #0003b661b825 # f0350818 # f1181780 # f1231507 # 944622074360
     cam.connect() 
 
     previous_yx = [0, 0]
