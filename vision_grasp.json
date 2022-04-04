@@ -1,0 +1,58 @@
+{
+  "cameras": [
+    {
+      "id": 0,
+      "name": "/camera01",
+      "path": {
+        "launch": "",
+        "setting": ""
+      },
+      "topics": {
+        "info": "/camera01/color/camera_info",
+        "color": "/camera01/color/image_rect_color",
+        "depth": "/camera01/aligned_depth_to_color/image_raw",
+        "points": "/camera01/depth_registered/points"
+      },
+      "calibration": {
+        "name": "eye-to-hand",
+        "matrix_bin": [[ 9.87813818e-01,  1.00176210e-02,  9.59781736e-03, -2.58351646e-01],
+        [ 9.89847389e-03, -9.88415687e-01, -2.75966066e-02, -4.77611422e-01],
+        [ 6.28613068e-03,  4.41033120e-02, -1.00272502e+00,  8.11031343e-01],
+        [ 6.66133815e-16,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]],
+        "matrix": [[ 1.025255737392765987e+00,  -7.950634188461869201e-03,  1.089372101529306747e-02, 5.681560167885066903e-01],
+        [ -6.611927216658486373e-03, -1.021718925869948613e+00, 1.879702048752562860e-02, 2.969514418599246142e-01],
+        [ 1.315401034369251265e-02,  5.224352576007618154e-04, -9.953936520277686384e-01,  7.928814537001684926e-01],
+        [ 8.881784197001252323e-16,  0.000000000000000000e+00,  0.000000000000000000e+00,  1.000000000000000000e+00]]
+      }
+    }
+  ],
+  "vision_procs": [
+    {
+      "id": 0,
+      "camera_id": 0,
+      "service": "/camera01_result0a_srv",
+      "preprocessing": {
+        "roi": {
+          "x0": -1,
+          "y0": -1,
+          "w": -1,
+          "h": -1
+        },
+        "resize": {
+          "w": -1,
+          "h": -1
+        }
+      },
+      "weights_path0": "/root/plaif_vision/grasp_weights/rfnet/211109_epoch_153_iou_0.90_0.87",
+      "weights_path": "/home/park/catkin_ws/config/weights/unknown_test1",
+      "seg_path": "/home/park/catkin_ws/config/weights/_0323_L-bce_B-16_E-100_Optim-Adam_best_iou.h5",
+      "semantic_path": "/home/park/catkin_ws/config/weights/_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou.h5",
+      "weights_path2": "/root/plaif_vision/grasp_weights/rfnet2/1203_140_0.81_0.76",
+      "weights_path3": "/root/plaif_vision/grasp_weights/rfnet2/rf02_epoch_10_iou_0.90_0.85",
+      "weights_path4": "/root/plaif_vision/grasp_weights/rfnet2/rf02_epoch_18_iou_0.89_0.83",
+      "weights_path5": "/root/plaif_vision/grasp_weights/rfnet2/rf02_epoch_24_iou_0.90_0.87",
+      "categories": [],
+      "postprocessing": []
+    }
+  ]
+}

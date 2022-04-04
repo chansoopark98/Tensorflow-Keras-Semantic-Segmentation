@@ -6,15 +6,36 @@ import time
 import cv2
 import numpy as np
 import tensorflow as tf
+from cv_bridge import CvBridge, CvBridgeError
 from utils.pyrealsense_camera import RealSenseCamera
 import rospy
+# ros numpy install 방법 
+# sudo apt-get install ros-$release-ros-numpy ($release는 현재 사용하는 ROS version (ex: melodic))
 from std_msgs.msg import Float32
+import message_filters
+from sensor_msgs.msg import Image, CameraInfo
+import json
+from utils.CameraManager import CameraManager
 
 tf.keras.backend.clear_session()
-
-rospy.init_node('topic_publisher')
-pub = rospy.Publisher('counter', Float32)
+bridge = CvBridge()
+rospy.init_node('topic_publisher', anonymous=True)
+pub = rospy.Publisher('counter', Float32, queue_size=1)
 rate = rospy.Rate(60)
+with open('./vision_grasp.json', 'r') as f_config:
+    config_data = json.load(f_config)
+
+camera_config_data = config_data["cameras"]
+cameras = []
+for idx, cam in enumerate(camera_config_data):
+    
+    topic_info = cam["topics"]
+    camera = CameraManager({'name':cam["name"],'cameraInfos':topic_info["info"],'colorStream':topic_info["color"],'depthStream':topic_info["depth"],'calibration':cam["calibration"]})
+    
+
+camera.register_cb()
+result_roi_pub = rospy.Publisher('ROI_semantic_segmentation_result', Image, queue_size=1)
+result_seg_pub = rospy.Publisher('Segmentation_result', Image, queue_size=1)
 
 
 parser = argparse.ArgumentParser()
@@ -103,14 +124,17 @@ if __name__ == '__main__':
 
     # 944622074360 D435i
     # f1181780 park pc l515
-    cam = RealSenseCamera(device_id='f0350818', width=IMAGE_SIZE[1], height=IMAGE_SIZE[0], fps=30) #0003b661b825 # f0350818 # f1181780 # f1231507 # 944622074360
-    cam.connect() 
+    # cam = RealSenseCamera(device_id='f0350818', width=IMAGE_SIZE[1], height=IMAGE_SIZE[0], fps=30) #0003b661b825 # f0350818 # f1181780 # f1231507 # 944622074360
+    # cam.connect() 
 
     previous_yx = [0, 0]
     while True:
         x,y,w,h = 0, 0, 0, 0
-        image_bundle = cam.get_image_bundle()
-        rgb  = image_bundle['rgb']
+
+        # image_bundle = cam.get_image_bundle()
+        # rgb  = image_bundle['rgb']
+        rgb = camera.color.copy()
+        
         
         # Inference
         img = tf.image.resize(rgb, size=IMAGE_SIZE,
@@ -127,6 +151,11 @@ if __name__ == '__main__':
 
         result= result[:, :, 0].astype(np.uint8)  * 255
         
+        
+        new_image_red, new_image_green, new_image_blue = result.copy(), result.copy(), result.copy()
+        new_rgb = np.dstack([new_image_red, new_image_green, new_image_blue])
+        img_msg = bridge.cv2_to_imgmsg(new_rgb, encoding='bgr8')
+        result_seg_pub.publish(img_msg)
 
         contours, _ = cv2.findContours(result, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
@@ -150,14 +179,21 @@ if __name__ == '__main__':
                 ROI = tf.expand_dims(ROI, axis=0)
                 ROI_PRED = roi_model.predict_on_batch(ROI)
                 ROI_PRED = tf.math.argmax(ROI_PRED, axis=-1)
-                ROI_PRED = tf.cast(ROI_PRED[0], tf.int32)
+                ROI_PRED = tf.cast(ROI_PRED[0], tf.uint8)
+
+                new_image = ROI_PRED.numpy().astype(np.uint8) * 127 
+                new_image_red, new_image_green, new_image_blue = new_image.copy(), new_image.copy(), new_image.copy()
+                new_rgb = np.dstack([new_image_red, new_image_green, new_image_blue])
+                img_msg = bridge.cv2_to_imgmsg(new_rgb, encoding='bgr8')
+                result_roi_pub.publish(img_msg)
                 
                 zero_img = np.zeros((rgb.shape[0], rgb.shape[1]))
 
                 ROI_PRED = tf.where(ROI_PRED==2, 127, 0)
-                
+
+
                 ROI_PRED = crop_center(ROI_PRED.numpy(), w, h)
-        
+
                             
                 if 512+64 >= x >= 128-64:
                     if 352+64 >= y >= 128-64:
@@ -181,11 +217,15 @@ if __name__ == '__main__':
                             previous_yx = yx_coords
                             cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
         
-        rgb = cv2.cvtColor(rgb,cv2.COLOR_RGB2BGR)
+        # rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         cv2.imshow('Output', rgb)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         
         # print('x :', previous_yx[1], 'y :', previous_yx[0])
+        
+        
+        
+
         pub.publish(previous_yx[0])
        
