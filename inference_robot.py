@@ -24,29 +24,6 @@ rospy.init_node('topic_publisher', anonymous=True)
 pub = rospy.Publisher('counter', String, queue_size=1)
 rate = rospy.Rate(60)
 
-with open('./vision_grasp.json', 'r') as f_config:
-    config_data = json.load(f_config)
-        
-camera = 0
-camera_config_data = config_data["cameras"]
-for idx, cam in enumerate(camera_config_data):
-    topic_info = cam["topics"]
-    camera = CameraManager({'name':cam["name"],'cameraInfos':topic_info["info"],'colorStream':topic_info["color"],'depthStream':topic_info["depth"],'calibration':cam["calibration"]})
-camera.register_cb()
-
-def load_realSense():
-    # Load RealSense Camera
-    with open('./vision_grasp.json', 'r') as f_config:
-        config_data = json.load(f_config)
-
-    camera_config_data = config_data["cameras"]
-    for idx, cam in enumerate(camera_config_data):
-        topic_info = cam["topics"]
-        camera = CameraManager({'name':cam["name"],'cameraInfos':topic_info["info"],'colorStream':topic_info["color"],'depthStream':topic_info["depth"],'calibration':cam["calibration"]})
-    camera.register_cb()
-
-    return camera
-    
 def load_mindVision():
     def jh_img_callback(img):
         global bgr
@@ -71,6 +48,16 @@ args = parser.parse_args()
 CAM_MODE = args.camera_mode
 IMAGE_SIZE = (480, 640)
 ROI_SIZE = (128, 128)
+
+if CAM_MODE == 1:
+    with open('./vision_grasp.json', 'r') as f_config:
+        config_data = json.load(f_config)
+    camera = 0
+    camera_config_data = config_data["cameras"]
+    for idx, cam in enumerate(camera_config_data):
+        topic_info = cam["topics"]
+        camera = CameraManager({'name':cam["name"],'cameraInfos':topic_info["info"],'colorStream':topic_info["color"],'depthStream':topic_info["depth"],'calibration':cam["calibration"]})
+    camera.register_cb()
 
 if __name__ == '__main__':
     # Segmentation 모델 불러오기
@@ -125,8 +112,9 @@ if __name__ == '__main__':
 
     # Main Loop
     while True:
-        original = camera.color.copy()
-        rgb = original[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]]
+        if CAM_MODE==1:
+            original = camera.color.copy()
+        rgb = original.copy()[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]]
         
         # Inference                     
         img = tf.cast(rgb, dtype=tf.float32)
