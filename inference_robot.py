@@ -36,6 +36,7 @@ for idx, cam in enumerate(camera_config_data):
 camera.register_cb()
 result_roi_pub = rospy.Publisher('ROI_semantic_segmentation_result', Image, queue_size=1)
 result_seg_pub = rospy.Publisher('Segmentation_result', Image, queue_size=1)
+result_final_pub = rospy.Publisher('Final_result', Image, queue_size=1)
 
 
 parser = argparse.ArgumentParser()
@@ -133,7 +134,8 @@ if __name__ == '__main__':
 
         # image_bundle = cam.get_image_bundle()
         # rgb  = image_bundle['rgb']
-        rgb = camera.color.copy()
+        rgb = camera.color.copy()[120:120+480, 320:320+640]
+        
         
         
         # Inference
@@ -218,9 +220,12 @@ if __name__ == '__main__':
                             cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
         
         # rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
-        cv2.imshow('Output', rgb)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # cv2.imshow('Output', rgb)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
+        
+        img_msg = bridge.cv2_to_imgmsg(rgb, encoding='bgr8')
+        result_final_pub.publish(img_msg)
         
         # print('x :', previous_yx[1], 'y :', previous_yx[0])
         
