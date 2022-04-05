@@ -158,6 +158,7 @@ if __name__ == '__main__':
                 ROI_PRED = tf.math.argmax(ROI_PRED, axis=-1)
                 ROI_PRED = tf.cast(ROI_PRED[0], tf.uint8)
 
+
                 new_image = ROI_PRED.numpy().astype(np.uint8) * 127 
                 new_image_red, new_image_green, new_image_blue = new_image.copy(), new_image.copy(), new_image.copy()
                 new_rgb = np.dstack([new_image_red, new_image_green, new_image_blue])
@@ -167,7 +168,12 @@ if __name__ == '__main__':
                 zero_img = np.zeros((rgb.shape[0], rgb.shape[1]))
 
                 ROI_PRED = tf.where(ROI_PRED==2, 127, 0)
-                ROI_PRED = ROI_PRED.numpy()
+                
+
+                # kernel = np.ones((3, 3), np.uint8)
+                # ROI_PRED = cv2.erode(ROI_PRED.numpy().astype(np.uint8), kernel, iterations=1)  #// make erosion image
+
+
 
                 crop_y, crop_x = ROI_PRED.shape
                 startx = crop_x // 2 - (w // 2) # x
