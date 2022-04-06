@@ -4,11 +4,11 @@ from imageio import imread, imwrite
 import glob
 import os
 import argparse
-from utils import load_imgs, canny_edge, find_contours
+from utils import load_imgs, canny_edge, find_contours, canny_selector
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--image_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040533_대각_24cm_white_b1/rgb/')
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040533_대각_24cm_white_b1/result/')
+parser.add_argument("--image_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_대각_24cm_gray_d3_noExposure/rgb/')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_대각_24cm_gray_d3_noExposure/result/')
 
 
 args = parser.parse_args()
@@ -28,6 +28,7 @@ img_list.sort()
 
 
 if __name__ == '__main__': 
+    i = 1
     for idx in range(len(img_list)):
         img = cv2.imread(img_list[idx])
 
@@ -39,11 +40,12 @@ if __name__ == '__main__':
         img_name = img_list[idx].split('/')[4]
         print('img_name', img_name)
         mask, img = load_imgs(img, resize=RESOLUTION)
-        mask = canny_edge(mask)
+        mask = canny_selector(mask)
         draw_mask = find_contours(mask, img)
 
         if len(draw_mask) != 0:
             print('save_image')
-            cv2.imwrite(RGB_PATH+date_name + '_' +img_name+'.png', img)
-            cv2.imwrite(MASK_PATH+date_name + '_' +img_name+'_mask.png', draw_mask)
+            cv2.imwrite(RGB_PATH+ str(i) +'.png', img)
+            cv2.imwrite(MASK_PATH+ str(i) +'_mask.png', draw_mask)
+            i+=1
             

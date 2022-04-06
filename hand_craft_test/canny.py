@@ -23,7 +23,7 @@ for i in range(len(img_list)):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     cv2.namedWindow("Trackbar Windows")
-    cv2.createTrackbar("minValue", "Trackbar Windows", 0, 255, onChange)
+    cv2.createTrackbar("minValue", "Trackbar Windows", 0, 255, lambda x : x)
     cv2.createTrackbar("maxValue", "Trackbar Windows", 0, 255, lambda x : x)
 
     cv2.setTrackbarPos("minValue", "Trackbar Windows", 127)
@@ -35,3 +35,5 @@ for i in range(len(img_list)):
         
         canny = cv2.Canny(img, thresh, maxval)
         cv2.imshow("Trackbar Windows", canny)
+
+        
