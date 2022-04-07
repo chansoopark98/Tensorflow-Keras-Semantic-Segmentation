@@ -54,7 +54,7 @@ def deconv_module(x, channels, kernel_size=3, strides=2, activation='swish', bn_
 def unet(input_shape=(300, 300, 3), base_channel=8, output_channel=1, use_logits=False):
     inputs = Input(shape=input_shape, name='image_input')
     bn_momentum = 0.99
-    activation = 'swish'
+    activation = 'relu'
     # Encoder branch
     conv1_1 = conv_module(x=inputs, channels=base_channel, kernel_size=3, strides=1, bn_momentum=bn_momentum,
                 activation=activation, dropout=0.0, prefix='conv1_1')

@@ -23,7 +23,7 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-bce_B-16_E-100_Optim-Adam_Act-leakyrelu')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-bce_B-16_E-100_Optim-Adam_Act-relu')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -85,7 +85,8 @@ checkpoint_val_iou = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_
                                       monitor='val_iou_coef', save_best_only=True, save_weights_only=True,
                                       verbose=1, mode='max')
 
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR+MODEL_PREFIX, write_graph=True, write_images=True)
+
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR +'segmentation/' +MODEL_PREFIX, write_graph=True, write_images=True)
 
 polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
                                                           decay_steps=EPOCHS,
