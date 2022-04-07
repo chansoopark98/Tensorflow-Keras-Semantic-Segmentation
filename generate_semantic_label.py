@@ -12,72 +12,52 @@ import matplotlib.pyplot as plt
 import glob
 import cv2
 import numpy as np
+import math
+from pathlib import Path
+import natsort
+import re 
 
-# from utils.cityscape_colormap import class_weight
-# from utils.adamW import LearningRateScheduler, poly_decay
-# import tensorflow_addons
-# sudo apt-get install libtcmalloc-minimal4
-# LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
-# LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
-# LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python gan_train.py
+file_pattern = re.compile(r'.*?(\d+).*?')
+def get_order(file):
+    match = file_pattern.match(Path(file).name)
+    if not match:
+        return math.inf
+    return int(match.groups()[0])
+
 
 
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--result_path",     type=str,   help="test result path", default='./test_imgs/')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
-parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
-parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
-parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
-parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
-                    default=str(time.strftime('%m%d', time.localtime(time.time()))))
-parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
-parser.add_argument("--result_dir", type=str,   help="Test result dir", default='./results/')
-parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
-parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
-parser.add_argument("--mixed_precision",  type=bool,  help="mixed_precision 사용", default=True)
-parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정", default=True)
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/032155_white_50cm/result/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/032155_white_50cm/result/mask/')
+
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/032155_white_50cm/result/semantic_label')
 
 args = parser.parse_args()
-RESULT_PATH = args.result_path
-WEIGHT_DECAY = args.weight_decay
-OPTIMIZER_TYPE = args.optimizer
-BATCH_SIZE = args.batch_size
-EPOCHS = args.epoch
-base_lr = args.lr
-SAVE_MODEL_NAME = args.model_name
-DATASET_DIR = args.dataset_dir
-CHECKPOINT_DIR = args.checkpoint_dir
-TENSORBOARD_DIR = args.tensorboard_dir
-RESULT_DIR = args.result_dir
-MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
+RGB_PATH = args.rgb_path
+MASK_PATH = args.mask_path
+RESULT_DIR = args.result_path
+RESOLUTION = (640,480)
+
+
+MASK_RESULT_DIR = RESULT_DIR + '_mask_result/'
 IMAGE_SIZE = (480, 640)
 # IMAGE_SIZE = (None, None)
-USE_WEIGHT_DECAY = args.use_weightDecay
-LOAD_WEIGHT = args.load_weight
-MIXED_PRECISION = args.mixed_precision
-DISTRIBUTION_MODE = args.distribution_mode
 
 ROI_PATH = MASK_RESULT_DIR + 'roi_mask/'
+
 ROI_INPUT_PATH = ROI_PATH + 'input/'
 ROI_GT_PATH = ROI_PATH + 'gt/'
 ROI_CHECK_GT_PATH = ROI_PATH + 'check_gt/'
 
 SEMANTIC_PATH = MASK_RESULT_DIR + 'semantic_mask/'
+
 SEMANTIC_INPUT_PATH = SEMANTIC_PATH + 'input/'
 SEMANTIC_GT_PATH = SEMANTIC_PATH + 'gt/'
 SEMANTIC_CHECK_GT_PATH = SEMANTIC_PATH + 'check_gt/'
 
-if MIXED_PRECISION:
-    policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-    mixed_precision.set_policy(policy)
 
-os.makedirs(DATASET_DIR, exist_ok=True)
-os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
 os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 
@@ -92,30 +72,23 @@ os.makedirs(SEMANTIC_GT_PATH, exist_ok=True)
 os.makedirs(ROI_CHECK_GT_PATH, exist_ok=True)
 os.makedirs(SEMANTIC_CHECK_GT_PATH, exist_ok=True)
 
-dataset_config = DatasetGenerator(DATASET_DIR, (480, 640), BATCH_SIZE, mode='all')
-data = dataset_config.get_testData(dataset_config.data)
+rgb_list = glob.glob(os.path.join(RGB_PATH+'*.png'))
+rgb_list = natsort.natsorted(rgb_list,reverse=True)
 
-model = segmentation_model(image_size=IMAGE_SIZE)
+mask_list = glob.glob(os.path.join(MASK_PATH+'*.png'))
+mask_list = natsort.natsorted(mask_list,reverse=True)
 
-
-weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
-
-# weight_name = '_0318_final_loss'
-model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-
-model.summary()
 i = 1
+for idx in range(len(rgb_list)):
+    img = cv2.imread(rgb_list[idx])
 
-
-for x, gt, original in data.take(dataset_config.number_all):
-    gt = gt.numpy()[0, :, :, 0]
-    original = original.numpy()[0]
+    gt = cv2.imread(mask_list[idx])
+    mask = np.where(gt.copy()>= 200, 1.0 , 0)
+    
+    original = img
     gray_scale = cv2.cvtColor(original, cv2.COLOR_RGB2GRAY)
     
-                                    
-    pred = model.predict_on_batch(x)
-    pred = np.where(pred>=1.0, 1, 0)
-    result = pred[0]
+    result = mask
 
     result= result[:, :, 0].astype(np.uint8)
     result_mul = result.copy() * 255
@@ -178,34 +151,29 @@ for x, gt, original in data.take(dataset_config.number_all):
         if delete_idx == 65:
             continue
             
-        try:
-            # 1번 키를 누를 때
-            if key == 49:
-                print('save')
-                save_draw_img = draw_img.copy()
+        # try:
+        # 1번 키를 누를 때
+        if key == 49:
+            print('save')
+            save_draw_img = draw_img.copy()
 
-                save_draw_img = np.where(save_draw_img == 255, 1, save_draw_img)
-                save_draw_img = np.where(save_draw_img == 127, 2, save_draw_img)
+            save_draw_img = np.where(save_draw_img == 255, 1, save_draw_img)
+            save_draw_img = np.where(save_draw_img == 127, 2, save_draw_img)
 
-                draw_img = cv2.resize(draw_img, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
-                draw_img = np.where(draw_img==127, 2, draw_img)
-                draw_img = np.where(draw_img==255, 1, draw_img)
+            draw_img = cv2.resize(draw_img, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+            draw_img = np.where(draw_img==127, 2, draw_img)
+            draw_img = np.where(draw_img==255, 1, draw_img)
 
-                cv2.imwrite(ROI_INPUT_PATH +str(i) +'_rgb.png', original[y:y+h, x:x+w])
-                cv2.imwrite(ROI_GT_PATH +str(i) +'_semantic_mask.png', draw_img)
-                cv2.imwrite(ROI_CHECK_GT_PATH +str(i) +'_semantic_mask.png', draw_img * 127)
+            cv2.imwrite(ROI_INPUT_PATH +str(i) +'_rgb.png', original[y:y+h, x:x+w])
+            cv2.imwrite(ROI_GT_PATH +str(i) +'_semantic_mask.png', draw_img)
+            cv2.imwrite(ROI_CHECK_GT_PATH +str(i) +'_semantic_mask.png', draw_img * 127)
+            
+            # zero_img[y:y+h, x:x+w] = draw_img
+            cropped_gt = draw_img.copy()
+            cropped_gt = np.where(cropped_gt==2, 1, 0)
+            result[y:y+h, x:x+w] += cropped_gt.astype(np.uint8)
+            cv2.imwrite(SEMANTIC_INPUT_PATH +str(i) +'_rgb.png', original)
+            cv2.imwrite(SEMANTIC_GT_PATH +str(i) +'_semantic_mask.png', result)
+            cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(i) +'_semantic_mask.png', result* 127)
                 
-                # zero_img[y:y+h, x:x+w] = draw_img
-                cropped_gt = draw_img.copy()
-                cropped_gt = np.where(cropped_gt==2, 1, 0)
-                gt[y:y+h, x:x+w] += cropped_gt
-                cv2.imwrite(SEMANTIC_INPUT_PATH +str(i) +'_rgb.png', original)
-                cv2.imwrite(SEMANTIC_GT_PATH +str(i) +'_semantic_mask.png', gt)
-                cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(i) +'_semantic_mask.png', gt* 127)
-                    
-                i += 1
-
-                
-        except:
-            print('Out of range!!')
-    
+            i += 1
