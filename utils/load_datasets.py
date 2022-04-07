@@ -58,8 +58,12 @@ class DatasetGenerator:
 
 
     def _load_valid_datasets(self):
-        valid_data = tfds.load('Custom0',
+        valid_1 = tfds.load('Custom0',
                                data_dir=self.data_dir, split='train[90%:]', shuffle_files=True)
+        valid_2 = tfds.load('Custom1',
+                               data_dir=self.data_dir, split='train[90%:]', shuffle_files=True)
+
+        valid_data = valid_1.concatenate(valid_2)
 
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
         print("검증 데이터 개수:", number_valid)
@@ -67,11 +71,12 @@ class DatasetGenerator:
         return valid_data, number_valid
 
     def _load_train_datasets(self):
-        train_data = tfds.load('Custom0',
+        train_1 = tfds.load('Custom0',
                                data_dir=self.data_dir, split='train[:90%]', shuffle_files=True)
-        # train_data = tfds.load('Custom1',
-        #                        data_dir=self.data_dir, split='train[:90%]')
+        train_2 = tfds.load('Custom1',
+                               data_dir=self.data_dir, split='train[:90%]')
 
+        train_data = train_1.concatenate(train_2)
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         print("학습 데이터 개수", number_train)
