@@ -51,10 +51,8 @@ class SemanticGenerator:
         self.image_size = image_size
         self.batch_size = batch_size
 
-        if data_type == 'roi':
-            self.data_type = '2'
-        else:
-            self.data_type = '3'
+        self.data_type= data_type
+            
 
         if mode == 'train':
             self.train_data, self.number_train = self._load_train_datasets()
@@ -66,16 +64,26 @@ class SemanticGenerator:
 
     def _load_valid_datasets(self):
         
-        valid_data = tfds.load('Custom' + self.data_type,
+        valid_1 = tfds.load('Custom2',
                                data_dir=self.data_dir, split='train[90%:]')
+        valid_2 = tfds.load('Custom4',
+                               data_dir=self.data_dir, split='train[90%:]')
+
+        valid_data = valid_1.concatenate(valid_2)
+                               
 
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
         print("검증 데이터 개수:", number_valid)
         return valid_data, number_valid
 
     def _load_train_datasets(self):
-        train_data = tfds.load('Custom' + self.data_type,
+
+        train_1 = tfds.load('Custom2',
                                data_dir=self.data_dir, split='train[:90%]')
+        train_2 = tfds.load('Custom4',
+                               data_dir=self.data_dir, split='train[:90%]')
+
+        train_data = train_1.concatenate(train_2)
 
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -97,7 +105,7 @@ class SemanticGenerator:
         img = tf.cast(original, tf.float32)
 
         labels = tf.cast(sample['gt'], tf.int64)
-        if self.data_type == '2':
+        if self.data_type == 'roi':
             img = tf.image.resize_with_crop_or_pad(img, 128, 128)
             labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
 
@@ -111,7 +119,7 @@ class SemanticGenerator:
         img = tf.cast(sample['rgb'], tf.float32)
         labels = tf.cast(sample['gt'], tf.int64)
 
-        if self.data_type == '2':
+        if self.data_type == 'roi':
             img = tf.image.resize_with_crop_or_pad(img, 128, 128)
             labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
 
@@ -135,7 +143,7 @@ class SemanticGenerator:
         img = tf.cast(original, tf.float32)
         labels = tf.cast(sample['gt'], tf.int64)
 
-        if self.data_type == '2':
+        if self.data_type == 'roi':
             img = tf.image.resize_with_crop_or_pad(img, 128, 128)
             labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
 

@@ -65,8 +65,10 @@ if __name__ == '__main__':
     roi_model = semantic_model(image_size=(128, 128))
 
     # Segmentation 모델 가중치 불러오기
-    weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
-    roi_weight_name = '_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
+    # weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
+    weight_name = 'new_roi_segmentation'
+    # roi_weight_name = '_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
+    roi_weight_name = 'new_roi_semantic'
     model.load_weights(weight_name + '.h5')
     roi_model.load_weights(roi_weight_name + '.h5')
 
@@ -114,6 +116,7 @@ if __name__ == '__main__':
     while True:
         if CAM_MODE==1:
             original = camera.color.copy()
+        
         rgb = original.copy()[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]]
         
         # Inference                     
@@ -121,7 +124,9 @@ if __name__ == '__main__':
         img = preprocess_input(img, mode='torch')
         img = tf.expand_dims(img, axis=0)
         pred = model.predict_on_batch(img)
-        pred = np.where(pred>=1.0, 1, 0)
+        # pred = np.where(pred>=1.0, 1, 0)
+        pred = np.where(pred>=0.99, 1., 0)
+        
         result = pred[0]
         
         pred = pred[0]

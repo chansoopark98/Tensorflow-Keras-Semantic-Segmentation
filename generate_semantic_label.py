@@ -6,9 +6,6 @@ from utils.load_datasets import DatasetGenerator
 import argparse
 import time
 import os
-import tensorflow as tf
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 import glob
 import cv2
 import numpy as np
@@ -26,13 +23,11 @@ def get_order(file):
 
 
 
-tf.keras.backend.clear_session()
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/032155_white_50cm/result/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/032155_white_50cm/result/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/mask/')
 
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/032155_white_50cm/result/semantic_label')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path

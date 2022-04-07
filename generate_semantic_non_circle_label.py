@@ -47,7 +47,7 @@ def onMouse(event, x, y, flags, param):
 
         
         # param[1][(rgb_y + y) - param[4]:(rgb_y + y) + param[4], (rgb_x + x) - param[4] : (rgb_x + x) + param[4]] = 2
-        semantic_v = np.where(new_v == (0, 255, 0), 2, 0)
+        # semantic_v = np.where(new_v == (0, 255, 0), 2, 0)
         param[1][(rgb_y + y) - param[4]:(rgb_y + y) + param[4], (rgb_x + x) - param[4] : (rgb_x + x) + param[4]] = 2
 
 
@@ -66,10 +66,10 @@ def onMouse(event, x, y, flags, param):
     cv2.resizeWindow('draw_img', IMAGE_SIZE[1], IMAGE_SIZE[0])
         
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_24cm_gray_d3_noExposure/result/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_24cm_gray_d3_noExposure/result/mask/')
 
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/semantic_label')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_24cm_gray_d3_noExposure/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path
@@ -95,7 +95,7 @@ SEMANTIC_GT_PATH = SEMANTIC_PATH + 'gt/'
 SEMANTIC_CHECK_GT_PATH = SEMANTIC_PATH + 'check_gt/'
 
 
-os.makedirs(RESULT_DIR, exist_ok=True)
+
 os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 
 os.makedirs(ROI_PATH, exist_ok=True)
@@ -179,27 +179,32 @@ for idx in range(len(rgb_list)):
     draw_result = result.copy()
 
     cv2.namedWindow("draw_img")
+    cv2.moveWindow("draw_img", 800, 400)
+
     cv2.createTrackbar("kernel_size", "draw_img", 1, 15, lambda x : x)
-    cv2.setTrackbarPos("kernel_size", "draw_img", 3)
+    cv2.setTrackbarPos("kernel_size", "draw_img", 4)
     kernel_size = cv2.getTrackbarPos("kernel_size", "draw_img")
     cv2.createTrackbar("threshold", "draw_img", 1, 255, lambda x : x)
-    cv2.setTrackbarPos("threshold", "draw_img", 70)
-    threshold = cv2.getTrackbarPos("threshold", "draw_img")
+    cv2.setTrackbarPos("threshold", "draw_img", 10)
+    pixel_threshold = cv2.getTrackbarPos("threshold", "draw_img")
 
    
     
     cv2.imshow('draw_img', draw_img)
-    cv2.setMouseCallback('draw_img', onMouse,[draw_img, draw_result ,x, y, kernel_size, threshold])
+    cv2.setMouseCallback('draw_img', onMouse,[draw_img, draw_result ,x, y, kernel_size, pixel_threshold])
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
     result = np.where(draw_result == 2, 2, result)
-    cv2.imshow('result', result * 127)
+
+    cv2.namedWindow("result")
+    cv2.moveWindow("result", 800, 400)
+    cv2.imshow('result', result.copy() * 127)
     cv2.waitKey(0)
     
 
     key = cv2.waitKey(0)
-    print(key)
+    
     cv2.destroyAllWindows()
         
     delete_idx = abs(48 - key)
@@ -213,23 +218,10 @@ for idx in range(len(rgb_list)):
     # 1번 키를 누를 때
     if key == 49:
         print('save')
-        save_draw_img = draw_img.copy()
-
-        save_draw_img = np.where(save_draw_img == 255, 1, save_draw_img)
-        save_draw_img = np.where(save_draw_img == 127, 2, save_draw_img)
-
-        draw_img = cv2.resize(draw_img, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
-        draw_img = np.where(draw_img==127, 2, draw_img)
-        draw_img = np.where(draw_img==255, 1, draw_img)
-
         cv2.imwrite(ROI_INPUT_PATH +str(i) +'_rgb.png', original[y:y+h, x:x+w])
-        cv2.imwrite(ROI_GT_PATH +str(i) +'_semantic_mask.png', draw_img)
-        cv2.imwrite(ROI_CHECK_GT_PATH +str(i) +'_semantic_mask.png', draw_img * 127)
-        
-        # zero_img[y:y+h, x:x+w] = draw_img
-        cropped_gt = draw_img.copy()
-        cropped_gt = np.where(cropped_gt[:, :, 0]==2, 1, 0)
-        result[y:y+h, x:x+w] += cropped_gt.astype(np.uint8)
+        cv2.imwrite(ROI_GT_PATH +str(i) +'_semantic_mask.png', result[y:y+h, x:x+w])
+        cv2.imwrite(ROI_CHECK_GT_PATH +str(i) +'_semantic_mask.png', result[y:y+h, x:x+w] * 127)
+               
         cv2.imwrite(SEMANTIC_INPUT_PATH +str(i) +'_rgb.png', original)
         cv2.imwrite(SEMANTIC_GT_PATH +str(i) +'_semantic_mask.png', result)
         cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(i) +'_semantic_mask.png', result* 127)
