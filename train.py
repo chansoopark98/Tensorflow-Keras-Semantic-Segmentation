@@ -23,7 +23,7 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-bce_B-16_E-100_Optim-Adam_Act-relu')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='L-bce_B-16_E-100_Optim-Adam_Act-relu-Total')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)

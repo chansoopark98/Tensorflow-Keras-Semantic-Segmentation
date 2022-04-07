@@ -58,8 +58,8 @@ class DatasetGenerator:
 
 
     def _load_valid_datasets(self):
-        valid_data = tfds.load('Custom1',
-                               data_dir=self.data_dir, split='train[:20%]', shuffle_files=True)
+        valid_data = tfds.load('Custom0',
+                               data_dir=self.data_dir, split='train[90%:]', shuffle_files=True)
 
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
         print("검증 데이터 개수:", number_valid)
@@ -68,7 +68,7 @@ class DatasetGenerator:
 
     def _load_train_datasets(self):
         train_data = tfds.load('Custom0',
-                               data_dir=self.data_dir, split='train', shuffle_files=True)
+                               data_dir=self.data_dir, split='train[:90%]', shuffle_files=True)
         # train_data = tfds.load('Custom1',
         #                        data_dir=self.data_dir, split='train[:90%]')
 
@@ -94,6 +94,11 @@ class DatasetGenerator:
         img = tf.cast(original, tf.float32)
         mask = tf.cast(sample['mask'], tf.float32)
 
+        img = tf.image.resize(img, size=self.image_size,
+                        method=tf.image.ResizeMethod.BILINEAR)
+        mask = tf.image.resize(mask, size=self.image_size,
+                        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
         img = preprocess_input(img, mode='torch')
         mask = tf.where(mask>=200., 255., 0.)
         mask /= 255.
@@ -108,28 +113,34 @@ class DatasetGenerator:
         mask = tf.cast(sample['mask'], tf.float32)
 
         if tf.random.uniform([]) > 0.5:
+            img = tf.image.resize(img, size=(self.image_size[0] * 2, self.image_size[1] * 2),
+                        method=tf.image.ResizeMethod.BILINEAR)
+            mask = tf.image.resize(mask, size=(self.image_size[0] * 2, self.image_size[1] * 2),
+                        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
             concat_img = tf.concat([img, mask], axis=-1)
             concat_img = tf.image.random_crop(concat_img, [self.image_size[0], self.image_size[1], 4])
         
             img = concat_img[:, :, :3]
             mask = concat_img[:, :, 3:]
-        else:
-            img = tf.image.resize(img, size=self.image_size,
-                        method=tf.image.ResizeMethod.BILINEAR)
-            mask = tf.image.resize(mask, size=self.image_size,
-                        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        # else:
+        #     img = tf.image.resize(img, size=self.image_size,
+        #                 method=tf.image.ResizeMethod.BILINEAR)
+        #     mask = tf.image.resize(mask, size=self.image_size,
+        #                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_saturation(img, 0.5, 1.5)
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_brightness(img, 0.05)
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_contrast(img, 0.5, 1.5)
+            img = tf.image.random_contrast(img, 0.5, 1.5)           
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_left_right(img)
             mask = tf.image.flip_left_right(mask)
 
         img = preprocess_input(img, mode='torch')
+        # img /= 255.
         mask = tf.where(mask>=200., 255., 0.)
         mask /= 255.
         mask = tf.clip_by_value(mask, 0., 1.)
@@ -141,19 +152,20 @@ class DatasetGenerator:
         img = tf.cast(sample['rgb'], tf.float32)
         mask = tf.cast(sample['mask'], tf.float32)
 
-        if tf.random.uniform([]) > 0.5:
-            concat_img = tf.concat([img, mask], axis=-1)
-            concat_img = tf.image.random_crop(concat_img, [self.image_size[0], self.image_size[1], 4])
+        # if tf.random.uniform([]) > 0.5:
+        #     concat_img = tf.concat([img, mask], axis=-1)
+        #     concat_img = tf.image.random_crop(concat_img, [self.image_size[0], self.image_size[1], 4])
         
-            img = concat_img[:, :, :3]
-            mask = concat_img[:, :, 3:]
-        else:
-            img = tf.image.resize(img, size=self.image_size,
-                        method=tf.image.ResizeMethod.BILINEAR)
-            mask = tf.image.resize(mask, size=self.image_size,
-                        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        #     img = concat_img[:, :, :3]
+        #     mask = concat_img[:, :, 3:]
+        # else:
+        #     img = tf.image.resize(img, size=self.image_size,
+        #                 method=tf.image.ResizeMethod.BILINEAR)
+        #     mask = tf.image.resize(mask, size=self.image_size,
+        #                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         img = preprocess_input(img, mode='torch')
+        # img /= 255.
         mask = tf.where(mask>=200., 255., 0.)
         mask /= 255.
         mask = tf.clip_by_value(mask, 0., 1.)
