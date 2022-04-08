@@ -135,11 +135,12 @@ if __name__ == '__main__':
 
         result= result[:, :, 0].astype(np.uint8)  * 255
         
-        
         new_image_red, new_image_green, new_image_blue = result.copy(), result.copy(), result.copy()
         new_rgb = np.dstack([new_image_red, new_image_green, new_image_blue])
+        new_rgb = new_rgb.astype(np.uint8)
         img_msg = bridge.cv2_to_imgmsg(new_rgb, encoding='bgr8')
         result_seg_pub.publish(img_msg)
+
 
         contours, _ = cv2.findContours(result, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
@@ -166,6 +167,7 @@ if __name__ == '__main__':
                 ROI_PRED = tf.cast(ROI_PRED[0], tf.uint8)
 
 
+
                 new_image = ROI_PRED.numpy().astype(np.uint8) * 127 
                 new_image_red, new_image_green, new_image_blue = new_image.copy(), new_image.copy(), new_image.copy()
                 new_rgb = np.dstack([new_image_red, new_image_green, new_image_blue])
@@ -177,16 +179,15 @@ if __name__ == '__main__':
                 ROI_PRED = tf.where(ROI_PRED==2, 127, 0)
                 
 
-                # kernel = np.ones((3, 3), np.uint8)
-                # ROI_PRED = cv2.erode(ROI_PRED.numpy().astype(np.uint8), kernel, iterations=1)  #// make erosion image
-
-
-
                 crop_y, crop_x = ROI_PRED.shape
+                print('crop_y, crop_x', crop_y, crop_x)
+                print('w, h', w, h)
                 startx = crop_x // 2 - (w // 2) # x
                 starty = crop_y // 2 - (h // 2) # y   
                 ROI_PRED = ROI_PRED.numpy()[starty:starty+h, startx:startx+w]
-                            
+                
+
+
                 if 512+64 >= x >= 128-64:
                     if 352+64 >= y >= 128-64:
 
@@ -219,4 +220,4 @@ if __name__ == '__main__':
         result_final_pub.publish(img_msg)
 
         pub.publish(f'x : {previous_yx[1]} , y : {previous_yx[0]}')
-       
+

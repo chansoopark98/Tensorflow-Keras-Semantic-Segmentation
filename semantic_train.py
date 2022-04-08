@@ -2,7 +2,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from models.model_builder import semantic_model
 from utils.load_semantic_datasets import SemanticGenerator
-from utils.loss import ce_loss
+from utils.loss import ce_loss, SparseCategoricalFocalLoss
 from utils.metrics import MIoU
 import argparse
 import time
@@ -23,8 +23,8 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='roi-DDRNet-B16-RELU-ADAM-realbatch16')
-parser.add_argument("--data_type",     type=str,   help="Data type: set please 'roi' or 'full'", default='roi')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-FOCAL-ADAM-B16')
+parser.add_argument("--data_type",     type=str,   help="Data type: set please 'roi' or 'full'", default='full')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -52,8 +52,8 @@ SAVE_MODEL_NAME = args.model_name + '_' + args.model_prefix
 DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
-# IMAGE_SIZE = (480, 640)
-IMAGE_SIZE = (128, 128)
+IMAGE_SIZE = (480, 640)
+# IMAGE_SIZE = (128, 128)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -119,7 +119,7 @@ mIoU = MIoU(3)
 
 model.compile(
     optimizer=optimizer,
-    loss=ce_loss,
+    loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True),
     metrics=[mIoU]
     )
 

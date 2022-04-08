@@ -2,7 +2,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from models.model_builder import segmentation_model
 from utils.load_datasets import DatasetGenerator
-from utils.loss import bce_loss, dice_loss, total_loss
+from utils.loss import bce_loss, dice_loss, total_loss, focal_bce_loss
 from utils.metrics import iou_coef, dice_coef
 import argparse
 import time
@@ -23,8 +23,8 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='DDRNet-B16-RELU-ADAM')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='DDRNet-B16-RELU-ADAM-Only_hole')
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
@@ -79,9 +79,9 @@ validation_steps = valid_dataset_config.number_valid // BATCH_SIZE
 
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
-checkpoint_val_loss = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_best_loss.h5',
+checkpoint_val_loss = ModelCheckpoint(CHECKPOINT_DIR + args.model_name+ '/_' + SAVE_MODEL_NAME + '_best_loss.h5',
                                       monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-checkpoint_val_iou = ModelCheckpoint(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_best_iou.h5',
+checkpoint_val_iou = ModelCheckpoint(CHECKPOINT_DIR + args.model_name+ '/_' + SAVE_MODEL_NAME + '_best_iou.h5',
                                       monitor='val_iou_coef', save_best_only=True, save_weights_only=True,
                                       verbose=1, mode='max')
 
