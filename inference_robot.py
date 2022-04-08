@@ -66,9 +66,10 @@ if __name__ == '__main__':
 
     # Segmentation 모델 가중치 불러오기
     # weight_name = '_0323_L-bce_B-16_E-100_Optim-Adam_best_iou'
-    weight_name = 'new_roi_segmentation'
+    # weight_name = 'new_roi_segmentation'
+    weight_name = 'segmentation_ddrnet'
     # roi_weight_name = '_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou'
-    roi_weight_name = 'new_roi_semantic'
+    roi_weight_name = 'roi_semantic_ddrnet'
     model.load_weights(weight_name + '.h5')
     roi_model.load_weights(roi_weight_name + '.h5')
 

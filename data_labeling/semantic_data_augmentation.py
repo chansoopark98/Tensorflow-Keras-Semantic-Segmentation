@@ -20,9 +20,9 @@ def get_order(file):
     return int(match.groups()[0])
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/roi_mask/input/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/roi_mask/gt/')
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/roi_mask/augmentation/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040533_24cm_white_b1/result/semantic_label_mask_result/semantic_mask/input/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040533_24cm_white_b1/result/semantic_label_mask_result/semantic_mask/gt/')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040533_24cm_white_b1/result/semantic_label_mask_result/semantic_mask/augmentation/')
 
 parser.add_argument("--bg_path",     type=str,   help="raw image path", default='./data_labeling/data/img/dtd/images/')
 

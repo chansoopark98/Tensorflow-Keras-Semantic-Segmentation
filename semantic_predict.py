@@ -41,8 +41,10 @@ test_steps = test_dataset_config.number_valid // BATCH_SIZE
 model = semantic_model(image_size=IMAGE_SIZE)
 
 # weight_name = '0329/_0329_CE-B16-E100-C16-RELU-ADAM_best_iou'
-weight_name = '0407/_0407_roi-CE-B16-E100-C8-SWISH-ADAM_best_iou'
-model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+# weight_name = '0407/_0407_roi-CE-B16-E100-C8-SWISH-ADAM_best_iou'
+weight_name = 'roi_semantic_ddrnet'
+# model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+model.load_weights(weight_name + '.h5')
 
 model.summary()
 batch_idx = 0

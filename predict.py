@@ -39,8 +39,10 @@ test_steps = test_dataset_config.number_valid // BATCH_SIZE
 
 model = segmentation_model(image_size=IMAGE_SIZE)
 
-weight_name = '_0407_L-bce_B-16_E-100_Optim-Adam_Act-relu-Total_best_iou'
-model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+# weight_name = '_0407_L-bce_B-16_E-100_Optim-Adam_Act-relu-Total_best_iou'
+weight_name = 'segmentation_ddrnet'
+# model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
+model.load_weights(weight_name + '.h5')
 model.summary()
 
 batch_idx = 0
@@ -55,10 +57,16 @@ for x, y, original in tqdm(test_set, total=test_steps):
     rows = 1
     cols = 4
 
-    pred = tf.where(pred>=0.99, 1., 0)
+    # pred = tf.where(pred==1.0, 1., 0)
+    
+    
+    
     
     original = tf.cast(original, tf.int32)
-    output = (original * tf.cast(pred,tf.int32))
+    pred = tf.where(pred>=0.98, 1, 0)
+    
+    output = original * pred
+    
 
     fig = plt.figure()
     ax0 = fig.add_subplot(rows, cols, 1)
