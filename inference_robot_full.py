@@ -107,7 +107,7 @@ if __name__ == '__main__':
             original = camera.color.copy()
         
         rgb = original.copy()[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]]
-        
+        rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
         # Inference                     
         img = tf.cast(rgb, dtype=tf.float32)
         img = preprocess_input(img, mode='torch')
