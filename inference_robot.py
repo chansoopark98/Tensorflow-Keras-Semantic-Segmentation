@@ -37,6 +37,7 @@ def load_mindVision():
 
 result_roi_pub = rospy.Publisher('ROI_semantic_segmentation_result', Image, queue_size=1)
 result_seg_pub = rospy.Publisher('Segmentation_result', Image, queue_size=1)
+test_roi = rospy.Publisher('Test roi', Image, queue_size=1)
 result_final_pub = rospy.Publisher('Final_result', Image, queue_size=1)
 
 TEST_IMG = rospy.Publisher('JH_IMG_TEST', Image, queue_size=1)
@@ -184,7 +185,7 @@ if __name__ == '__main__':
                 crop_y, crop_x = ROI_PRED.shape
                 startx = crop_x // 2 - (w // 2) # x
                 starty = crop_y // 2 - (h // 2) # y   
-                ROI_PRED = ROI_PRED[starty:starty+h, startx:startx+w]
+                ROI_PRED = ROI_PRED.numpy()[starty:starty+h, startx:startx+w]
                             
                 if 512+64 >= x >= 128-64:
                     if 352+64 >= y >= 128-64:
@@ -200,10 +201,14 @@ if __name__ == '__main__':
                             new_w = x+w
 
                         # zero_img[y:new_h, x:new_w] = ROI_PRED
+                        
                         zero_img[y:y+ROI_PRED.shape[0], x:x+ROI_PRED.shape[1]] = ROI_PRED
-
-                        yx_coords = np.mean(np.column_stack(np.where(zero_img == 127)),axis=0)
-            
+                        
+                        # yx_coords = np.mean(np.column_stack(np.where(zero_img == 127)),axis=0)
+                        
+                        yx_coords =  np.mean(np.argwhere(zero_img == 127), axis=0)
+                        
+                        # if np.isnan(yx_coords[0]) != True:
                         if np.isnan(yx_coords[0]) != True:
                             previous_yx = yx_coords
                             # cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
