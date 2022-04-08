@@ -37,6 +37,11 @@ def ce_loss(y_true, y_pred):
 
     return ce_loss
 
+def aux_ce_loss(y_true, y_pred):
+    ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(y_true=y_true, y_pred=y_pred)
+    ce_loss *= 0.4
+    return ce_loss
+
 
 def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
                                   class_weight: Optional[Any] = None,

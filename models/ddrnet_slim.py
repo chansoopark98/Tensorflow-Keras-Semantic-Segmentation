@@ -123,7 +123,7 @@ def DAPPPM(x_in, branch_planes, outplanes):
 Segmentation head 
 3*3 -> 1*1 -> rescale
 """
-def segmentation_head(x_in, interplanes, outplanes, scale_factor=None):
+def segmentation_head(x_in, interplanes, outplanes, scale_factor=None, name='output'):
     x = layers.BatchNormalization()(x_in)
     x = layers.Activation("relu")(x)
     x = layers.Conv2D(interplanes, kernel_size=(3, 3), use_bias=False, padding="same")(x)
@@ -132,11 +132,11 @@ def segmentation_head(x_in, interplanes, outplanes, scale_factor=None):
     x = layers.Activation("relu")(x)
     x = layers.Conv2D(outplanes, kernel_size=(1, 1), use_bias=range, padding="valid")(x)
 
-    if scale_factor is not None:
-        input_shape = tf.keras.backend.int_shape(x)
-        height2 = input_shape[1] * scale_factor
-        width2 = input_shape[2] * scale_factor
-        x = tf.image.resize(x, size =(height2, width2))
+    # if scale_factor is not None:
+    input_shape = tf.keras.backend.int_shape(x)
+    height2 = input_shape[1] * scale_factor
+    width2 = input_shape[2] * scale_factor
+    x = tf.image.resize(x, size =(height2, width2), name=name)
 
     return x
 
@@ -178,7 +178,7 @@ head_planes: segmentation head dimensions
 scale_factor: scale output factor
 augment: whether auxiliary loss is added or not
 """
-def ddrnet_23_slim(input_shape=[1024,2048,3], num_classes=1, planes=32, use_aux=False):
+def ddrnet_23_slim(input_shape=[1024,2048,3], num_classes=1, planes=32, use_aux=True):
 
     layers_arg=[2, 2, 2, 2]   
     spp_planes=128
@@ -287,16 +287,16 @@ def ddrnet_23_slim(input_shape=[1024,2048,3], num_classes=1, planes=32, use_aux=
 
     x_ = layers.Add()([x, x_])
 
-    x_ = segmentation_head( (x_), head_planes, num_classes, scale_factor)
+    x_ = segmentation_head( (x_), head_planes, num_classes, scale_factor, name='output')
 
     # apply softmax at the output layer
     if num_classes == 1:
-        x_ = tf.nn.sigmoid(x_)
+        x_ = tf.nn.sigmoid(x_, name='sigmoid_output')
 
     if use_aux:
-        x_extra = segmentation_head( temp_output, head_planes, num_classes, scale_factor) # without scaling
+        x_extra = segmentation_head( temp_output, head_planes, num_classes, scale_factor, name='aux') # without scaling
         if num_classes == 1:
-            x_extra = tf.nn.sigmoid(x_extra, name='aux')
+            x_extra = tf.nn.sigmoid(x_extra, name='sig_aux')
         model_output = [x_, x_extra]
     else:
         model_output = x_
