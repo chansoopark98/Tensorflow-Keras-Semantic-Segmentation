@@ -23,7 +23,7 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-CE-Aux-ADAM-B16')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-CE-ADAM-B16')
 parser.add_argument("--data_type",     type=str,   help="Data type: set please 'roi' or 'full'", default='full')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
@@ -117,12 +117,12 @@ model = semantic_model(image_size=IMAGE_SIZE)
 
 mIoU = MIoU(3)
 
-losses = {'output': ce_loss, 'aux': aux_ce_loss}
+# losses = {'output': ce_loss}
 # if use focal
 # SparseCategoricalFocalLoss(gamma=2, from_logits=True)
 model.compile(
     optimizer=optimizer,
-    loss=losses,
+    loss=ce_loss,
     metrics=[mIoU]
     )
 

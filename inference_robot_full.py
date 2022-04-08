@@ -64,7 +64,7 @@ if __name__ == '__main__':
     model = semantic_model(image_size=(480, 640))
 
     # Segmentation 모델 가중치 불러오기
-    weight_name = '_0408_Full-DDRNet-FOCAL-ADAM-B16_best_iou'
+    weight_name = '_0408_Full-DDRNet-CE-Aux-ADAM-B16_best_loss'
     model.load_weights(weight_name + '.h5')
 
     # Warm-Up Deep Learning Model's (한 번 Inference하여 대기 시간을 줄임) 

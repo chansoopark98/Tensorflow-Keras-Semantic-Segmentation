@@ -123,7 +123,7 @@ def DAPPPM(x_in, branch_planes, outplanes):
 Segmentation head 
 3*3 -> 1*1 -> rescale
 """
-def segmentation_head(x_in, interplanes, outplanes, scale_factor=None, name='output'):
+def segmentation_head(x_in, interplanes, outplanes, scale_factor=None, name='test'):
     x = layers.BatchNormalization()(x_in)
     x = layers.Activation("relu")(x)
     x = layers.Conv2D(interplanes, kernel_size=(3, 3), use_bias=False, padding="same")(x)
