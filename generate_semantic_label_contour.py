@@ -17,6 +17,7 @@ import math
 from pathlib import Path
 import natsort
 import re 
+from data_labeling.utils import canny_selector
 
 file_pattern = re.compile(r'.*?(\d+).*?')
 def get_order(file):
@@ -118,7 +119,7 @@ rgb_list = natsort.natsorted(rgb_list,reverse=True)
 mask_list = glob.glob(os.path.join(MASK_PATH+'*.png'))
 mask_list = natsort.natsorted(mask_list,reverse=True)
 
-i = 1
+file_idx = 1
 for idx in range(len(rgb_list)):
     img = cv2.imread(rgb_list[idx])
 
@@ -155,81 +156,57 @@ for idx in range(len(rgb_list)):
 
     # >>>> ROI CROP
     ROI = rgb_map.copy()[y:y+h, x:x+w]
-    # ROI = cv2.resize(ROI, dsize=(w * 4, h * 4), interpolation=cv2.INTER_LINEAR)
-    # ROI = cv2.GaussianBlur(ROI, (3, 3), 0)
-    # _, ROI = cv2.threshold(ROI,100,255,cv2.THRESH_BINARY)
-    # _, ROI = cv2.threshold(ROI,200,255,cv2.THRESH_BINARY)
-    
-    # circles = cv2.HoughCircles(ROI, cv2.HOUGH_GRADIENT, 1, 1,
-    #                  param1=127, param2=cv2.imshow('img',param[0]
-
-    # if circles is not None:
-    #     cx, cy, radius = circles[0][0]
-    #     contours, _ = cv2.findContours(ROI, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #     min_area = 999999
-        
-    #     out_contour = []
-    #     for contour in contours:
-    #         area = cv2.contourArea(contour)
-    #         if min_area >= area:
-    #             min_area = area
-    #             out_contour = [contour]
-            
-
-    draw_img = ROI.copy()
-    # cv2.drawContours(draw_img, out_contour, 0, (127, 127, 127), -1)
 
     draw_result = result.copy()
 
-    cv2.namedWindow("draw_img")
-    cv2.moveWindow("draw_img", 800, 400)
+    canny = cv2.GaussianBlur(ROI.copy(), (7, 7), 0)
+    canny = canny_selector(canny)
 
-    cv2.createTrackbar("kernel_size", "draw_img", 1, 30, lambda x : x)
-    cv2.setTrackbarPos("kernel_size", "draw_img", 13)
+
+    contours, _ = cv2.findContours(canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    circle_contour = []
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area >= 1000: 
+            circle_contour.append(contour)
+                
+    for i in range(len(circle_contour)):
+        draw_roi = ROI.copy()
+        cv2.drawContours(draw_roi, circle_contour, i, 127, -1)
+        cv2.imshow('circle check', draw_roi)
+        key = cv2.waitKey(0)
+
+        delete_idx = abs(48 - key)
+        
+        if delete_idx == 65:
+            cv2.destroyAllWindows()
+            break
+                
+                
+        # 1번 키를 누를 때
+        if key == 49:
+            cv2.destroyAllWindows()
+            draw_canny = canny.copy()
+            cv2.drawContours(draw_canny, circle_contour, i, 127, -1)
+            cropped_gt = np.where(draw_canny==127, 1, 0)
+            draw_result[y:y+h, x:x+w] += cropped_gt.astype(np.uint8)
+            break
     
-    cv2.createTrackbar("threshold", "draw_img", 1, 255, lambda x : x)
-    cv2.setTrackbarPos("threshold", "draw_img", 5)
-    
-
-   
-    while cv2.waitKey(1) != ord('q'):
-        kernel_size = cv2.getTrackbarPos("kernel_size", "draw_img")
-        pixel_threshold = cv2.getTrackbarPos("threshold", "draw_img")
-        cv2.imshow('draw_img', draw_img)
-        cv2.setMouseCallback('draw_img', onMouse,[draw_img, draw_result ,x, y, kernel_size, pixel_threshold])
-
-    # cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    
-    result = np.where(draw_result == 2, 2, result)
-
-    cv2.namedWindow("result")
-    cv2.moveWindow("result", 800, 400)
-    cv2.imshow('result', result.copy() * 127)
-    cv2.waitKey(0)
-    
-
+        
+    cv2.imshow('check gt', draw_result * 127)
     key = cv2.waitKey(0)
-    
     cv2.destroyAllWindows()
-        
-    delete_idx = abs(48 - key)
-    
 
-    # Choose don't save
-    if delete_idx == 65:
-        continue
-        
-    # Choose save
+    delete_idx = abs(48 - key)
+
+            
     # 1번 키를 누를 때
     if key == 49:
-        print('save')
-        cv2.imwrite(ROI_INPUT_PATH +str(i) +'_rgb.png', original[y:y+h, x:x+w])
-        cv2.imwrite(ROI_GT_PATH +str(i) +'_semantic_mask.png', result[y:y+h, x:x+w])
-        cv2.imwrite(ROI_CHECK_GT_PATH +str(i) +'_semantic_mask.png', result[y:y+h, x:x+w] * 127)
-               
-        cv2.imwrite(SEMANTIC_INPUT_PATH +str(i) +'_rgb.png', original)
-        cv2.imwrite(SEMANTIC_GT_PATH +str(i) +'_semantic_mask.png', result)
-        cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(i) +'_semantic_mask.png', result* 127)
+        cv2.destroyAllWindows()
+
+        print('save : ', file_idx)
+        cv2.imwrite(SEMANTIC_INPUT_PATH +str(file_idx) +'_rgb.png', original)
+        cv2.imwrite(SEMANTIC_GT_PATH +str(file_idx) +'_semantic_mask.png', draw_result )
+        cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(file_idx) +'_semantic_mask.png', draw_result * 127)
             
-        i += 1
+        file_idx += 1

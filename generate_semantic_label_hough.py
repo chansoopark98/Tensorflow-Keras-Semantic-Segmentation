@@ -69,10 +69,10 @@ def onMouse(event, x, y, flags, param):
     cv2.resizeWindow('draw_img', IMAGE_SIZE[1], IMAGE_SIZE[0])
         
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040829_exposure_1000_gain_100_25cm_gray3/result/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040829_exposure_1000_gain_100_25cm_gray3/result/mask/')
 
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/semantic_label')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040829_exposure_1000_gain_100_25cm_gray3/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path
@@ -118,7 +118,7 @@ rgb_list = natsort.natsorted(rgb_list,reverse=True)
 mask_list = glob.glob(os.path.join(MASK_PATH+'*.png'))
 mask_list = natsort.natsorted(mask_list,reverse=True)
 
-i = 1
+file_idx = 1
 for idx in range(len(rgb_list)):
     img = cv2.imread(rgb_list[idx])
 
@@ -176,60 +176,128 @@ for idx in range(len(rgb_list)):
     #             out_contour = [contour]
             
 
-    draw_img = ROI.copy()
+    
     # cv2.drawContours(draw_img, out_contour, 0, (127, 127, 127), -1)
 
     draw_result = result.copy()
 
-    cv2.namedWindow("draw_img")
-    cv2.moveWindow("draw_img", 800, 400)
+    cv2.namedWindow("Trackbar Windows")
 
-    cv2.createTrackbar("kernel_size", "draw_img", 1, 30, lambda x : x)
-    cv2.setTrackbarPos("kernel_size", "draw_img", 13)
-    
-    cv2.createTrackbar("threshold", "draw_img", 1, 255, lambda x : x)
-    cv2.setTrackbarPos("threshold", "draw_img", 5)
-    
+    cv2.createTrackbar("minDistance", "Trackbar Windows", 0, 255, lambda x : x)
+    cv2.createTrackbar("CannyThreshold", "Trackbar Windows", 0, 255, lambda x : x)
+    cv2.createTrackbar("CenterThreshold", "Trackbar Windows", 0, 255, lambda x : x)
+    cv2.createTrackbar("minRadius", "Trackbar Windows", 0, 255, lambda x : x)
+    cv2.createTrackbar("maxRadius", "Trackbar Windows", 0, 255, lambda x : x)
 
-   
+    """
+    gray
+
+    minDistance : 5
+    CannyThreshold : 15
+    CenterThreshold : 25
+    minRadius : 27
+    maxRadius : 30
+    """
+    cv2.setTrackbarPos("minDistance", "Trackbar Windows", 5)
+    cv2.setTrackbarPos("CannyThreshold", "Trackbar Windows", 15)
+    cv2.setTrackbarPos("CenterThreshold", "Trackbar Windows", 17)
+    cv2.setTrackbarPos("minRadius", "Trackbar Windows", 4)
+    cv2.setTrackbarPos("maxRadius", "Trackbar Windows", 12)
+
     while cv2.waitKey(1) != ord('q'):
-        kernel_size = cv2.getTrackbarPos("kernel_size", "draw_img")
-        pixel_threshold = cv2.getTrackbarPos("threshold", "draw_img")
-        cv2.imshow('draw_img', draw_img)
-        cv2.setMouseCallback('draw_img', onMouse,[draw_img, draw_result ,x, y, kernel_size, pixel_threshold])
+        draw_img = ROI.copy()
+        draw_img = cv2.cvtColor(draw_img, cv2.COLOR_BGR2GRAY)
+        try:
+            minDistance = cv2.getTrackbarPos("minDistance", "Trackbar Windows")
+            CannyThreshold = cv2.getTrackbarPos("CannyThreshold", "Trackbar Windows")
+            CenterThreshold = cv2.getTrackbarPos("CenterThreshold", "Trackbar Windows")
+            minRadius = cv2.getTrackbarPos("minRadius", "Trackbar Windows")
+            maxRadius = cv2.getTrackbarPos("maxRadius", "Trackbar Windows")
 
-    # cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    
-    result = np.where(draw_result == 2, 2, result)
+        except:
+            print('out of range track bars')
 
-    cv2.namedWindow("result")
-    cv2.moveWindow("result", 800, 400)
-    cv2.imshow('result', result.copy() * 127)
-    cv2.waitKey(0)
+            minDistance =5
+            CannyThreshold = 15
+            CenterThreshold =25
+            minRadius = 27
+            maxRadius = 30
+
+
+
+        circles = cv2.HoughCircles(draw_img, cv2.HOUGH_GRADIENT, 1, minDistance,
+                param1=CannyThreshold, param2=CenterThreshold, minRadius=minRadius, maxRadius=maxRadius)
+        if circles is not None:
+            for i in circles[0]:
+                cv2.circle(draw_img, (int(i[0]), int(i[1])), int(i[2]), 255, 1)
+                cv2.circle(draw_img, (int(i[0]), int(i[1])), 0, 0, -1)
+        cv2.imshow("Trackbar Windows", draw_img)
     
 
-    key = cv2.waitKey(0)
-    
-    cv2.destroyAllWindows()
-        
-    delete_idx = abs(48 - key)
-    
-
-    # Choose don't save
-    if delete_idx == 65:
-        continue
-        
-    # Choose save
-    # 1번 키를 누를 때
-    if key == 49:
-        print('save')
-        cv2.imwrite(ROI_INPUT_PATH +str(i) +'_rgb.png', original[y:y+h, x:x+w])
-        cv2.imwrite(ROI_GT_PATH +str(i) +'_semantic_mask.png', result[y:y+h, x:x+w])
-        cv2.imwrite(ROI_CHECK_GT_PATH +str(i) +'_semantic_mask.png', result[y:y+h, x:x+w] * 127)
-               
-        cv2.imwrite(SEMANTIC_INPUT_PATH +str(i) +'_rgb.png', original)
-        cv2.imwrite(SEMANTIC_GT_PATH +str(i) +'_semantic_mask.png', result)
-        cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(i) +'_semantic_mask.png', result* 127)
+    draw_result *= 127
+    if circles is not None:
+        for i in circles[0]:
+            new_roi = ROI.copy()
             
-        i += 1
+            cv2.circle(new_roi, (int(i[0]), int(i[1])), int(i[2]), (0, 255, 0), -1)
+            cv2.imshow('circle check', new_roi)
+            key = cv2.waitKey(0)
+
+            delete_idx = abs(48 - key)
+            
+            if delete_idx == 65:
+                cv2.destroyAllWindows()
+                break
+                
+                
+                
+            
+            # 1번 키를 누를 때
+            if key == 49:
+                cv2.destroyAllWindows()
+                
+                
+                
+                cv2.circle(draw_result, (int(i[0] + x), int(i[1]) + y), int(i[2]), 255, -1)
+
+                continue
+
+            if key == ord('q'):
+                break
+        
+        
+        cv2.imshow('check gt', draw_result)
+        key = cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        delete_idx = abs(48 - key)
+
+                
+        # 1번 키를 누를 때
+        if key == 49:
+            cv2.destroyAllWindows()
+
+            print('save : ', file_idx)
+            cv2.imwrite(SEMANTIC_INPUT_PATH +str(file_idx) +'_rgb.png', original)
+            cv2.imwrite(SEMANTIC_GT_PATH +str(file_idx) +'_semantic_mask.png', draw_result // 127)
+            cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(file_idx) +'_semantic_mask.png', draw_result)
+                
+            file_idx += 1
+        
+    # # result = np.where(draw_result == 2, 2, result)
+
+    # cv2.namedWindow("result")
+    # cv2.moveWindow("result", 800, 400)
+    # cv2.imshow('result', draw_result)
+    # cv2.waitKey(0)
+    
+
+    # key = cv2.waitKey(0)
+    
+    
+        
+    # delete_idx = abs(48 - key)
+    
+
+
+                            

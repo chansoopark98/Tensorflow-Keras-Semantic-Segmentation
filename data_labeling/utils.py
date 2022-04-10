@@ -15,8 +15,8 @@ def canny_selector(rgb):
 
     cv2.setTrackbarPos("minValue", "Canny Selector", 127)
     cv2.setTrackbarPos("maxValue", "Canny Selector", 255)
-    cv2.setTrackbarPos("black threshold", "Canny Selector", 46)
-    cv2.setTrackbarPos("Kernel Size", "Canny Selector", 5)
+    cv2.setTrackbarPos("black threshold", "Canny Selector", 64)
+    cv2.setTrackbarPos("Kernel Size", "Canny Selector", 3)
     cv2.setTrackbarPos("v_dilate", "Canny Selector", 1)
     cv2.setTrackbarPos("h_dilate", "Canny Selector", 1)
     cv2.setTrackbarPos("v_erode", "Canny Selector", 1)

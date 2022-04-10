@@ -24,10 +24,10 @@ def get_order(file):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/mask/')
 
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040505_24cm_gray_d1_noExposure/result/semantic_label')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path
