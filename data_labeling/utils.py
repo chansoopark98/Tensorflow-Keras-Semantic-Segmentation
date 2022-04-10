@@ -7,20 +7,20 @@ def canny_selector(rgb):
     cv2.createTrackbar("maxValue", "Canny Selector", 1, 255, lambda x : x)
     cv2.createTrackbar("black threshold", "Canny Selector", 1, 255, lambda x : x)
     cv2.createTrackbar("Kernel Size", "Canny Selector", 1, 7, lambda x : x)
-    cv2.createTrackbar("수직 팽창 연산", "Canny Selector", 0, 1, lambda x : x)
-    cv2.createTrackbar("수평 팽창 연산", "Canny Selector", 0, 1, lambda x : x)
-    cv2.createTrackbar("수직 침식 연산", "Canny Selector", 0, 1, lambda x : x)
-    cv2.createTrackbar("수평 침식 연산", "Canny Selector", 0, 1, lambda x : x)
+    cv2.createTrackbar("v_dilate", "Canny Selector", 0, 1, lambda x : x)
+    cv2.createTrackbar("h_dilate", "Canny Selector", 0, 1, lambda x : x)
+    cv2.createTrackbar("v_erode", "Canny Selector", 0, 1, lambda x : x)
+    cv2.createTrackbar("h_erode", "Canny Selector", 0, 1, lambda x : x)
     
 
     cv2.setTrackbarPos("minValue", "Canny Selector", 127)
     cv2.setTrackbarPos("maxValue", "Canny Selector", 255)
-    cv2.setTrackbarPos("black threshold", "Canny Selector", 150)
+    cv2.setTrackbarPos("black threshold", "Canny Selector", 46)
     cv2.setTrackbarPos("Kernel Size", "Canny Selector", 5)
-    cv2.setTrackbarPos("수직 팽창 연산", "Canny Selector", 1)
-    cv2.setTrackbarPos("수평 팽창 연산", "Canny Selector", 1)
-    cv2.setTrackbarPos("수직 침식 연산", "Canny Selector", 1)
-    cv2.setTrackbarPos("수평 침식 연산", "Canny Selector", 1)
+    cv2.setTrackbarPos("v_dilate", "Canny Selector", 1)
+    cv2.setTrackbarPos("h_dilate", "Canny Selector", 1)
+    cv2.setTrackbarPos("v_erode", "Canny Selector", 1)
+    cv2.setTrackbarPos("h_erode", "Canny Selector", 1)
     
 
     img = rgb.copy()
@@ -32,10 +32,10 @@ def canny_selector(rgb):
         maxval = cv2.getTrackbarPos("maxValue", "Canny Selector")
         black_t = cv2.getTrackbarPos("black threshold", "Canny Selector")
         kernel_size = cv2.getTrackbarPos("Kernel Size", "Canny Selector")
-        v_dilate = cv2.getTrackbarPos("수직 팽창 연산", "Canny Selector")
-        h_dilate = cv2.getTrackbarPos("수평 팽창 연산", "Canny Selector")
-        v_erode = cv2.getTrackbarPos("수직 침식 연산", "Canny Selector")
-        h_erode = cv2.getTrackbarPos("수평 침식 연산", "Canny Selector")
+        v_dilate = cv2.getTrackbarPos("v_dilate", "Canny Selector")
+        h_dilate = cv2.getTrackbarPos("h_dilate", "Canny Selector")
+        v_erode = cv2.getTrackbarPos("v_erode", "Canny Selector")
+        h_erode = cv2.getTrackbarPos("h_erode", "Canny Selector")
         
         img = np.where(rgb.copy() <= black_t, 0, rgb.copy())
         canny = cv2.Canny(img, thresh, maxval)
@@ -116,12 +116,13 @@ def find_contours(mask, img, color=(0, 255, 0)):
     mask = np.where(mask >= 255, mask, 0)
 
     contour_list = []
-    area_list = []
+    
     for contour in contours:
         approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
         area = cv2.contourArea(contour)
-        area_list.append(area)
-        contour_list.append(contour)
+        if area >= 1000:
+            
+            contour_list.append(contour)
 
     
         

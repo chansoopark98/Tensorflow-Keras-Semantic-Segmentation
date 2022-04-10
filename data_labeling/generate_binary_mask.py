@@ -7,14 +7,14 @@ import argparse
 from utils import load_imgs, canny_edge, find_contours, canny_selector
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--image_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_대각_24cm_gray_d3_noExposure/rgb/')
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040523_대각_24cm_gray_d3_noExposure/result/')
+parser.add_argument("--image_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040834_exposure_1000_gain_100_10cm_gray3/rgb/')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040834_exposure_1000_gain_100_10cm_gray3/result/')
 
 
 args = parser.parse_args()
 IMAGE_PATH = args.image_path
 RESULT_PATH = args.result_path
-RESOLUTION = (640,480)
+RESOLUTION = (1280,720)
 RGB_PATH = RESULT_PATH+'rgb/'
 MASK_PATH = RESULT_PATH+'mask/'
 
