@@ -1,15 +1,5 @@
-from cv2 import threshold
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
-from models.model_builder import segmentation_model
-from utils.load_datasets import DatasetGenerator
 import argparse
-import time
 import os
-import tensorflow as tf
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 import glob
 import cv2
 import numpy as np
@@ -70,10 +60,10 @@ def onMouse(event, x, y, flags, param):
     cv2.resizeWindow('draw_img', IMAGE_SIZE[1], IMAGE_SIZE[0])
         
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/032155_white_50cm/result/rgb/') 
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/032155_white_50cm/result/mask/')
 
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/semantic_label')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/032155_white_50cm/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path
@@ -86,11 +76,6 @@ MASK_RESULT_DIR = RESULT_DIR + '_mask_result/'
 IMAGE_SIZE = (480, 640)
 # IMAGE_SIZE = (None, None)
 
-ROI_PATH = MASK_RESULT_DIR + 'roi_mask/'
-
-ROI_INPUT_PATH = ROI_PATH + 'input/'
-ROI_GT_PATH = ROI_PATH + 'gt/'
-ROI_CHECK_GT_PATH = ROI_PATH + 'check_gt/'
 
 SEMANTIC_PATH = MASK_RESULT_DIR + 'semantic_mask/'
 
@@ -98,19 +83,10 @@ SEMANTIC_INPUT_PATH = SEMANTIC_PATH + 'input/'
 SEMANTIC_GT_PATH = SEMANTIC_PATH + 'gt/'
 SEMANTIC_CHECK_GT_PATH = SEMANTIC_PATH + 'check_gt/'
 
-
-
 os.makedirs(MASK_RESULT_DIR, exist_ok=True)
-
-os.makedirs(ROI_PATH, exist_ok=True)
-os.makedirs(ROI_INPUT_PATH, exist_ok=True)
-os.makedirs(ROI_GT_PATH, exist_ok=True)
-
 os.makedirs(SEMANTIC_PATH, exist_ok=True)
 os.makedirs(SEMANTIC_INPUT_PATH, exist_ok=True)
 os.makedirs(SEMANTIC_GT_PATH, exist_ok=True)
-
-os.makedirs(ROI_CHECK_GT_PATH, exist_ok=True)
 os.makedirs(SEMANTIC_CHECK_GT_PATH, exist_ok=True)
 
 rgb_list = glob.glob(os.path.join(RGB_PATH+'*.png'))
@@ -140,8 +116,8 @@ for idx in range(len(rgb_list)):
     for contour in contours:
         area = cv2.contourArea(contour)
         
-        if area >= 1000: 
-            circle_contour.append(contour)
+        # if area >= 1000: 
+        circle_contour.append(contour)
             
     try:
         x,y,w,h = cv2.boundingRect(circle_contour[0])
@@ -170,11 +146,14 @@ for idx in range(len(rgb_list)):
         
         
         circle_contour.append(contour)
-                
+
+    cv2.namedWindow("circle check") 
     for i in range(len(circle_contour)):
         draw_roi = ROI.copy()
-        cv2.drawContours(draw_roi, circle_contour, i, 127, -1)
+        cv2.drawContours(draw_roi, circle_contour, i, (0, 255, 0), -1)
+        cv2.moveWindow("circle check", 800, 400)
         cv2.imshow('circle check', draw_roi)
+        
         key = cv2.waitKey(0)
 
         delete_idx = abs(48 - key)
@@ -193,7 +172,8 @@ for idx in range(len(rgb_list)):
             draw_result[y:y+h, x:x+w] += cropped_gt.astype(np.uint8)
             break
     
-        
+    cv2.namedWindow("check gt")
+    cv2.moveWindow("check gt", 600, 400)
     cv2.imshow('check gt', draw_result * 127)
     key = cv2.waitKey(0)
     cv2.destroyAllWindows()

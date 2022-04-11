@@ -15,7 +15,7 @@ def canny_selector(rgb):
 
     cv2.setTrackbarPos("minValue", "Canny Selector", 127)
     cv2.setTrackbarPos("maxValue", "Canny Selector", 255)
-    cv2.setTrackbarPos("black threshold", "Canny Selector", 64)
+    cv2.setTrackbarPos("black threshold", "Canny Selector", 90)
     cv2.setTrackbarPos("Kernel Size", "Canny Selector", 3)
     cv2.setTrackbarPos("v_dilate", "Canny Selector", 1)
     cv2.setTrackbarPos("h_dilate", "Canny Selector", 1)
@@ -43,17 +43,17 @@ def canny_selector(rgb):
         v_kernel = np.ones((kernel_size, 1), np.uint8) 
         h_kernel = np.ones((1,kernel_size), np.uint8) 
 
-        if v_dilate == 1:
-            canny = cv2.dilate(canny, v_kernel, iterations=1)    
+        # if v_dilate == 1:
+        #     canny = cv2.dilate(canny, v_kernel, iterations=1)    
         
-        if h_dilate == 1:
-            canny = cv2.dilate(canny, h_kernel, iterations=1)    
+        # if h_dilate == 1:
+        #     canny = cv2.dilate(canny, h_kernel, iterations=1)    
         
-        if v_erode == 1:
-            canny = cv2.erode(canny, v_kernel, iterations=1)    
+        # if v_erode == 1:
+        #     canny = cv2.erode(canny, v_kernel, iterations=1)    
 
-        if h_erode == 1:
-            canny = cv2.erode(canny, h_kernel, iterations=1)    
+        # if h_erode == 1:
+        #     canny = cv2.erode(canny, h_kernel, iterations=1)    
 
         cv2.moveWindow("Canny Selector", 800, 400)
         cv2.imshow("Canny Selector", canny)

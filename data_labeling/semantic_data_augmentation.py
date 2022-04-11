@@ -20,9 +20,9 @@ def get_order(file):
     return int(match.groups()[0])
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/semantic_label_mask_result/semantic_mask/input/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/semantic_label_mask_result/semantic_mask/check_gt/')
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/semantic_label_mask_result/semantic_mask/augmentation/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0405/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/semantic_mask/input/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0405/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/semantic_mask/check_gt/')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0405/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/semantic_mask/augmentation/')
 
 parser.add_argument("--bg_path",     type=str,   help="raw image path", default='./data_labeling/data/img/backgrounds/rgb/')
 
@@ -152,7 +152,7 @@ def object_resize(img, mask, bg, name, img_idx):
     bg = cv2.resize(bg, dsize=(img.shape[1], img.shape[0]), interpolation=cv2.INTER_LINEAR)
 
     # 1. Resize 할 random factor값 가져오기
-    rand_factor = round(random.uniform(0.5  ,2), 1)          
+    rand_factor = round(random.uniform(1,2), 1)          
     rand_x = rand_factor
     rand_y = rand_factor
 
@@ -212,13 +212,23 @@ def object_resize(img, mask, bg, name, img_idx):
     
     
     bg_y, bg_x, _ = bg_img.shape
-    # bg image
+    """
+    1280x720 
     if rand_factor > 1.0:
         x_max_shift = 250
         y_max_shift = 50
     else:
         x_max_shift = 500
         y_max_shift = 150
+    """
+    if rand_factor > 1.0:
+        x_max_shift = 100
+        y_max_shift = 20
+    else:
+        x_max_shift = 250
+        y_max_shift = 50
+
+
 
     
     rand_bg_x = random.randint(0, x_max_shift)
@@ -282,7 +292,7 @@ if __name__ == '__main__':
 
         
         
-        name = rgb_list[idx].split('/')[4] + '_' + str(i)
+        name = rgb_list[idx].split('/')[5] + '_' + str(i)
         
         save_imgs(img, mask, name)
         img_shift(img, mask, name)
