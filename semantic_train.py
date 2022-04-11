@@ -13,8 +13,13 @@ import tensorflow_addons as tfa
 
 # from utils.cityscape_colormap import class_weight
 # from utils.adamW import LearningRateScheduler, poly_decay
-# import tensorflow_addons
-# sudo apt-get install libtcmalloc-minimal4
+
+
+# 1. sudo apt-get install libtcmalloc-minimal4
+# 2. check dir ! 
+# dpkg -L libtcmalloc-minimal4
+# 3. LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python semantic_train.py
+
 # LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
 # LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
 # LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python gan_train.py
