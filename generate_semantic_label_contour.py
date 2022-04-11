@@ -70,10 +70,10 @@ def onMouse(event, x, y, flags, param):
     cv2.resizeWindow('draw_img', IMAGE_SIZE[1], IMAGE_SIZE[0])
         
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/mask/')
 
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/semantic_label')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path
@@ -140,7 +140,7 @@ for idx in range(len(rgb_list)):
     for contour in contours:
         area = cv2.contourArea(contour)
         
-        if area >= 1000:
+        if area >= 1000: 
             circle_contour.append(contour)
             
     try:
@@ -167,8 +167,9 @@ for idx in range(len(rgb_list)):
     circle_contour = []
     for contour in contours:
         area = cv2.contourArea(contour)
-        if area >= 1000: 
-            circle_contour.append(contour)
+        
+        
+        circle_contour.append(contour)
                 
     for i in range(len(circle_contour)):
         draw_roi = ROI.copy()

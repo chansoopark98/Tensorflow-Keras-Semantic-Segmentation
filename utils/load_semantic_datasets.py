@@ -5,40 +5,8 @@ import numpy as np
 
 AUTO = tf.data.experimental.AUTOTUNE
 
-def imgNetNorm(img):
-    # img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
-    #                 method=tf.image.ResizeMethod.BILINEAR)
-    # mask = tf.image.resize(mask, size=(self.image_size[0], self.image_size[1]),
-    #                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    img = img / 255.0
-    img -= [0.485, 0.456, 0.406]  # imageNet mean
-    img /= [0.229, 0.224, 0.225]  # imageNet std
-    return img
-
-@tf.function
-def zoom(self, x, labels, scale_min=0.6, scale_max=1.6):
-    h, w, _ = x.shape
-    scale = tf.random.uniform([], scale_min, scale_max)
-    nh = h * scale
-    nw = w * scale
-    x = tf.image.resize(x, (nh, nw), method=tf.image.ResizeMethod.BILINEAR)
-    labels = tf.image.resize(labels, (nh, nw), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    x = tf.image.resize_with_crop_or_pad(x, h, w)
-    labels = tf.image.resize_with_crop_or_pad(labels, h, w)
-    return x, labels
-
-@tf.function
-def rotate(self, x, labels, angle=(-45, 45)):
-    angle = tf.random.uniform([], angle[0], angle[1], tf.float32)
-    theta = np.pi * angle / 180
-
-    # x = tfa.image.rotate(x, theta, interpolation="bilinear")
-    # labels = tfa.image.rotate(labels, theta)
-    return (x, labels)
-
-
 class SemanticGenerator:
-    def __init__(self, data_dir, image_size, batch_size, mode, data_type):
+    def __init__(self, data_dir, image_size, batch_size, mode):
         """
         Args:
             data_dir: 데이터셋 상대 경로 ( default : './datasets/' )
@@ -51,9 +19,6 @@ class SemanticGenerator:
         self.image_size = image_size
         self.batch_size = batch_size
 
-        self.data_type= data_type
-            
-
         if mode == 'train':
             self.train_data, self.number_train = self._load_train_datasets()
         elif mode == 'all':
@@ -63,7 +28,7 @@ class SemanticGenerator:
 
 
     def _load_valid_datasets(self):
-        
+
         valid_data = tfds.load('FullSemantic',
                                data_dir=self.data_dir, split='train[90%:]')
 
@@ -82,7 +47,7 @@ class SemanticGenerator:
         return train_data, number_train
 
     def _load_all_datasets(self):
-        data = tfds.load('FullSemantic' + self.data_type,
+        data = tfds.load('FullSemantic',
                                data_dir=self.data_dir, split='train')
 
 
@@ -93,14 +58,21 @@ class SemanticGenerator:
 
     def load_test(self, sample):
         original = sample['rgb']
-        img = tf.cast(original, tf.float32)
-        labels = tf.cast(sample['gt'], tf.int64)
-        
-        if self.data_type == 'roi':
-            img = tf.image.resize_with_crop_or_pad(img, 128, 128)
-            labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
+        img = tf.cast(sample['rgb'], tf.float32)
+        labels = tf.cast(sample['gt'], tf.float32)
 
+        
+        concat_img = tf.concat([img, labels], axis=-1)
+        concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
+        
+        img = concat_img[:, :, :3]
+        labels = concat_img[:, :, 3:]
+
+        img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
+        
+        labels /= 127
+        labels = tf.cast(labels, tf.int32)
 
         return (img, labels, original)
 
@@ -108,12 +80,25 @@ class SemanticGenerator:
     @tf.function
     def preprocess(self, sample):
         img = tf.cast(sample['rgb'], tf.float32)
-        labels = tf.cast(sample['gt'], tf.int64)
+        labels = tf.cast(sample['gt'], tf.float32)
 
-        if self.data_type == 'roi':
-            img = tf.image.resize_with_crop_or_pad(img, 128, 128)
-            labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
+        if tf.random.uniform([]) > 0.5:
+            concat_img = tf.concat([img, labels], axis=-1)
+            concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
+        
+            img = concat_img[:, :, :3]
+            labels = concat_img[:, :, 3:]
+        else:
+            img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
+                method=tf.image.ResizeMethod.BILINEAR)
+            labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
+                method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
+
+        return (img, labels)
+        
+    @tf.function
+    def augmentation(self, img, labels):           
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_saturation(img, 0.5, 1.5)
         if tf.random.uniform([]) > 0.5:
@@ -123,28 +108,42 @@ class SemanticGenerator:
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
+        if tf.random.uniform([]) > 0.5:
+            img = tf.image.flip_up_down(img)
+            labels = tf.image.flip_up_down(labels)
 
+        img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
+        
+        labels /= 127
+        labels = tf.cast(labels, tf.int32)
 
         return (img, labels)
 
     @tf.function
     def preprocess_valid(self, sample):
-        original = sample['rgb']
-        img = tf.cast(original, tf.float32)
-        labels = tf.cast(sample['gt'], tf.int64)
+        img = tf.cast(sample['rgb'], tf.float32)
+        labels = tf.cast(sample['gt'], tf.float32)
 
-        if self.data_type == 'roi':
-            img = tf.image.resize_with_crop_or_pad(img, 128, 128)
-            labels = tf.image.resize_with_crop_or_pad(labels, 128, 128)
+        
+        concat_img = tf.concat([img, labels], axis=-1)
+        concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
+        
+        img = concat_img[:, :, :3]
+        labels = concat_img[:, :, 3:]
 
+        img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
+        
+        labels /= 127
+        labels = tf.cast(labels, tf.int32)
 
         return (img, labels)
 
     def get_trainData(self, train_data):
         train_data = train_data.shuffle(1024)
         train_data = train_data.map(self.preprocess, num_parallel_calls=AUTO)
+        train_data = train_data.map(self.augmentation, num_parallel_calls=AUTO)
         train_data = train_data.padded_batch(self.batch_size)
         train_data = train_data.prefetch(AUTO)
         train_data = train_data.repeat()

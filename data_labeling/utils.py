@@ -55,7 +55,9 @@ def canny_selector(rgb):
         if h_erode == 1:
             canny = cv2.erode(canny, h_kernel, iterations=1)    
 
+        cv2.moveWindow("Canny Selector", 800, 400)
         cv2.imshow("Canny Selector", canny)
+        
     
     return canny
 

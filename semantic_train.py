@@ -24,7 +24,6 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-CE-ADAM-B16')
-parser.add_argument("--data_type",     type=str,   help="Data type: set please 'roi' or 'full'", default='full')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -42,7 +41,6 @@ parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모�
 
 args = parser.parse_args()
 MODEL_PREFIX = args.model_prefix
-DATA_TYPE = args.data_type
 WEIGHT_DECAY = args.weight_decay
 OPTIMIZER_TYPE = args.optimizer
 BATCH_SIZE = args.batch_size
@@ -53,7 +51,6 @@ DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 IMAGE_SIZE = (480, 640)
-# IMAGE_SIZE = (128, 128)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -69,8 +66,8 @@ os.makedirs(CHECKPOINT_DIR + args.model_name, exist_ok=True)
 
 TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
 VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
-train_dataset_config = SemanticGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='train', data_type=DATA_TYPE)
-valid_dataset_config = SemanticGenerator(DATASET_DIR, VALID_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', data_type=DATA_TYPE)
+train_dataset_config = SemanticGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='train')
+valid_dataset_config = SemanticGenerator(DATASET_DIR, VALID_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation')
 
 train_data = train_dataset_config.get_trainData(train_dataset_config.train_data)
 # train_data = mirrored_strategy.experimental_distribute_dataset(train_data)

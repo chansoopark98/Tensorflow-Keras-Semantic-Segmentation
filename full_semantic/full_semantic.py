@@ -56,7 +56,7 @@ class FullSemantic(tfds.core.GeneratorBasedBuilder):
 
     # TODO(cornell_grasp): Returns the Dict[split names, Iterator[Key, Example]]
     return {
-        'train': self._generate_examples(img_path=extracted_path/'full_rgb', mask_path=extracted_path/'full_gt')
+        'train': self._generate_examples(img_path=extracted_path/'rgb', mask_path=extracted_path/'mask')
     }
 
   def _generate_examples(self, img_path, mask_path):

@@ -20,11 +20,11 @@ def get_order(file):
     return int(match.groups()[0])
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040533_24cm_white_b1/result/semantic_label_mask_result/semantic_mask/input/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040533_24cm_white_b1/result/semantic_label_mask_result/semantic_mask/gt/')
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040533_24cm_white_b1/result/semantic_label_mask_result/semantic_mask/augmentation/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/semantic_label_mask_result/semantic_mask/input/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/semantic_label_mask_result/semantic_mask/check_gt/')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040841_exposure_1000_gain_100_25cm_white/result/semantic_label_mask_result/semantic_mask/augmentation/')
 
-parser.add_argument("--bg_path",     type=str,   help="raw image path", default='./data_labeling/data/img/dtd/images/')
+parser.add_argument("--bg_path",     type=str,   help="raw image path", default='./data_labeling/data/img/backgrounds/rgb/')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path
@@ -48,7 +48,7 @@ rgb_list = natsort.natsorted(rgb_list,reverse=True)
 mask_list = glob.glob(os.path.join(MASK_PATH+'*.png'))
 mask_list = natsort.natsorted(mask_list,reverse=True)
 
-bg_list =  glob.glob(os.path.join(BG_PATH,  '*', '*.jpg'))
+bg_list =  glob.glob(os.path.join(BG_PATH,  '*.png'))
 bg_list = natsort.natsorted(bg_list,reverse=True)
 
 def img_shift(rgb, mask, name):
@@ -145,12 +145,123 @@ def cutmix(img, mask, bg, name):
     bg_background += img
 
     cv2.imwrite(OUT_RGB_PATH + name + '_bg' +'_.png', bg_background)
-    
     cv2.imwrite(OUT_MASK_PATH +name + '_bg' +'_mask.png', mask)
+
+
+def object_resize(img, mask, bg, name, img_idx):
+    bg = cv2.resize(bg, dsize=(img.shape[1], img.shape[0]), interpolation=cv2.INTER_LINEAR)
+
+    # 1. Resize 할 random factor값 가져오기
+    rand_factor = round(random.uniform(0.5  ,2), 1)          
+    rand_x = rand_factor
+    rand_y = rand_factor
+
+    # 2. 배경 rgb 이미지, zero mask 준비하기
+    bg_img = bg.copy()
+    zero_mask = np.zeros(bg.shape)
+    zero_mask = zero_mask[:, :, 0]
+
+    # 3. 이미지 리사이즈
+    img = cv2.resize(img, dsize=(0, 0), fx=rand_x, fy=rand_y, interpolation=cv2.INTER_LINEAR)
+    mask = cv2.resize(mask, dsize=(0, 0), fx=rand_x, fy=rand_y, interpolation=cv2.INTER_NEAREST)
+
+    # 4. 랜덤 로테이션
+    rot = random.randint(10, 350)
+    h, w = img.shape[:2]
+    M = cv2.getRotationMatrix2D((w/2, h/2), rot, 1)
     
+    img = cv2.warpAffine(img, M, (w, h))
+    mask = cv2.warpAffine(mask, M, (w, h))
+
+    # 5. Binary 마스크 생성
+    binary_mask = np.where(mask.copy() >= 1, 255, 0).astype(np.uint8)
+    binary_mask = cv2.cvtColor(binary_mask, cv2.COLOR_BGR2GRAY)
+
+    # 6. mask를 이용하여 object의 x,y,w,h 계산
+    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    area_allowed_contour = []
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        # if area >= 1000: 
+        area_allowed_contour.append(contour)
+    try:
+        x,y,w,h = cv2.boundingRect(area_allowed_contour[0])
+    except:
+        return 0
+
+    if x % 2 == 1:
+        x += 1
+    if y % 2 == 1:
+        y += 1
+    if w % 2 == 1:
+        w += 1
+    if h % 2 == 1:
+        h += 1
+
+    # 7. 좌표값을 이용하여 원본 이미지에서 crop
+
+    crop_mask = mask.copy()[y:y+h, x:x+w]
+
+    crop_rgb = img.copy()[y:y+h, x:x+w]
+    crop_rgb *= np.where(crop_mask.copy() >= 1, 1, 0).astype(np.uint8)
+    
+    
+    draw_mask = mask.copy()
+    draw_mask = draw_mask[:, :, 0]
+    draw_mask = draw_mask[y:y+h, x:x+w]
+    
+    
+    bg_y, bg_x, _ = bg_img.shape
+    # bg image
+    if rand_factor > 1.0:
+        x_max_shift = 250
+        y_max_shift = 50
+    else:
+        x_max_shift = 500
+        y_max_shift = 150
 
     
+    rand_bg_x = random.randint(0, x_max_shift)
+    rand_bg_y = random.randint(0, y_max_shift)
+
+    use_minus = random.randint(0, 1)
+    if use_minus == 1:
+        rand_bg_x *= -1
+        rand_bg_y *= -1
     
+    bg_y = ( bg_y // 2 ) + rand_bg_y
+    bg_x = ( bg_x // 2 ) + rand_bg_x
+    
+
+    # crop image
+    crop_y , crop_x, _ = crop_rgb.shape
+    w = crop_x // 2# w // 2
+    h = crop_y // 2# h // 2 
+    
+    # 8. Crop 이미지를 사용하여 배경에 합성
+
+    bg_img[bg_y - h : bg_y + h, bg_x - w : bg_x + w] = np.where(crop_mask.copy() >=1, crop_rgb, bg_img[bg_y - h : bg_y + h, bg_x - w : bg_x + w])
+    hole_label = zero_mask.copy()
+
+    zero_mask[bg_y - h : bg_y + h, bg_x - w : bg_x + w] = np.where(draw_mask.copy() >= 127, 1, 0)
+    zero_mask = zero_mask.astype(np.uint8)
+    hole_label[bg_y - h : bg_y + h, bg_x - w : bg_x + w] = np.where(draw_mask.copy() >= 250, 1, 0)
+    hole_label = hole_label.astype(np.uint8)
+
+    zero_mask += hole_label
+    
+    # 9. 이미지 저장
+    # cv2.imshow('bg_img', bg_img)
+    # cv2.waitKey(0)
+    # print(bg_img.shape)
+    # cv2.imshow('zero_mask', zero_mask * 127)
+    # cv2.waitKey(0)
+    
+    img_name = '_factor_' + str(rand_factor) + '_' + str(img_idx)
+    cv2.imwrite(OUT_RGB_PATH + name + img_name +'_original' +'_.png', bg_img)
+    
+    cv2.imwrite(OUT_MASK_PATH +name +  img_name +'_synthesis' +'_mask.png', zero_mask * 127)
+
 
 def save_imgs(rgb, mask, name):
     cv2.imwrite(OUT_RGB_PATH + name + '_original' +'_.png', rgb)
@@ -164,6 +275,7 @@ if __name__ == '__main__':
     i = 1
 
     bg_range = range(len(bg_list))
+    
     for idx in range(len(rgb_list)):
         img = cv2.imread(rgb_list[idx])
         mask = cv2.imread(mask_list[idx])
@@ -173,13 +285,14 @@ if __name__ == '__main__':
         name = rgb_list[idx].split('/')[4] + '_' + str(i)
         
         save_imgs(img, mask, name)
-        # img_shift(img, mask, name)
+        img_shift(img, mask, name)
         img_blur(img, mask, name)
         img_rotate(img, mask, name)
-        # for j in range(3):
-        #     bg_idx = random.choice(bg_range)
-        #     bg = cv2.imread(bg_list[bg_idx])
-        #     cutmix(img, mask, bg, name)
+        
+        for bg_idx in bg_range:
+            bg_img = cv2.imread(bg_list[bg_idx])
+            for j in range(5):
+                object_resize(img, mask, bg_img, name, j)
         i+=1
 
         

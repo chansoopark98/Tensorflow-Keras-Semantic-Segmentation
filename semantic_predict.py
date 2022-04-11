@@ -34,7 +34,7 @@ os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
 VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
 
-test_dataset_config = SemanticGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation', data_type='full')
+test_dataset_config = SemanticGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation')
 test_set = test_dataset_config.get_testData(test_dataset_config.valid_data)
 test_steps = test_dataset_config.number_valid // BATCH_SIZE
 
