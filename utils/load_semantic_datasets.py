@@ -83,28 +83,39 @@ class SemanticGenerator:
         labels = tf.cast(sample['gt'], tf.float32)
 
         if tf.random.uniform([]) > 0.5:
+            scale = tf.random.uniform([], 1.0, 1.4)
+            new_h = self.image_size[0] * scale
+            new_w = self.image_size[1] * scale
+            
+            img = tf.image.resize(img, size=(new_h, new_w),
+                            method=tf.image.ResizeMethod.BILINEAR)
+            labels = tf.image.resize(labels, size=(new_h, new_w),
+                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+            img = tf.cast(img, tf.uint8)
+
             concat_img = tf.concat([img, labels], axis=-1)
             concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
         
             img = concat_img[:, :, :3]
             labels = concat_img[:, :, 3:]
+
         else:
             img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
                 method=tf.image.ResizeMethod.BILINEAR)
             labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-
         return (img, labels)
         
     @tf.function
     def augmentation(self, img, labels):           
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_saturation(img, 0.5, 1.5)
+            img = tf.image.random_saturation(img, 0.1, 0.8)
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_brightness(img, 0.05)
+            img = tf.image.random_brightness(img, 0.1)
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_contrast(img, 0.5, 1.5)
+            img = tf.image.random_contrast(img, 0.1, 0.8)
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
