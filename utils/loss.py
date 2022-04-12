@@ -37,18 +37,6 @@ def ce_loss(y_true, y_pred):
 
     return ce_loss
 
-def total_loss(y_true, y_pred, eps=1e-6):
-    """both tensors are [b, h, w, classes] and y_pred is in logit form"""
-    ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(y_true=y_true, y_pred=y_pred)
-
-    y_true_f = K.flatten(K.one_hot(K.cast(y_true, 'int32'), num_classes=3)[...,1:])
-    y_pred_f = K.flatten(y_pred[...,1:])
-    intersect = K.sum(y_true_f * y_pred_f, axis=-1)
-    denom = K.sum(y_true_f + y_pred_f, axis=-1)
-    dice_loss = 1 - K.mean((2. * intersect / (denom + eps)))
-
-    return dice_loss + ce_loss
-
 
 def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
                                   class_weight: Optional[Any] = None,

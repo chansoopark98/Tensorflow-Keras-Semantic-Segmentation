@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from glob import glob
+from cv2 import HoughCircles
 from models.model_builder import semantic_model, segmentation_model
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import argparse
@@ -20,8 +22,12 @@ from utils.CameraManager import CameraManager
 tf.keras.backend.clear_session()
 bridge = CvBridge()
 
+
+
 rospy.init_node('topic_publisher', anonymous=True)
 pub = rospy.Publisher('counter', String, queue_size=1)
+seg_result_pub = rospy.Publisher('Segmentation_result', Image, queue_size=1)
+hole_result_pub = rospy.Publisher('Final_result', Image, queue_size=1)
 rate = rospy.Rate(60)
 
 def load_mindVision():
@@ -35,13 +41,6 @@ def load_mindVision():
 
     return bgr
 
-result_roi_pub = rospy.Publisher('ROI_semantic_segmentation_result', Image, queue_size=1)
-result_seg_pub = rospy.Publisher('Segmentation_result', Image, queue_size=1)
-test_roi = rospy.Publisher('Test roi', Image, queue_size=1)
-result_final_pub = rospy.Publisher('Final_result', Image, queue_size=1)
-
-TEST_IMG = rospy.Publisher('JH_IMG_TEST', Image, queue_size=1)
-# TEST_IMG.publish(img)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--camera_mode",     type=int,   help="Camera Mode || 1 : RealSense launch  2 : MindVision", default=1)
@@ -61,10 +60,11 @@ if CAM_MODE == 1:
 
 if __name__ == '__main__':
     # Segmentation 모델 불러오기
+    
     model = semantic_model(image_size=(480, 640))
 
     # Segmentation 모델 가중치 불러오기
-    weight_name = '0411_test'
+    weight_name = 'epoch200'
     model.load_weights(weight_name + '.h5')
 
     # Warm-Up Deep Learning Model's (한 번 Inference하여 대기 시간을 줄임) 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     roi_pred = model.predict_on_batch(roi_img)
 
     # RosTopic으로 publish할 변수 (예측한 홀의 중심 x,y 좌표)
-    previous_yx = [0, 0]
+    previous_yx = [0 ,0]
 
     # Load Camera
     if CAM_MODE == 1:
@@ -105,7 +105,9 @@ if __name__ == '__main__':
     while True:
         if CAM_MODE==1:
             original = camera.color.copy()
-        
+        yx_coords = []
+        x_list = []
+        y_list = []
         rgb = original.copy()[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]]
         rgb = cv2.cvtColor(rgb, cv2.COLOR_BGR2RGB)
         # Inference                     
@@ -117,46 +119,66 @@ if __name__ == '__main__':
         pred = tf.cast(pred, tf.uint8)
         
         result = pred[0]
-        
-        pred = pred[0]
-
         result = result.numpy()  * 127
+
+        # start = time.process_time()
+        # duration = (time.process_time() - start)
+        # print('cv :', duration, 'sec')
+        new_rgb = cv2.cvtColor(result.astype(np.uint8), cv2.COLOR_GRAY2BGR)
         
-        new_image_red, new_image_green, new_image_blue = result.copy(), result.copy(), result.copy()
-        new_rgb = np.dstack([new_image_red, new_image_green, new_image_blue])
-        new_rgb = new_rgb.astype(np.uint8)
+        
+
         img_msg = bridge.cv2_to_imgmsg(new_rgb, encoding='bgr8')
-        result_seg_pub.publish(img_msg)
+        seg_result_pub.publish(img_msg)
 
-
-        contours, _ = cv2.findContours(result, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
-        circle_contour = []
+        hole_result = np.where(result== 254,254, 0)
+        hole_result = hole_result.astype(np.uint8)
+        contours, _ = cv2.findContours(hole_result, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        rectangle_contours = []
         if len(contours) != 0:
             for contour in contours:
                 area = cv2.contourArea(contour)
-                
-                if area >= 1000:
-                    circle_contour.append(contour)
+                if area >= 20:
+                    rectangle_contours.append(contour)
 
-            if len(circle_contour) != 0:
-                x,y,w,h = cv2.boundingRect(circle_contour[0])
-            
-
-            if x != 0:
-                cropped_input_img = result.copy()[y:y+h, x:x+w]
-                yx_coords =  np.mean(np.argwhere(cropped_input_img == 254), axis=0)
-                        
-                        
-                if np.isnan(yx_coords[0]) != True:
+            if len(rectangle_contours) != 0:
+                area_mask = hole_result.copy()
+                for contours_idx in range(len(rectangle_contours)):
+                    x,y,w,h = cv2.boundingRect(rectangle_contours[contours_idx])
+                    semantic_area = area_mask[y:y+h, x:x+w]
                     
-                    previous_yx = [yx_coords[0] + y, yx_coords[1] + x]
-                    # cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
-                    original[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]] = rgb
-                    cv2.circle(original, (int(previous_yx[1]+x_index), int(previous_yx[0])+y_index), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+                    # coord = np.mean(np.argwhere(semantic_area == 254), axis=0)
+                    
+                    argwhere = np.argwhere(semantic_area == 254)
+                    max_coord = np.max(argwhere, axis=0)
+                    min_coord = np.min(argwhere, axis=0)
+
+                    coord = (max_coord - min_coord) //2
+                    
+                    
+                    yx_coords.append(coord)
+                    x_list.append(x)
+                    y_list.append(y)
+
+                
+                # cropped_input_img = result.copy()[y:y+h, x:x+w]
+                
+                previous_yx = []
+                
+                for i in range(len(yx_coords)):
+                    if np.isnan(yx_coords[i][0]) != True: 
+                        previous_yx.append([yx_coords[i][0] + y_list[i], yx_coords[i][1] + x_list[i]])
+                
+                original[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]] = rgb
+                for i in range(len(previous_yx)):
+                    
+                        # cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+
+                    cv2.circle(original, (int(previous_yx[i][1]+x_index), int(previous_yx[i][0])+y_index), int(3), (0, 0, 255), 3, cv2.LINE_AA)
             
         img_msg = bridge.cv2_to_imgmsg(original, encoding='bgr8')
-        result_final_pub.publish(img_msg)
-
-        pub.publish(f'x : {previous_yx[1]} , y : {previous_yx[0]}')
+        hole_result_pub.publish(img_msg)
+        pub.publish(f'x : {previous_yx[0]} , y : {previous_yx[0]}')
 

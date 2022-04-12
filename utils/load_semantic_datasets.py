@@ -92,7 +92,7 @@ class SemanticGenerator:
             labels = tf.image.resize(labels, size=(new_h, new_w),
                             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-            img = tf.cast(img, tf.uint8)
+            
 
             concat_img = tf.concat([img, labels], axis=-1)
             concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
