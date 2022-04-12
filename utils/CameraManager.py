@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-
-import os
-import sys
 from PIL import Image
 from numpy.core.fromnumeric import nonzero
 import rospy
@@ -13,7 +10,6 @@ from sensor_msgs.msg import Image, CameraInfo
 from sensor_msgs.point_cloud2 import PointCloud2
 from geometry_msgs.msg import Pose, PoseArray
 from std_msgs.msg import Bool
-import tensorflow as tf
 import numpy as np
 
 

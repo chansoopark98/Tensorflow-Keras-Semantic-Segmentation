@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
+from audioop import mul
 from glob import glob
+import multiprocessing
+from threading import Thread
 from cv2 import HoughCircles
 from models.model_builder import semantic_model, segmentation_model
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
@@ -19,8 +22,6 @@ from sensor_msgs.msg import Image, CameraInfo
 import json
 from utils.CameraManager import CameraManager
 
-# from threading import Thread
-from multiprocessing import Process
 
 tf.keras.backend.clear_session()
 bridge = CvBridge()
@@ -47,23 +48,17 @@ def load_mindVision():
 def hole_image_pub(pub, pub_img):
     while True:
         try:
-            img_msg = bridge.cv2_to_imgmsg(pub_img, encoding='bgr8')
-            pub.publish(img_msg)
+                img_msg = bridge.cv2_to_imgmsg(pub_img, encoding='bgr8')
+                pub.publish(img_msg)
         except CvBridgeError as e:
-            print(e)
+                print(e)
 
 def seg_image_pub(pub, pub_img):
-    while True:
-        print('try')
-        try:
+    try:
             img_msg = bridge.cv2_to_imgmsg(pub_img, encoding='bgr8')
             pub.publish(img_msg)
-        except CvBridgeError as e:
+    except CvBridgeError as e:
             print(e)
-
-
-        
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--camera_mode",     type=int,   help="Camera Mode || 1 : RealSense launch  2 : MindVision", default=1)
@@ -127,20 +122,11 @@ if __name__ == '__main__':
     
     original = camera.color.copy()
     new_rgb = camera.color.copy()
-    
 
-    proc1 = Process(target=hole_image_pub, args=(hole_result_pub, original,), daemon=True)
-    proc2 = Process(target=seg_image_pub, args=(seg_result_pub, new_rgb,), daemon=True)
-
-    proc1.start()
-    proc2.start()
-    
-    
   
-    # Main Loop
+    # # Main Loop
     while True:
-        if CAM_MODE==1:
-            original = camera.color.copy()
+        original = camera.color.copy()
         yx_coords = []
         x_list = []
         y_list = []
@@ -157,15 +143,10 @@ if __name__ == '__main__':
         result = pred[0]
         result = result.numpy()  * 127
 
-        # start = time.process_time()
-        # duration = (time.process_time() - start)
-        # print('cv :', duration, 'sec')
         new_rgb = cv2.cvtColor(result.astype(np.uint8), cv2.COLOR_GRAY2BGR)
         
         
 
-        # img_msg = bridge.cv2_to_imgmsg(new_rgb, encoding='bgr8')
-        # result_seg_pub.publish(img_msg)
 
         
         hole_result = np.where(result== 254,254, 0)
@@ -213,11 +194,24 @@ if __name__ == '__main__':
                         # cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
 
                         cv2.circle(original, (int(previous_yx[i][1]+x_index), int(previous_yx[i][0])+y_index), int(3), (0, 0, 255), 3, cv2.LINE_AA)
-            
-        # img_msg = bridge.cv2_to_imgmsg(original, encoding='bgr8')
-        # result_final_pub.publish(img_msg)
 
+
+
+
+        start = time.process_time()
+        
+        img_msg = bridge.cv2_to_imgmsg(new_rgb, encoding='bgr8')
+        seg_result_pub.publish(img_msg)
+
+
+        img_msg = bridge.cv2_to_imgmsg(original, encoding='bgr8')
+        hole_result_pub.publish(img_msg)
+
+        duration = (time.process_time() - start)
+        print('time :', duration, 'sec')
+   
 
 
         pub.publish(f'x : {previous_yx[0]} , y : {previous_yx[0]}')
+
 
