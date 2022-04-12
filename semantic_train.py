@@ -28,8 +28,8 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-CE+DICE-ADAM-B16-Epoch200')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-CE-ADAM-B48-Epoch100-NewAugment')
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=48)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
@@ -124,7 +124,7 @@ mIoU = MIoU(3)
 # SparseCategoricalFocalLoss(gamma=2, from_logits=True)
 model.compile(
     optimizer=optimizer,
-    loss=total_loss,
+    loss=ce_loss,
     metrics=[mIoU]
     )
 
