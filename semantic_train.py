@@ -2,7 +2,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from models.model_builder import semantic_model
 from utils.load_semantic_datasets import SemanticGenerator
-from utils.loss import ce_loss, SparseCategoricalFocalLoss, aux_ce_loss
+from utils.loss import ce_loss, SparseCategoricalFocalLoss, total_loss
 from utils.metrics import MIoU
 import argparse
 import time
@@ -28,9 +28,9 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-CE-ADAM-B32')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=32)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-CE+DICE-ADAM-B16-Epoch200')
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
@@ -124,7 +124,7 @@ mIoU = MIoU(3)
 # SparseCategoricalFocalLoss(gamma=2, from_logits=True)
 model.compile(
     optimizer=optimizer,
-    loss=ce_loss,
+    loss=total_loss,
     metrics=[mIoU]
     )
 
