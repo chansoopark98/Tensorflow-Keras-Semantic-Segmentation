@@ -28,6 +28,13 @@ bridge = CvBridge()
 
 
 
+
+def check_boolean(value):
+    if value == 1:
+        return True
+    else:
+        return False
+
 rospy.init_node('topic_publisher', anonymous=True)
 pub = rospy.Publisher('counter', String, queue_size=1)
 seg_result_pub = rospy.Publisher('Segmentation_result', Image, queue_size=1)
@@ -145,57 +152,109 @@ if __name__ == '__main__':
 
         new_rgb = cv2.cvtColor(result.astype(np.uint8), cv2.COLOR_GRAY2BGR)
         
-        
+        gray = original.copy()[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]]
+        gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
+        if np.any(result==254):
+            mask = np.where(result == 254, 1, 0)
+            argwhere = np.argwhere(mask == 1)
+            max_coord = np.max(argwhere, axis=0)
+            min_coord = np.min(argwhere, axis=0)
+
+            y_min = min_coord[0]
+            x_min = min_coord[1]
+            y_max = max_coord[0]
+            x_max = max_coord[1]
+
+            mask[y_min:y_max, x_min:x_max] = 1
+
+            gray *= mask.astype(np.uint8)
+            # Set nameWindow
+            cv2.namedWindow("Trackbar Windows")
+            
+            # Set createTrackbars
+            cv2.createTrackbar("minThreshold", "Trackbar Windows", 1, 255, lambda x : x)
+            cv2.createTrackbar("maxThreshold", "Trackbar Windows", 1, 255, lambda x : x)
+
+            cv2.createTrackbar("filterByArea", "Trackbar Windows", 0, 1, lambda x : x)
+            cv2.createTrackbar("minArea", "Trackbar Windows", 1, 1500, lambda x : x)
+
+            cv2.createTrackbar("filterByCircularity", "Trackbar Windows", 0, 1, lambda x : x)
+            cv2.createTrackbar("minCircularity", "Trackbar Windows", 1, 10, lambda x : x)
+
+            cv2.createTrackbar("filterByConvexity", "Trackbar Windows", 0, 1, lambda x : x)
+            cv2.createTrackbar("minConvexity", "Trackbar Windows", 1, 20, lambda x : x)
+
+            cv2.createTrackbar("filterByInertia", "Trackbar Windows", 0, 1, lambda x : x)
+            cv2.createTrackbar("minInertiaRatio", "Trackbar Windows", 1, 10, lambda x : x)
 
 
-        
-        hole_result = np.where(result== 254,254, 0)
-        hole_result = hole_result.astype(np.uint8)
-        contours, _ = cv2.findContours(hole_result, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        rectangle_contours = []
-        if len(contours) != 0:
-            for contour in contours:
-                area = cv2.contourArea(contour)
-                if area >= 20:
-                    rectangle_contours.append(contour)
+            # Set default value
+            cv2.setTrackbarPos("minThreshold", "Trackbar Windows", 10)
+            cv2.setTrackbarPos("maxThreshold", "Trackbar Windows", 200)
 
-            if len(rectangle_contours) != 0:
-                area_mask = hole_result.copy()
-                for contours_idx in range(len(rectangle_contours)):
-                    x,y,w,h = cv2.boundingRect(rectangle_contours[contours_idx])
-                    semantic_area = area_mask[y:y+h, x:x+w]
-                    
-                    # coord = np.mean(np.argwhere(semantic_area == 254), axis=0)
-                    
-                    argwhere = np.argwhere(semantic_area == 254)
-                    max_coord = np.max(argwhere, axis=0)
-                    min_coord = np.min(argwhere, axis=0)
+            cv2.setTrackbarPos("filterByArea", "Trackbar Windows", 1)
+            cv2.setTrackbarPos("minArea", "Trackbar Windows", 30)
 
-                    coord = (max_coord - min_coord) //2
-                    
-                    
-                    yx_coords.append(coord)
-                    x_list.append(x)
-                    y_list.append(y)
+            cv2.setTrackbarPos("filterByCircularity", "Trackbar Windows", 1)
+            cv2.setTrackbarPos("minCircularity", "Trackbar Windows", 1)
 
-                
-                # cropped_input_img = result.copy()[y:y+h, x:x+w]
-                
-                previous_yx = []
-                
-                for i in range(len(yx_coords)):
-                    if np.isnan(yx_coords[i][0]) != True: 
-                        previous_yx.append([yx_coords[i][0] + y_list[i], yx_coords[i][1] + x_list[i]])
-                
-                original[y_index:y_index+IMAGE_SIZE[0], x_index:x_index+IMAGE_SIZE[1]] = rgb
-                for i in range(len(previous_yx)):
-                    
-                        # cv2.circle(rgb, (int(yx_coords[1]), int(yx_coords[0])), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+            cv2.setTrackbarPos("filterByConvexity", "Trackbar Windows", 1)
+            cv2.setTrackbarPos("minConvexity", "Trackbar Windows", 1)
 
-                        cv2.circle(original, (int(previous_yx[i][1]+x_index), int(previous_yx[i][0])+y_index), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+            cv2.setTrackbarPos("filterByInertia", "Trackbar Windows", 1)
+            cv2.setTrackbarPos("minInertiaRatio", "Trackbar Windows", 1)
 
 
+            draw_img = rgb.copy()
+            minThreshold = cv2.getTrackbarPos("minThreshold", "Trackbar Windows")
+            maxThreshold = cv2.getTrackbarPos("maxThreshold", "Trackbar Windows")
+
+            filterByArea = cv2.getTrackbarPos("filterByArea", "Trackbar Windows")
+            minArea = cv2.getTrackbarPos("minArea", "Trackbar Windows")
+
+            filterByCircularity =cv2.getTrackbarPos("filterByCircularity", "Trackbar Windows")
+            minCircularity = cv2.getTrackbarPos("minCircularity", "Trackbar Windows")
+
+            filterByConvexity = cv2.getTrackbarPos("filterByConvexity", "Trackbar Windows")
+            minConvexity = cv2.getTrackbarPos("minConvexity", "Trackbar Windows")
+
+            filterByInertia = cv2.getTrackbarPos("filterByInertia", "Trackbar Windows")
+            minInertiaRatio = cv2.getTrackbarPos("minInertiaRatio", "Trackbar Windows")
+
+            params = cv2.SimpleBlobDetector_Params()
+
+            # Change thresholds
+            params.minThreshold = minThreshold
+            params.maxThreshold = maxThreshold
+
+            # Filter by Area.
+            params.filterByArea = check_boolean(filterByArea)
+            params.minArea = minArea
+            # Filter by Circularity
+            params.filterByCircularity = check_boolean(filterByCircularity)        
+            params.minCircularity = minCircularity * 0.1
+            # Filter by Convexity
+            params.filterByConvexity = check_boolean(filterByConvexity)      
+            params.minConvexity = minConvexity * 0.1
+            
+            # Filter by Inertia
+            params.filterByInertia = check_boolean(filterByInertia)   
+            params.minInertiaRatio = minInertiaRatio * 0.1
+
+
+            # SimpleBlobDetector 생성 ---①
+            detector = cv2.SimpleBlobDetector_create(params) # SimpleBlobDetector
+            # 키 포인트 검출 ---②
+            keypoints = detector.detect(gray)
+            
+            for keypoint in keypoints:
+                x = int(keypoint.pt[0])
+                y = int(keypoint.pt[1])
+                s = keypoint.size
+                x += x_index
+                y += y_index
+                if original.copy()[:, :, 0][y, x] != 0:
+                    cv2.circle(original, (int(x), int(y)), int(3), (0, 0, 255), 3, cv2.LINE_AA)
 
 
         start = time.process_time()
