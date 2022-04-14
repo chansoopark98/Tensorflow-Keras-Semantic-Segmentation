@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import time
 import cv2
 import json
@@ -8,7 +7,6 @@ from utils.CameraManager import CameraManager
 import os
 
 IMAGE_SIZE = (480, 640)
-
 
 with open('./vision_grasp.json', 'r') as f_config:
     config_data = json.load(f_config)

@@ -40,35 +40,13 @@ class RealSenseCamera:
         self.cfg = self.pipeline.start(config)
 
         # Determine intrinsics
-        # Get the sensor once at the beginning. (Sensor index: 1)
-
-
-        # sensor = cfg.get_device().query_sensors()[1]
-        # sensor.set_option(rs.option.enable_auto_exposure, False)
-        # sensor.set_option(rs.option.exposure, 80.000)
         s = self.cfg.get_device().query_sensors()[1]
         s.set_option(rs.option.enable_auto_exposure, False)
         s.set_option(rs.option.exposure, 10)
-        
-        
-
-
-        # Set the exposure anytime during the operation
-        # sensor.set_option(rs.option.enable_auto_exposure, 0)
-        # sensor.set_option(rs.option.exposure, 10.000)
-
-        # sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1].set_option(rs.option.exposure, 1.000)
-
-
-        # Set the exposure anytime during the operation
-        # cfg.set_option(rs.option.exposure, 1000.000)
-
-        
-
+    
+    
         rgb_profile = self.cfg.get_stream(rs.stream.color)
-        
-
-        
+    
         self.intrinsics = rgb_profile.as_video_stream_profile().get_intrinsics()
 
         # Determine depth scale
@@ -76,38 +54,17 @@ class RealSenseCamera:
         # self.scale *= 4.
 
     def get_image_bundle(self):
-
         align_to = rs.stream.color
         align = rs.align(align_to)
 
         frames = self.pipeline.wait_for_frames()
         
         aligned_frames = align.process(frames)
-        aligned_depth_frame = aligned_frames.get_depth_frame()
         color_frame = aligned_frames.get_color_frame()
-
-        depth_image = np.asanyarray(aligned_depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
-
-        
-        
-        # color_frame = frames.get_color_frame()
-
-        # align = rs.align(rs.stream.color)
-        # aligned_frames = align.process(frames)
-        # color_frame = aligned_frames.first(rs.stream.color)
-        
-        # # aligned_depth_frame = aligned_frames.get_depth_frame()
-
-        # # depth_image = np.asarray(aligned_depth_frame.get_data(), dtype=np.float32)
-        # # depth_image *= self.scale
-        # color_image = np.asanyarray(color_frame.get_data())
-
-        # depth_image = np.expand_dims(depth_image, axis=2)
 
         return {
             'rgb': color_image,
-            # 'aligned_depth': depth_image,
         }
 
     def plot_image_bundle(self):

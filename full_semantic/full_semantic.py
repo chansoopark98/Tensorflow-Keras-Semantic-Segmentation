@@ -25,8 +25,6 @@ class FullSemantic(tfds.core.GeneratorBasedBuilder):
       '1.0.0': 'Initial release.',
   }
 
-  MANUAL_DOWNLOAD_INSTRUCTIONS = '/home/park/park/'
-
   def _info(self) -> tfds.core.DatasetInfo:
     """Returns the dataset metadata."""
     # TODO(cornell_grasp): Specifies the tfds.core.DatasetInfo object

@@ -2,7 +2,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from models.model_builder import segmentation_model
 from utils.load_datasets import DatasetGenerator
-from utils.loss import bce_loss, dice_loss, total_loss, focal_bce_loss
+from utils.loss import bce_loss, focal_bce_loss
 from utils.metrics import iou_coef, dice_coef
 import argparse
 import time

@@ -12,9 +12,6 @@ from geometry_msgs.msg import Pose, PoseArray
 from std_msgs.msg import Bool
 import numpy as np
 
-
-
-
 # rospy.init_node('plaif_vision', anonymous=True)
 
 bridge = CvBridge()
@@ -167,22 +164,8 @@ class CameraManager:
         return self._info["type"]
 
     def register_cb(self):
-        # cam_mode = 0b0000
         cam_mode = 0b0001
         
-        
-        res = False
-        
-        # if self.colorstream_topic is not None:
-        #     print('self.colorstream_topic is not None')
-        #     cam_mode |= self.COLORSTRAM
-        # if self.pointclouds_topic is not None:
-        #     print('self.pointclouds_topic is not None:')
-        #     cam_mode |= self.POINTCLOUD
-        # if self.depthstream_topic is not None:
-        #     print('self.depthstream_topic is not None:')
-        #     cam_mode |= self.DEPTHSTREAM
-
         if cam_mode is self.COLORSTRAM:
             
             color_sub = message_filters.Subscriber(self.colorstream_topic, Image)

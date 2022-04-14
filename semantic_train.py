@@ -2,7 +2,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from models.model_builder import semantic_model
 from utils.load_semantic_datasets import SemanticGenerator
-from utils.loss import ce_loss, SparseCategoricalFocalLoss, total_loss
+from utils.loss import ce_loss, SparseCategoricalFocalLoss
 from utils.metrics import MIoU
 import argparse
 import time
