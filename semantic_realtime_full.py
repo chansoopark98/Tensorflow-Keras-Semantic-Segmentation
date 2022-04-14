@@ -15,6 +15,7 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,   help="모델 저장 디렉토리 설정", default='weight_name.h5')
+parser.add_argument("--serial_num", type=str,   help="모델 저장 디렉토리 설정", default='serial_num')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
