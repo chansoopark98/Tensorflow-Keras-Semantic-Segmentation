@@ -68,7 +68,7 @@
 ## Loss
 1. **CrossEntropy** <br>
 
-    ### $J(w)=−1N∑i=1N[yilog(y^i)+(1−yi)log(1−y^i)]$
+    ### $ J(w)=−1N∑i=1N[yilog(y^i)+(1−yi)log(1−y^i)] $
 
     #### $w$ &nbsp;  refer to the model parameters, e.g. weights of the neural network <br>
     #### $yi$ &nbsp; is the true label <br>
