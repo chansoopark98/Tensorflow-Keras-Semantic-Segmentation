@@ -68,13 +68,9 @@
 ## Loss
 1. **CrossEntropy** <br>
 
-$$ J(w)=−1N∑i=1N[yilog(y^i)+(1−yi)log(1−y^i)] $$
+    ![image](https://user-images.githubusercontent.com/60956651/163329997-a0b8d85d-c98a-401b-abba-0d65b4a8e303.png)
 
-#### $w$ &nbsp;  refer to the model parameters, e.g. weights of the neural network <br>
-#### $yi$ &nbsp; is the true label <br>
-#### $\hat{y_i}$ &nbsp; is the predicted label
-
-    <br>
+<br>
 
 2. **FocalLoss** <br>
 
@@ -105,7 +101,7 @@ $$ J(w)=−1N∑i=1N[yilog(y^i)+(1−yi)log(1−y^i)] $$
 4. **BinaryFocalLoss**
     <br>
 
-    ### $L(y,p^)=−αy(1−p^)γlog(p^)−(1−y)p^γlog(1−p^)$
+    ### $L(y,p^)=−αy(1−p^ )γlog(p^)−(1−y)p^γlog(1−p^)$
     
     where
 
