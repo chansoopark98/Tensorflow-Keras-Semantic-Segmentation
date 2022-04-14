@@ -8,8 +8,8 @@ from data_labeling.utils import canny_selector
         
 parser = argparse.ArgumentParser()
 parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/rgb/') 
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/mask/')
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/semantic_label')
+parser.add_argument("--mask_path",     type=str,   help="mask image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/mask/')
+parser.add_argument("--result_path",     type=str,   help="result path ", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path

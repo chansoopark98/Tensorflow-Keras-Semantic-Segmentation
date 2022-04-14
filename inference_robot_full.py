@@ -49,7 +49,7 @@ CAM_MODE = args.camera_mode
 IMAGE_SIZE = (480, 640)
 
 if CAM_MODE == 1:
-    with open('./vision_grasp.json', 'r') as f_config:
+    with open('./camera_infos.json', 'r') as f_config:
         config_data = json.load(f_config)
     camera = 0
     camera_config_data = config_data["cameras"]

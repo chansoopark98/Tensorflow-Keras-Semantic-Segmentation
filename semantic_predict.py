@@ -21,7 +21,7 @@ parser.add_argument("--result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="모델 가중치 이름", default='weight_name.h5')
+                    help="모델 가중치 이름", default='semantic_full_weight.h5')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -50,8 +50,13 @@ model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
 model.summary()
 
 batch_idx = 0
+avg_duration = 0
 for x, y, original in tqdm(test_set, total=test_steps):
+    start = time.process_time()
     pred = model.predict_on_batch(x)
+    duration = (time.process_time() - start)
+    if duration <= 0.1:
+        avg_duration += duration
 
     img = x[0]
     pred = pred[0]
@@ -81,3 +86,4 @@ for x, y, original in tqdm(test_set, total=test_steps):
 
     batch_idx += 1
     plt.savefig(RESULT_DIR + str(batch_idx) + '_output.png', dpi=300)
+print(f"avg inference time : {(avg_duration / test_dataset_config.number_valid)}sec.")
