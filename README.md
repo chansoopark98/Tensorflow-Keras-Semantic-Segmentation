@@ -197,7 +197,6 @@ ESDet은 Tensorflow 기반 코드로 작성되었습니다. 코드는 **Windows*
 
 프로그램에 필요한 **Dataset**은 **Tensorflow Datasets** 라이브러리([TFDS](https://www.tensorflow.org/datasets/catalog/overview))를 사용합니다. 
 
-Bracket image labels(binary and semantic label)이 필요한 경우엔 개인 이메일 chansoo0710@gmail.com으로 코멘트를 남겨주세요
 <br>
 
 ## **Custom dataset labeling process**
