@@ -5,38 +5,6 @@ import numpy as np
 
 AUTO = tf.data.experimental.AUTOTUNE
 
-def imgNetNorm(img):
-    # img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
-    #                 method=tf.image.ResizeMethod.BILINEAR)
-    # mask = tf.image.resize(mask, size=(self.image_size[0], self.image_size[1]),
-    #                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    img = img / 255.0
-    img -= [0.485, 0.456, 0.406]  # imageNet mean
-    img /= [0.229, 0.224, 0.225]  # imageNet std
-    return img
-
-@tf.function
-def zoom(self, x, labels, scale_min=0.6, scale_max=1.6):
-    h, w, _ = x.shape
-    scale = tf.random.uniform([], scale_min, scale_max)
-    nh = h * scale
-    nw = w * scale
-    x = tf.image.resize(x, (nh, nw), method=tf.image.ResizeMethod.BILINEAR)
-    labels = tf.image.resize(labels, (nh, nw), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    x = tf.image.resize_with_crop_or_pad(x, h, w)
-    labels = tf.image.resize_with_crop_or_pad(labels, h, w)
-    return x, labels
-
-@tf.function
-def rotate(self, x, labels, angle=(-45, 45)):
-    angle = tf.random.uniform([], angle[0], angle[1], tf.float32)
-    theta = np.pi * angle / 180
-
-    # x = tfa.image.rotate(x, theta, interpolation="bilinear")
-    # labels = tfa.image.rotate(labels, theta)
-    return (x, labels)
-
-
 class DatasetGenerator:
     def __init__(self, data_dir, image_size, batch_size, mode):
         """
@@ -87,7 +55,6 @@ class DatasetGenerator:
         data = tfds.load('Custom1',
                                data_dir=self.data_dir, split='train')
 
-
         number_all = data.reduce(0, lambda x, _: x + 1).numpy()
         print("전체 데이터 개수", number_all)
 
@@ -128,11 +95,6 @@ class DatasetGenerator:
         
             img = concat_img[:, :, :3]
             mask = concat_img[:, :, 3:]
-        # else:
-        #     img = tf.image.resize(img, size=self.image_size,
-        #                 method=tf.image.ResizeMethod.BILINEAR)
-        #     mask = tf.image.resize(mask, size=self.image_size,
-        #                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_saturation(img, 0.5, 1.5)
@@ -157,17 +119,10 @@ class DatasetGenerator:
         img = tf.cast(sample['rgb'], tf.float32)
         mask = tf.cast(sample['mask'], tf.float32)
 
-        # if tf.random.uniform([]) > 0.5:
-        #     concat_img = tf.concat([img, mask], axis=-1)
-        #     concat_img = tf.image.random_crop(concat_img, [self.image_size[0], self.image_size[1], 4])
-        
-        #     img = concat_img[:, :, :3]
-        #     mask = concat_img[:, :, 3:]
-        # else:
-        #     img = tf.image.resize(img, size=self.image_size,
-        #                 method=tf.image.ResizeMethod.BILINEAR)
-        #     mask = tf.image.resize(mask, size=self.image_size,
-        #                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        img = tf.image.resize(img, size=self.image_size,
+                    method=tf.image.ResizeMethod.BILINEAR)
+        mask = tf.image.resize(mask, size=self.image_size,
+                    method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         img = preprocess_input(img, mode='torch')
         # img /= 255.

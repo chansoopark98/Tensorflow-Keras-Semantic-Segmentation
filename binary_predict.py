@@ -16,6 +16,7 @@ parser.add_argument("--model_name",     type=str,   help="저장될 모델 이�
 parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
 parser.add_argument("--result_dir", type=str,   help="Test result dir", default='./results/')
 parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
+parser.add_argument("--weight_name", type=str,   help="모델 가중치 이름", default='weight_name.h5')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -23,6 +24,7 @@ SAVE_MODEL_NAME = args.model_name
 DATASET_DIR = args.dataset_dir
 RESULT_DIR = args.result_dir
 CHECKPOINT_DIR = args.checkpoint_dir
+WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
 IMAGE_SIZE = (480, 640)
 
@@ -38,11 +40,7 @@ test_set = test_dataset_config.get_testData(test_dataset_config.valid_data)
 test_steps = test_dataset_config.number_valid // BATCH_SIZE
 
 model = segmentation_model(image_size=IMAGE_SIZE)
-
-# weight_name = '_0407_L-bce_B-16_E-100_Optim-Adam_Act-relu-Total_best_iou'
-weight_name = 'segmentation_ddrnet'
-# model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-model.load_weights(weight_name + '.h5')
+model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
 model.summary()
 
 batch_idx = 0

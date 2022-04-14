@@ -10,15 +10,10 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-
-# from utils.cityscape_colormap import class_weight
-# from utils.adamW import LearningRateScheduler, poly_decay
-# import tensorflow_addons
-# sudo apt-get install libtcmalloc-minimal4
-# LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
-# LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
-# LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python gan_train.py
-
+# 1. sudo apt-get install libtcmalloc-minimal4
+# 2. check dir ! 
+# dpkg -L libtcmalloc-minimal4
+# 3. LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python binary_train.py
 
 tf.keras.backend.clear_session()
 
@@ -51,28 +46,24 @@ DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
 IMAGE_SIZE = (480, 640)
-# IMAGE_SIZE = (None, None)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
 DISTRIBUTION_MODE = args.distribution_mode
 
-if MIXED_PRECISION:
-    policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-    mixed_precision.set_policy(policy)
-
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
-TRAIN_INPUT_IMAGE_SIZE = IMAGE_SIZE
-VALID_INPUT_IMAGE_SIZE = IMAGE_SIZE
-train_dataset_config = DatasetGenerator(DATASET_DIR, TRAIN_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='train')
-valid_dataset_config = DatasetGenerator(DATASET_DIR, VALID_INPUT_IMAGE_SIZE, BATCH_SIZE, mode='validation')
+train_dataset_config = DatasetGenerator(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, mode='train')
+valid_dataset_config = DatasetGenerator(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, mode='validation')
 
 train_data = train_dataset_config.get_trainData(train_dataset_config.train_data)
-# train_data = mirrored_strategy.experimental_distribute_dataset(train_data)
 valid_data = valid_dataset_config.get_validData(valid_dataset_config.valid_data)
-# valid_data = mirrored_strategy.experimental_distribute_dataset(valid_data)
+
+if DISTRIBUTION_MODE:
+    mirrored_strategy = tf.distribute.MirroredStrategy()
+    train_data = mirrored_strategy.experimental_distribute_dataset(train_data)
+    valid_data = mirrored_strategy.experimental_distribute_dataset(valid_data) 
 
 steps_per_epoch = train_dataset_config.number_train // BATCH_SIZE
 validation_steps = valid_dataset_config.number_valid // BATCH_SIZE
@@ -96,18 +87,19 @@ lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
 
 if OPTIMIZER_TYPE == 'sgd':
     optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=base_lr)
-else:
+elif OPTIMIZER_TYPE == 'adam':
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-    # optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
-    #                                           weight_decay=0.00001,
-    #                                           total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
-    #                                           warmup_proportion=0.1,
-    #                                           min_lr=0.0001)
-
+elif OPTIMIZER_TYPE == 'radam':
+    optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
+                                              weight_decay=0.00001,
+                                              total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
+                                              warmup_proportion=0.1,
+                                              min_lr=0.0001)
 
 if MIXED_PRECISION:
+    policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+    mixed_precision.set_policy(policy)
     optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
-
 
 callback = [checkpoint_val_iou, checkpoint_val_loss,  tensorboard, lr_scheduler]
 

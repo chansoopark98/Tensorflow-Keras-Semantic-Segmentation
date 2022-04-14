@@ -1,15 +1,6 @@
-from cv2 import threshold
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
-from models.model_builder import segmentation_model
-from utils.load_datasets import DatasetGenerator
 import argparse
-import time
 import os
 import tensorflow as tf
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 import glob
 import cv2
 import numpy as np
@@ -30,9 +21,7 @@ def onMouse(event, x, y, flags, param):
     # event = 3 휠 클릭
     filled = 5
     
-    
     if event==cv2.EVENT_LBUTTONDOWN: # 마우스 왼쪽 버튼 클릭 
-    
     
         rgb_x = param[2]
         rgb_y = param[3]
@@ -42,15 +31,11 @@ def onMouse(event, x, y, flags, param):
         area = param[0][y- param[4] : y + param[4], x - param[4] : x + param[4]]
 
         if np.any(area == (0, 255, 0)):
-            # param[0][y- param[4] : y + param[4], x - param[4] : x + param[4]] = (0, 255, 0)
             param[0][y- filled : y + filled, x - filled : x + filled] = (0, 255, 0)  
         
         new_v = np.where(abs(area - param[0][y, x]) <=(param[5], param[5] ,param[5]), (0, 255, 0), area)
         param[0][y- param[4] : y + param[4], x - param[4] : x + param[4]] = new_v
-        
 
-        
-        # param[1][(rgb_y + y) - param[4]:(rgb_y + y) + param[4], (rgb_x + x) - param[4] : (rgb_x + x) + param[4]] = 2
         semantic_v = np.where(new_v == (0, 255, 0), 2, 0)
         param[1][(rgb_y + y) - param[4]:(rgb_y + y) + param[4], (rgb_x + x) - param[4] : (rgb_x + x) + param[4]] = semantic_v[:, :, 0]
 
@@ -59,8 +44,6 @@ def onMouse(event, x, y, flags, param):
         rgb_x = param[2]
         rgb_y = param[3]
 
-        # param[0][y- param[4] : y + param[4], x - param[4] : x + param[4]] = 0
-        # param[1][(rgb_y + y) - param[4]:(rgb_y + y) + param[4], (rgb_x + x) - param[4] : (rgb_x + x) + param[4]] = 0
         param[0][y- filled : y + filled, x - filled : x + filled] = 0
         param[1][(rgb_y + y) - filled:(rgb_y + y) + filled, (rgb_x + x) - filled : (rgb_x + x) + filled] = 0
 

@@ -1,5 +1,6 @@
 tensorflow
 tensorflow-datasets
+tensorflow-addons
 imageio
 opencv-python
 pyrealsense2
