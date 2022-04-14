@@ -3,82 +3,21 @@ import os
 import glob
 import cv2
 import numpy as np
-import math
-from pathlib import Path
 import natsort
-import re 
 from data_labeling.utils import canny_selector
-
-file_pattern = re.compile(r'.*?(\d+).*?')
-def get_order(file):
-    match = file_pattern.match(Path(file).name)
-    if not match:
-        return math.inf
-    return int(match.groups()[0])
-
-def onMouse(event, x, y, flags, param): 
-    # event = 10 휠 조절
-    # event = 3 휠 클릭
-    filled = 5
-    
-    
-    if event==cv2.EVENT_LBUTTONDOWN: # 마우스 왼쪽 버튼 클릭 
-    
-    
-        rgb_x = param[2]
-        rgb_y = param[3]
-        # param[0][y, x] = (0, 255, 0)
-        param[1][rgb_y + y, rgb_x + x] = 2
-        
-        area = param[0][y- param[4] : y + param[4], x - param[4] : x + param[4]]
-
-        if np.any(area == (0, 255, 0)):
-            # param[0][y- param[4] : y + param[4], x - param[4] : x + param[4]] = (0, 255, 0)
-            param[0][y- filled : y + filled, x - filled : x + filled] = (0, 255, 0)  
-        
-        new_v = np.where(abs(area - param[0][y, x]) <=(param[5], param[5] ,param[5]), (0, 255, 0), area)
-        param[0][y- param[4] : y + param[4], x - param[4] : x + param[4]] = new_v
-        
-
-        
-        # param[1][(rgb_y + y) - param[4]:(rgb_y + y) + param[4], (rgb_x + x) - param[4] : (rgb_x + x) + param[4]] = 2
-        semantic_v = np.where(new_v == (0, 255, 0), 2, 0)
-        param[1][(rgb_y + y) - param[4]:(rgb_y + y) + param[4], (rgb_x + x) - param[4] : (rgb_x + x) + param[4]] = semantic_v[:, :, 0]
-
-
-    if event==3: # 휠 클릭
-        rgb_x = param[2]
-        rgb_y = param[3]
-
-        # param[0][y- param[4] : y + param[4], x - param[4] : x + param[4]] = 0
-        # param[1][(rgb_y + y) - param[4]:(rgb_y + y) + param[4], (rgb_x + x) - param[4] : (rgb_x + x) + param[4]] = 0
-        param[0][y- filled : y + filled, x - filled : x + filled] = 0
-        param[1][(rgb_y + y) - filled:(rgb_y + y) + filled, (rgb_x + x) - filled : (rgb_x + x) + filled] = 0
-
-    
-    cv2.imshow('draw_img',param[0])
-    cv2.resizeWindow('draw_img', IMAGE_SIZE[1], IMAGE_SIZE[0])
         
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/032155_white_50cm/result/rgb/') 
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/032155_white_50cm/result/mask/')
-
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/032155_white_50cm/result/semantic_label')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/rgb/') 
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/mask/')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path
 MASK_PATH = args.mask_path
 RESULT_DIR = args.result_path
-RESOLUTION = (640,480)
-
-
 MASK_RESULT_DIR = RESULT_DIR + '_mask_result/'
-IMAGE_SIZE = (480, 640)
-# IMAGE_SIZE = (None, None)
-
 
 SEMANTIC_PATH = MASK_RESULT_DIR + 'semantic_mask/'
-
 SEMANTIC_INPUT_PATH = SEMANTIC_PATH + 'input/'
 SEMANTIC_GT_PATH = SEMANTIC_PATH + 'gt/'
 SEMANTIC_CHECK_GT_PATH = SEMANTIC_PATH + 'check_gt/'
@@ -98,13 +37,11 @@ mask_list = natsort.natsorted(mask_list,reverse=True)
 file_idx = 1
 for idx in range(len(rgb_list)):
     img = cv2.imread(rgb_list[idx])
-
     gt = cv2.imread(mask_list[idx])
+
     mask = np.where(gt.copy()>= 200, 1.0 , 0)
-    
+
     original = img
-    
-    
     result = mask
 
     result= result[:, :, 0].astype(np.uint8)
@@ -115,7 +52,6 @@ for idx in range(len(rgb_list)):
     circle_contour = []
     for contour in contours:
         area = cv2.contourArea(contour)
-        
         # if area >= 1000: 
         circle_contour.append(contour)
             
@@ -162,7 +98,6 @@ for idx in range(len(rgb_list)):
             cv2.destroyAllWindows()
             break
                 
-                
         # 1번 키를 누를 때
         if key == 49:
             cv2.destroyAllWindows()
@@ -179,7 +114,6 @@ for idx in range(len(rgb_list)):
     cv2.destroyAllWindows()
 
     delete_idx = abs(48 - key)
-
             
     # 1번 키를 누를 때
     if key == 49:
@@ -189,5 +123,4 @@ for idx in range(len(rgb_list)):
         cv2.imwrite(SEMANTIC_INPUT_PATH +str(file_idx) +'_rgb.png', original)
         cv2.imwrite(SEMANTIC_GT_PATH +str(file_idx) +'_semantic_mask.png', draw_result )
         cv2.imwrite(SEMANTIC_CHECK_GT_PATH +str(file_idx) +'_semantic_mask.png', draw_result * 127)
-            
         file_idx += 1

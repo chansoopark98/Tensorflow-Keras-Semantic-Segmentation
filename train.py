@@ -116,10 +116,9 @@ model = segmentation_model(image_size=IMAGE_SIZE)
 model.compile(
     optimizer=optimizer,
     loss=bce_loss,
-    # loss='mse',
     metrics=[iou_coef, dice_coef]
     )
-# tf.keras.losses.BinaryCrossentropy()
+    
 if LOAD_WEIGHT:
     weight_name = '_1002_best_miou'
     model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')

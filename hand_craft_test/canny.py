@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--result_path",     type=str,   help="test result path", default='./test_imgs/')
+parser.add_argument("--result_path",     type=str,   help="test result path", default='./test_imgs/hand/')
 args = parser.parse_args()
 RESULT_PATH = args.result_path
 

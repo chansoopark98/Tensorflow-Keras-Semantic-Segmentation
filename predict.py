@@ -56,17 +56,10 @@ for x, y, original in tqdm(test_set, total=test_steps):
 
     rows = 1
     cols = 4
-
-    # pred = tf.where(pred==1.0, 1., 0)
-    
-    
-    
     
     original = tf.cast(original, tf.int32)
-    pred = tf.where(pred>=0.98, 1, 0)
     
     output = original * pred
-    
 
     fig = plt.figure()
     ax0 = fig.add_subplot(rows, cols, 1)

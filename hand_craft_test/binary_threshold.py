@@ -1,76 +1,79 @@
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
 import argparse
 import time
 import os
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 import glob
 import cv2
 import numpy as np
+from data_labeling.utils import canny_selector, find_contours
 
-# from utils.cityscape_colormap import class_weight
-# from utils.adamW import LearningRateScheduler, poly_decay
-# import tensorflow_addons
-# sudo apt-get install libtcmalloc-minimal4
-# LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
-# LD_PRELOAD="/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4" python train.py
-# LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python gan_train.py
+def check_boolean(value):
+    if value == 1:
+        return True
+    else:
+        return False
 
-def crop_center(img,cropx,cropy):
-    y,x = img.shape
-    startx = x//2-(cropx//2)
-    starty = y//2-(cropy//2)    
-    return img[starty:starty+cropy,startx:startx+cropx]
+def fit_rotated_ellipse_ransac(data,iter=30,sample_num=10,offset=80.0):
+
+	count_max = 0
+	effective_sample = None
+
+	for i in range(iter):
+		sample = np.random.choice(len(data), sample_num, replace=False)
+
+		xs = data[sample][:,0].reshape(-1,1)
+		ys = data[sample][:,1].reshape(-1,1)
+
+		J = np.mat( np.hstack((xs*ys,ys**2,xs, ys, np.ones_like(xs,dtype=np.float))) )
+		Y = np.mat(-1*xs**2)
+		P= (J.T * J).I * J.T * Y
+
+		# fitter a*x**2 + b*x*y + c*y**2 + d*x + e*y + f = 0
+		a = 1.0; b= P[0,0]; c= P[1,0]; d = P[2,0]; e= P[3,0]; f=P[4,0];
+		ellipse_model = lambda x,y : a*x**2 + b*x*y + c*y**2 + d*x + e*y + f
+
+		# threshold 
+		ran_sample = np.array([[x,y] for (x,y) in data if np.abs(ellipse_model(x,y)) < offset ])
+
+		if(len(ran_sample) > count_max):
+			count_max = len(ran_sample) 
+			effective_sample = ran_sample
+
+	return fit_rotated_ellipse(effective_sample)
 
 
+def fit_rotated_ellipse(data):
+
+	xs = data[:,0].reshape(-1,1) 
+	ys = data[:,1].reshape(-1,1)
+
+	J = np.mat( np.hstack((xs*ys,ys**2,xs, ys, np.ones_like(xs,dtype=np.float))) )
+	Y = np.mat(-1*xs**2)
+	P= (J.T * J).I * J.T * Y
+
+	a = 1.0; b= P[0,0]; c= P[1,0]; d = P[2,0]; e= P[3,0]; f=P[4,0];
+	theta = 0.5* np.arctan(b/(a-c))  
+	
+	cx = (2*c*d - b*e)/(b**2-4*a*c)
+	cy = (2*a*e - b*d)/(b**2-4*a*c)
+
+	cu = a*cx**2 + b*cx*cy + c*cy**2 -f
+	w= np.sqrt(cu/(a*np.cos(theta)**2 + b* np.cos(theta)*np.sin(theta) + c*np.sin(theta)**2))
+	h= np.sqrt(cu/(a*np.sin(theta)**2 - b* np.cos(theta)*np.sin(theta) + c*np.cos(theta)**2))
+
+	ellipse_model = lambda x,y : a*x**2 + b*x*y + c*y**2 + d*x + e*y + f
+
+	error_sum = np.sum([ellipse_model(x,y) for x,y in data])
+	print('fitting error = %.3f' % (error_sum))
+
+	return (cx,cy,w,h,theta)
+
+color_list = [(238,0,0),(0,252,124),(142,56,142),(10,20,0),(245,245,245)]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--result_path",     type=str,   help="test result path", default='./test_imgs/')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=1)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
-parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
-parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
-parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
-parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
-                    default=str(time.strftime('%m%d', time.localtime(time.time()))))
-parser.add_argument("--dataset_dir",    type=str,   help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
-parser.add_argument("--checkpoint_dir", type=str,   help="모델 저장 디렉토리 설정", default='./checkpoints/')
-parser.add_argument("--result_dir", type=str,   help="Test result dir", default='./results/')
-parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 경로", default='tensorboard')
-parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
-parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
-parser.add_argument("--mixed_precision",  type=bool,  help="mixed_precision 사용", default=True)
-parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정", default=True)
+parser.add_argument("--result_path",     type=str,   help="test result path", default='./test_imgs/hand/')
 
 args = parser.parse_args()
 RESULT_PATH = args.result_path
-WEIGHT_DECAY = args.weight_decay
-OPTIMIZER_TYPE = args.optimizer
-BATCH_SIZE = args.batch_size
-EPOCHS = args.epoch
-base_lr = args.lr
-SAVE_MODEL_NAME = args.model_name
-DATASET_DIR = args.dataset_dir
-CHECKPOINT_DIR = args.checkpoint_dir
-TENSORBOARD_DIR = args.tensorboard_dir
-RESULT_DIR = args.result_dir
-MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (480, 640)
-# IMAGE_SIZE = (None, None)
-USE_WEIGHT_DECAY = args.use_weightDecay
-LOAD_WEIGHT = args.load_weight
-MIXED_PRECISION = args.mixed_precision
-DISTRIBUTION_MODE = args.distribution_mode
-
-if MIXED_PRECISION:
-    policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-    mixed_precision.set_policy(policy)
-
-os.makedirs(DATASET_DIR, exist_ok=True)
-os.makedirs(CHECKPOINT_DIR, exist_ok=True)
-os.makedirs(RESULT_DIR, exist_ok=True)
-os.makedirs(MASK_RESULT_DIR, exist_ok=True)
 
 batch_idx = 0
 avg_duration = 0
@@ -84,24 +87,56 @@ def onChange(pos):
 
 for i in range(len(img_list)):
     
-    img = cv2.imread(img_list[i])
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    cv2.namedWindow("Trackbar Windows")
-    cv2.createTrackbar("threshold", "Trackbar Windows", 0, 255, onChange)
-    cv2.createTrackbar("maxValue", "Trackbar Windows", 0, 255, lambda x : x)
+    rgb = cv2.imread(img_list[i])
+    gray = cv2.cvtColor(rgb.copy(), cv2.COLOR_BGR2GRAY)
 
-    cv2.setTrackbarPos("threshold", "Trackbar Windows", 127)
-    cv2.setTrackbarPos("maxValue", "Trackbar Windows", 255)
 
-    while cv2.waitKey(1) != ord('q'):
-
-        thresh = cv2.getTrackbarPos("threshold", "Trackbar Windows")
-        maxval = cv2.getTrackbarPos("maxValue", "Trackbar Windows")
-
-        _, binary = cv2.threshold(img, thresh, maxval, cv2.THRESH_BINARY)
-
-        cv2.imshow("Trackbar Windows", binary)
     
+    _, binary = cv2.threshold(gray.copy(), 127, 255, cv2.THRESH_BINARY)
+
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    circle_contour = []
+    if len(contours) != 0:
+        tmp_area = 0
+        idx = -1
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if tmp_area <= area:
+                tmp_area = area
+                idx += 1
+
+                circle_contour.append(contour)
+            
+        # if len(circle_contour) != 0:
+        #     x,y,w,h = cv2.boundingRect(circle_contour[0])
+
+    cv2.drawContours(binary, circle_contour, idx, 127, -1)
+    # draw_area = draw_img.copy()
+    # binary = np.expand_dims(np.where(binary == 127, 1, 0).astype(np.uint8), -1)
+    binary = np.where(binary == 127, 1, 0).astype(np.uint8)
+
+    draw_gray = gray.copy() * binary
+
+
+
+    # circles = cv2.HoughCircles(draw_gray, cv2.HOUGH_GRADIENT, 1, minDistance,
+    #         param1=CannyThreshold, param2=CenterThreshold, minRadius=minRadius, maxRadius=maxRadius)
+    # if circles is not None:
+    #     for i in circles[0]:
+    #         cv2.circle(draw_gray, (int(i[0]), int(i[1])), int(i[2]), 0, 1)
+    #         cv2.circle(draw_gray, (int(i[0]), int(i[1])), 0, 0, -1)
+
+    
+    # draw_gray = cv2.cvtColor(draw_gray, cv2.COLOR_BGR2HSV)
+    # draw_gray = draw_gray[:,:,1]
+    draw_gray = cv2.GaussianBlur(draw_gray, (7, 7), 0.5)
+    mask = canny_selector(draw_gray)
+    
+    rgb_result = find_contours(mask, rgb.copy())
+        
+        
+            
 
 print(f"avg inference time : {(avg_duration / len(img_list)) // 1000000}ms.")
 print(f"No good images : {ng_time}.")

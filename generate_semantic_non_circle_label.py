@@ -69,10 +69,10 @@ def onMouse(event, x, y, flags, param):
     cv2.resizeWindow('draw_img', IMAGE_SIZE[1], IMAGE_SIZE[0])
         
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/mask/')
 
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040802_exposure_1000_gain_100_25cm_gray1/result/semantic_label')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0321/032110_white_r1_40cm/result/semantic_label')
 
 args = parser.parse_args()
 RGB_PATH = args.rgb_path
