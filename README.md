@@ -1,8 +1,9 @@
-<h1>ESDet</h1>
+<h1>Realtime segmentation with custom datasets</h1>
 
-> Hole detection : Bracket segmentation
+> Binary/Semantic segmentation with Custom data
 
-이 저장소는 **Hole Detection**을 위해 **Binary segmentation, Semantic segmentation**을 응용하여 구현하였습니다.  
+이 저장소는 **Custom dataset을 사용한 segmentation**을 위해 데이터 레이블링부터 실시간 추론까지 구현한 레포지토리입니다.
+ &nbsp; **(Binary segmentation, Semantic segmentation)**
 
 <br>
 
@@ -364,10 +365,6 @@ ROS 연동 관련하여 사전 지식 및 세팅은 개별적으로 진행해야
     PYTHON
         1. python3 inference_robot_full.py
 
-
-
-<!-- ![001070 jpg](https://user-images.githubusercontent.com/60956651/110722231-49632f00-8255-11eb-9351-165d9efac7c2.jpg)
-![002107 jpg](https://user-images.githubusercontent.com/60956651/110722280-54b65a80-8255-11eb-8005-0ddd88f33082.jpg)   -->
 
 # Reference
 <hr>
