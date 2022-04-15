@@ -17,7 +17,7 @@ from std_msgs.msg import Float32, String
 import message_filters
 from sensor_msgs.msg import Image, CameraInfo
 import json
-from utils.CameraManager import CameraManager
+from utils.CameraManager import CameraBuilder
 
 tf.keras.backend.clear_session()
 bridge = CvBridge()
@@ -55,7 +55,7 @@ if CAM_MODE == 1:
     camera_config_data = config_data["cameras"]
     for idx, cam in enumerate(camera_config_data):
         topic_info = cam["topics"]
-        camera = CameraManager({'name':cam["name"],'cameraInfos':topic_info["info"],'colorStream':topic_info["color"],'depthStream':topic_info["depth"],'calibration':cam["calibration"]})
+        camera = CameraBuilder({'name':cam["name"],'cameraInfos':topic_info["info"],'colorStream':topic_info["color"],'depthStream':topic_info["depth"],'calibration':cam["calibration"]})
     camera.register_cb()
 
 if __name__ == '__main__':

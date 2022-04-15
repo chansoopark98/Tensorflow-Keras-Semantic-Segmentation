@@ -8,15 +8,12 @@ import ros_numpy
 
 from sensor_msgs.msg import Image, CameraInfo
 from sensor_msgs.point_cloud2 import PointCloud2
-from geometry_msgs.msg import Pose, PoseArray
 from std_msgs.msg import Bool
 import numpy as np
 
-# rospy.init_node('plaif_vision', anonymous=True)
-
 bridge = CvBridge()
 
-class CameraManager:
+class CameraBuilder:
     COLORSTRAM = 0b0001
     DEPTHSTREAM = 0b0010
     POINTCLOUD = 0b0100

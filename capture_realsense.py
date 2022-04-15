@@ -3,7 +3,7 @@ import time
 import cv2
 import json
 from cv2 import imwrite
-from utils.CameraManager import CameraManager
+from utils.CameraManager import CameraBuilder
 import os
 
 IMAGE_SIZE = (480, 640)
@@ -14,7 +14,7 @@ camera = 0
 camera_config_data = config_data["cameras"]
 for idx, cam in enumerate(camera_config_data):
     topic_info = cam["topics"]
-    camera = CameraManager({'name':cam["name"],'cameraInfos':topic_info["info"],'colorStream':topic_info["color"],'depthStream':topic_info["depth"],'calibration':cam["calibration"]})
+    camera = CameraBuilder({'name':cam["name"],'cameraInfos':topic_info["info"],'colorStream':topic_info["color"],'depthStream':topic_info["depth"],'calibration':cam["calibration"]})
 camera.register_cb()
 
 if __name__ == '__main__':

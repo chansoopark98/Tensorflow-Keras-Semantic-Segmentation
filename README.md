@@ -332,7 +332,7 @@ Training 이후 모델의 추론 결과를 테스트해볼 수 있습니다.
 ## 1. Inference with PyRealSense Camera
     1. 연결된 RealSense 카메라의 시리얼 넘버를 확인합니다.
         terminal
-            (park) park@park-plaif:~$ rs-enumerate-devices 
+            (park) park@park:~$ rs-enumerate-devices 
             Device info: 
                 Name                          : 	Intel RealSense L515
 >                Serial Number                 : 	f0350818

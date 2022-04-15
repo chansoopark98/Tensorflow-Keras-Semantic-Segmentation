@@ -25,34 +25,5 @@
         [ 8.881784197001252323e-16,  0.000000000000000000e+00,  0.000000000000000000e+00,  1.000000000000000000e+00]]
       }
     }
-  ],
-  "vision_procs": [
-    {
-      "id": 0,
-      "camera_id": 0,
-      "service": "/camera01_result0a_srv",
-      "preprocessing": {
-        "roi": {
-          "x0": -1,
-          "y0": -1,
-          "w": -1,
-          "h": -1
-        },
-        "resize": {
-          "w": -1,
-          "h": -1
-        }
-      },
-      "weights_path0": "/root/plaif_vision/grasp_weights/rfnet/211109_epoch_153_iou_0.90_0.87",
-      "weights_path": "/home/park/catkin_ws/config/weights/unknown_test1",
-      "seg_path": "/home/park/catkin_ws/config/weights/_0323_L-bce_B-16_E-100_Optim-Adam_best_iou.h5",
-      "semantic_path": "/home/park/catkin_ws/config/weights/_0330_roi-CE-B16-E100-C16-SWISH-ADAM_best_iou.h5",
-      "weights_path2": "/root/plaif_vision/grasp_weights/rfnet2/1203_140_0.81_0.76",
-      "weights_path3": "/root/plaif_vision/grasp_weights/rfnet2/rf02_epoch_10_iou_0.90_0.85",
-      "weights_path4": "/root/plaif_vision/grasp_weights/rfnet2/rf02_epoch_18_iou_0.89_0.83",
-      "weights_path5": "/root/plaif_vision/grasp_weights/rfnet2/rf02_epoch_24_iou_0.90_0.87",
-      "categories": [],
-      "postprocessing": []
-    }
   ]
 }
