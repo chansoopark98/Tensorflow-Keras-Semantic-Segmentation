@@ -18,6 +18,9 @@ This repository has implemented everything from data labeling to real-time infer
 
 
 <br>
+
+### 한국어 [ReadME.md](https://github.com/chansoopark98/Tensorflow-Keras-Realtime-Segmentation/blob/main/README_kr.md)도 지원합니다.
+<br>
 <hr/>
 
 ## Table of Contents
