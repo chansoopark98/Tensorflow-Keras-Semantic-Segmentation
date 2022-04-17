@@ -2,8 +2,7 @@
 
 > Binary/Semantic segmentation with Custom data
 
-This repository has implemented everything from data labeling to real-time inference for segmentation using **custom datasets**.
-
+이 저장소는 **Custom dataset을 사용한 segmentation**을 위해 데이터 레이블링부터 실시간 추론까지 구현하였습니다.
  &nbsp; **(Binary segmentation, Semantic segmentation)**
 
 <br>
@@ -184,7 +183,7 @@ This repository has implemented everything from data labeling to real-time infer
 
 <hr/>
 
-Download the package from the **Anaconda (miniconda)** virtual environment for training and evaluation.
+학습 및 평가를 위해 **Anaconda(miniconda)** 가상환경에서 패키지를 다운로드 합니다.
     
     conda create -n envs_name python=3.8
 
@@ -195,38 +194,38 @@ Download the package from the **Anaconda (miniconda)** virtual environment for t
 
 # 3. Preparing datasets
 
-The **Dataset** required by the program uses the **Tensorflow Datasets library**  ([TFDS](https://www.tensorflow.org/datasets/catalog/overview)).
+프로그램에 필요한 **Dataset**은 **Tensorflow Datasets** 라이브러리([TFDS](https://www.tensorflow.org/datasets/catalog/overview))를 사용합니다. 
 
 <br>
 
 ## **Custom dataset labeling process**
 * Binary mask label
-    1. Data Generation and Mask Labeling
-    2. Data Augmentation
-         * Image shift
-         * Image blurring
-         * Rotate image
-         * Image background synthesis
+    1. 데이터 생성 및 마스크 레이블링
+    2. 데이터 증강
+        * 이미지 시프트
+        * 이미지 블러링
+        * 이미지 회전
+        * 이미지 배경 합성
 * Semantic label
-    1. Data Generation and Semantic Labeling
-    2. Data Augmentation
-         * Image shift
-         * Image blurring
-         * Rotate image
-         * Image background compositing (random image resizing)
+    1. 데이터 생성 및 시멘틱 레이블링
+    2. 데이터 증강
+        * 이미지 시프트
+        * 이미지 블러링
+        * 이미지 회전
+        * 이미지 배경 합성 (랜덤 이미지 크기 조정)
 
 
 ## **Generate Binary mask label**
 
 
-Generate it by running utils/generate_binary_mask.py.
+utils/generate_binary_mask.py를 실행하여 생성합니다.
 
     cd utils
     python generate_binary_mask.py --image_path='./datasets/dir_name/' --result_path='./datasets/dir_name/result/'
 
 ## **Generate Semantic label**
 
-A semantic label is created using the generated binary mask.
+생성된 binary mask를 이용하여 semantic label을 생성합니다.
 
     cd utils
     python generate_semantic_label_contour.py 
@@ -234,9 +233,9 @@ A semantic label is created using the generated binary mask.
 
 ## **Convert TFDS dataset**
 
-We use the tensorflow datasets library to convert the generated semantic labels into tf.data format.<br>
+생성된 Semantic label을 tf.data format으로 변환하기 위해 tensorflow datasets 라이브러리를 사용합니다.<br>
 
-Move the RGB image with augmentation applied and the image with semantic label saved to the following folder.
+증강이 적용된 RGB 이미지와 semantic label이 저장된 이미지를 다음과 같은 폴더로 이동시킵니다.
 
 
     └── dataset 
@@ -247,11 +246,11 @@ Move the RGB image with augmentation applied and the image with semantic label s
             ├── image_1_mask.png 
             └── image_2_output.png
 
-Compress that directory into 'full_semantic.zip'.
+해당 디렉토리를 'full_semantic.zip'으로 압축시킵니다.
 
     zip full_semantic.zip ./*
 
-After the compression is complete, it should be set like the corresponding path.
+압축이 완료되면 해당 경로와 같이 설정되어야 합니다.
 
     
     └──full_semantic.zip
@@ -262,11 +261,11 @@ After the compression is complete, it should be set like the corresponding path.
             ├── image_1_mask.png 
             └── image_2_output.png
 
-Then, move full_semantic.zip after creating the following folder structure.
+그리고 나서, full_semantic.zip을 아래와 같은 폴더 구조를 생성한 후 이동시킵니다.
 
     /home/$USER/tensorflow_datasets/downloads/manual
 
-Finally, build the dataset.
+마지막으로 데이터셋을 빌드합니다.
     
     cd hole-detection/full_semantic/
     tfds build
@@ -279,14 +278,14 @@ Finally, build the dataset.
 
 # 4. Train
 
-The training code for binary segmentation/semantic segmentation is separated for each script.
+Binary segmentation/ Semantic segmentation에 대한 학습 코드는 각 스크립트별로 구분되어 있습니다.
 
-Because of memory allocation issues in tf.data before training, use TCMalloc to avoid memory leaks.
+학습하기전 tf.data의 메모리 할당 문제로 인해 TCMalloc을 사용하여 메모리 누수를 방지합니다.
 
     1. sudo apt-get install libtcmalloc-minimal4
     2. dpkg -L libtcmalloc-minimal4
 
-    Save the path of TCMalloc installed through '2'
+    2번을 통해 설치된 TCMalloc의 경로를 저장합니다
 
 ## Training binary segmentation
 
@@ -296,7 +295,7 @@ Because of memory allocation issues in tf.data before training, use TCMalloc to 
 
     LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python semantic_train.py
 
-    You can set the args required for training through '-h' .
+    '-h' 를 통해 학습에 필요한 args를 설정할 수 있습니다.
     python3 semantic_train.py -h
     usage: semantic_train.py [-h] [--model_prefix MODEL_PREFIX] [--batch_size BATCH_SIZE] [--epoch EPOCH] [--lr LR] [--weight_decay WEIGHT_DECAY] [--optimizer OPTIMIZER] [--model_name MODEL_NAME]
                             [--dataset_dir DATASET_DIR] [--checkpoint_dir CHECKPOINT_DIR] [--tensorboard_dir TENSORBOARD_DIR] [--use_weightDecay USE_WEIGHTDECAY] [--load_weight LOAD_WEIGHT]
@@ -306,7 +305,7 @@ Because of memory allocation issues in tf.data before training, use TCMalloc to 
 <hr>
 
 # 5. Predict
-After training, you can test the inference results of your model.
+Training 이후 모델의 추론 결과를 테스트해볼 수 있습니다.
 
 ## Predict binary segmentation
 
@@ -319,18 +318,18 @@ After training, you can test the inference results of your model.
 <hr>
 
 # Inference real-time
-You can test real-time inference with the camera using the learned weights.
+학습된 가중치를 이용하여 카메라를 이용하여 실제 추론을 테스트해볼 수 있습니다.
 
 ### **1. Inference with PyRealSense Camera <br>**
-&nbsp; &nbsp; &nbsp; When using the Intel RealSense Camera directly
+&nbsp; &nbsp; &nbsp; Intel RealSense Camera를 직접 사용하는 경우
 ### **2. Inference with RealSense-ROS <br>**
-&nbsp; &nbsp; &nbsp; When using Intel RealSense Camera by subcribe image data with ROS(Robot Operating System)
+&nbsp; &nbsp; &nbsp; Intel RealSense Camera를 ROS(Robot Operating System)로 이미지 데이터를 subcribe하여 사용하는 경우
 
 <br>
 <br>
 
 ## 1. Inference with PyRealSense Camera
-    1. Check the serial number of the connected RealSense camera.
+    1. 연결된 RealSense 카메라의 시리얼 넘버를 확인합니다.
         terminal
             (park) park@park:~$ rs-enumerate-devices 
             Device info: 
@@ -351,8 +350,8 @@ You can test real-time inference with the camera using the learned weights.
         python semantic_realtime_full.py --checkpoint_dir='./checkpoints/' --weight_name='weight.h5', --serial_num='f0350818'
 
 ## 2. Inference with RealSense-ROS
-In relation to ROS interworking, prior knowledge and setting must be carried out individually.
-The test environment is ROS-melodic.
+ROS 연동 관련하여 사전 지식 및 세팅은 개별적으로 진행해야 합니다.
+테스트 환경은 ROS-melodic입니다.
 
 
     ROS
