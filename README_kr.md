@@ -21,7 +21,7 @@
 
 ## Table of Contents
 
- 1. [Overview of Model](#Overview of Model)
+ 1. [Models](#Models)
  2. [Preferences](#Preferences)
  3. [Preparing datasets](#Preparing-datasets)
  4. [Train](#Train)
@@ -31,7 +31,7 @@
 <br>
 <hr/>
 
-# 1. Overview of Model
+# 1. Models
 
 <table border="0">
 <tr>

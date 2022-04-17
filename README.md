@@ -22,7 +22,8 @@ This repository has implemented everything from data labeling to real-time infer
 
 ## Table of Contents
 
- 1. [Overview of Model](#Overview of Model)
+
+ 1. [Models](#Models)
  2. [Preferences](#Preferences)
  3. [Preparing datasets](#Preparing-datasets)
  4. [Train](#Train)
@@ -32,7 +33,7 @@ This repository has implemented everything from data labeling to real-time infer
 <br>
 <hr/>
 
-# 1. Overview of Model
+# 1. Models
 
 <table border="0">
 <tr>
