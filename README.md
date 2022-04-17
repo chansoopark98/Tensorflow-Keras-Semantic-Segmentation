@@ -2,7 +2,7 @@
 
 > Binary/Semantic segmentation with Custom data
 
-이 저장소는 **Custom dataset을 사용한 segmentation**을 위해 데이터 레이블링부터 실시간 추론까지 구현한 레포지토리입니다.
+이 저장소는 **Custom dataset을 사용한 segmentation**을 위해 데이터 레이블링부터 실시간 추론까지 구현하였습니다.
  &nbsp; **(Binary segmentation, Semantic segmentation)**
 
 <br>
