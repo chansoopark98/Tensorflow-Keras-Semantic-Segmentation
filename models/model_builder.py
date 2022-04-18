@@ -1,6 +1,6 @@
 import tensorflow as tf
-from .model import unet
-from .ddrnet_slim import ddrnet_23_slim
+from .model_zoo.UNet import unet
+from .model_zoo.DDRNet_23_slim import ddrnet_23_slim
 
 def segmentation_model(image_size):
     # model_input, model_output = unet(input_shape=(image_size[0], image_size[1], 3), use_logits=False)
