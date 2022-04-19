@@ -14,7 +14,7 @@ args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
 DATASET_TYPE = args.dataset_type
 DATASET_NUMS = args.dataset_nums
-IMAGE_SIZE = (480, 640)
+IMAGE_SIZE = (1024, 1024)
 
 if __name__ == "__main__":
     if DATASET_TYPE == 'binary':
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         ax0.axis("off")
 
         ax0 = fig.add_subplot(rows, cols, 2)
-        ax0.imshow(mask[0])
+        ax0.imshow(mask[0, :, :, 0])
         ax0.set_title('mask')
         ax0.axis("off")
 

@@ -62,11 +62,11 @@ class SemanticGenerator:
         labels = tf.cast(sample['gt'], tf.float32)
 
         
-        concat_img = tf.concat([img, labels], axis=-1)
-        concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
+        # concat_img = tf.concat([img, labels], axis=-1)
+        # concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
         
-        img = concat_img[:, :, :3]
-        labels = concat_img[:, :, 3:]
+        # img = concat_img[:, :, :3]
+        # labels = concat_img[:, :, 3:]
 
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
@@ -81,29 +81,29 @@ class SemanticGenerator:
         img = tf.cast(sample['rgb'], tf.float32)
         labels = tf.cast(sample['gt'], tf.float32)
 
-        if tf.random.uniform([]) > 0.5:
-            scale = tf.random.uniform([], 1.0, 1.4)
-            new_h = self.image_size[0] * scale
-            new_w = self.image_size[1] * scale
+        # if tf.random.uniform([]) > 0.5:
+        #     scale = tf.random.uniform([], 1.0, 1.4)
+        #     new_h = self.image_size[0] * scale
+        #     new_w = self.image_size[1] * scale
             
-            img = tf.image.resize(img, size=(new_h, new_w),
-                            method=tf.image.ResizeMethod.BILINEAR)
-            labels = tf.image.resize(labels, size=(new_h, new_w),
-                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        #     img = tf.image.resize(img, size=(new_h, new_w),
+        #                     method=tf.image.ResizeMethod.BILINEAR)
+        #     labels = tf.image.resize(labels, size=(new_h, new_w),
+        #                     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
             
 
-            concat_img = tf.concat([img, labels], axis=-1)
-            concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
+        #     concat_img = tf.concat([img, labels], axis=-1)
+        #     concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
         
-            img = concat_img[:, :, :3]
-            labels = concat_img[:, :, 3:]
+        #     img = concat_img[:, :, :3]
+        #     labels = concat_img[:, :, 3:]
 
-        else:
-            img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
-                method=tf.image.ResizeMethod.BILINEAR)
-            labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
-                method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        # else:
+        #     img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
+        #         method=tf.image.ResizeMethod.BILINEAR)
+        #     labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
+        #         method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         return (img, labels)
         
