@@ -21,7 +21,7 @@ class BilinearUpsampling(Layer):
         return (input_shape[0], height, width, input_shape[3])
 
     def call(self, inputs):
-        return tf.image.resize_bilinear(inputs, (int(inputs.shape[1] * self.upsampling[0]),
+        return tf.image.resize(inputs, (int(inputs.shape[1] * self.upsampling[0]),
                                                  int(inputs.shape[2] * self.upsampling[1])))
 
     def get_config(self):
@@ -231,9 +231,9 @@ def DeeplabV3_plus(nClasses=21, input_height=512, input_width=512, out_stride=16
 
     x = Conv2D(nClasses, (1, 1), padding="same")(x)
     x = BilinearUpsampling((4, 4))(x)
-    outputHeight = Model(img_input, x).output_shape[1]
-    outputWidth = Model(img_input, x).output_shape[2]
-    x = (Reshape((outputHeight * outputWidth, nClasses)))(x)
-    x = Activation('softmax')(x)
-    model = Model(input=img_input, output=x)
+    # outputHeight = Model(img_input, x).output_shape[1]
+    # outputWidth = Model(img_input, x).output_shape[2]
+    # x = (Reshape((outputHeight * outputWidth, nClasses)))(x)
+    # x = Activation('softmax')(x)
+    model = Model(inputs=[img_input], outputs=[x])
     return model

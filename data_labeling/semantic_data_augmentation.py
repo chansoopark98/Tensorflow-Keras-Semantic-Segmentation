@@ -20,9 +20,9 @@ def get_order(file):
     return int(match.groups()[0])
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0405/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/semantic_mask/input/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0405/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/semantic_mask/check_gt/')
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/0405/040523_24cm_gray_d3_noExposure/result/semantic_label_mask_result/semantic_mask/augmentation/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_labeling/data/img/concent/roi/041902_normal_1/labeled/JPEGImages/')
+parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_labeling/data/img/concent/roi/041902_normal_1/labeled/SegmentationClass/')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/concent/roi/041902_normal_1/labeled/')
 
 parser.add_argument("--bg_path",     type=str,   help="raw image path", default='./data_labeling/data/img/backgrounds/rgb/')
 
@@ -42,14 +42,19 @@ os.makedirs(OUT_RGB_PATH, exist_ok=True)
 
 os.makedirs(OUT_MASK_PATH, exist_ok=True)
 
-rgb_list = glob.glob(os.path.join(RGB_PATH+'*.png'))
-rgb_list = natsort.natsorted(rgb_list,reverse=True)
+ 
+# rgb_list = glob.glob(os.path.join(RGB_PATH+'*.png'))
+# rgb_list = natsort.natsorted(rgb_list,reverse=True)
+
 
 mask_list = glob.glob(os.path.join(MASK_PATH+'*.png'))
 mask_list = natsort.natsorted(mask_list,reverse=True)
+print(mask_list)
 
-bg_list =  glob.glob(os.path.join(BG_PATH,  '*.png'))
-bg_list = natsort.natsorted(bg_list,reverse=True)
+rgb_list = [f.replace('SegmentationClass', 'JPEGImages') for f in mask_list]
+
+# bg_list =  glob.glob(os.path.join(BG_PATH,  '*.png'))
+# bg_list = natsort.natsorted(bg_list,reverse=True)
 
 def img_shift(rgb, mask, name):
     rand_x = random.randint(0, 100)
@@ -191,11 +196,6 @@ def object_resize(img, mask, bg, name, img_idx):
 
     if x % 2 == 1:
         x += 1
-    if y % 2 == 1:
-        y += 1
-    if w % 2 == 1:
-        w += 1
-    if h % 2 == 1:
         h += 1
 
     # 7. 좌표값을 이용하여 원본 이미지에서 crop
@@ -283,26 +283,32 @@ def save_imgs(rgb, mask, name):
 if __name__ == '__main__': 
     print(rgb_list[0], mask_list[0])
     i = 1
-
-    bg_range = range(len(bg_list))
+    import matplotlib.pyplot as plt
+    # bg_range = range(len(bg_list))
     
     for idx in range(len(rgb_list)):
         img = cv2.imread(rgb_list[idx])
         mask = cv2.imread(mask_list[idx])
+        # 226 -> concent 209 -> plug 55 -> hole
+        mask = mask[:, :, 0]
+        mask = np.where(mask == 226, 1, mask)
+        mask = np.where(mask == 209, 2, mask)
+        mask = np.where(mask == 55, 3, mask)
+        
 
         
         
-        name = rgb_list[idx].split('/')[5] + '_' + str(i)
+        name = rgb_list[idx].split('/')[6] + '_' + str(i)
         
         save_imgs(img, mask, name)
         img_shift(img, mask, name)
         img_blur(img, mask, name)
         img_rotate(img, mask, name)
         
-        for bg_idx in bg_range:
-            bg_img = cv2.imread(bg_list[bg_idx])
-            for j in range(5):
-                object_resize(img, mask, bg_img, name, j)
+        # for bg_idx in bg_range:
+        #     bg_img = cv2.imread(bg_list[bg_idx])
+        #     for j in range(5):
+        #         object_resize(img, mask, bg_img, name, j)
         i+=1
 
         

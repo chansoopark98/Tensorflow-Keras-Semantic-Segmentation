@@ -79,7 +79,7 @@ batch_idx = 0
 avg_duration = 0
 ng_time = 0
 
-img_list = glob.glob(os.path.join(RESULT_PATH,'*.png'))
+img_list = glob.glob(os.path.join(RESULT_PATH,'*.jpg'))
 img_list.sort()
 
 def onChange(pos):

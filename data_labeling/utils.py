@@ -24,6 +24,9 @@ def canny_selector(rgb):
     
 
     img = rgb.copy()
+    
+    # h, s, v = cv2.split(img)
+    # img = v
 
     while cv2.waitKey(1) != ord('q'):
         # 수직 = VERTICAL
@@ -62,12 +65,15 @@ def canny_selector(rgb):
     return canny
 
 def load_imgs(img, resize=(640, 480)):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    
     # img = cv2.imread('./data_labeling/test_img/t2.jpg')
     if resize:
         img = cv2.resize(img, dsize=resize, interpolation=cv2.INTER_AREA)
     output_img = img.copy()
 
     x, y, w, h = cv2.selectROI(img)
+    
     
     # img = cv2.GaussianBlur(img, (5,5), 0) # 이미지에 블러 하면 홀은 잘 찾음
     # img = cv2.GaussianBlur(img, (7,7), 0) # 이미지에 블러 하면 홀은 잘 찾음
@@ -76,7 +82,7 @@ def load_imgs(img, resize=(640, 480)):
     # 250, 200 to 400, 300
     # mask[200:300, 250:400]= img[200:300, 250:400]
     mask[y:y+h, x:x+w]= img[y:y+h, x:x+w]
-    mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    # mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
     
     
     # mask = cv2.medianBlur(mask, 7)

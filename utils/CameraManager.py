@@ -12,7 +12,7 @@ from std_msgs.msg import Bool
 import numpy as np
 
 bridge = CvBridge()
-
+rospy.init_node('plaif_vision', anonymous=True)
 class CameraBuilder:
     COLORSTRAM = 0b0001
     DEPTHSTREAM = 0b0010
@@ -21,11 +21,11 @@ class CameraBuilder:
     COLORDEPTH = 0b0011
 
     def __init__(self, params={}):
-        print('params', params)
-        self.camerainfos_topic = params.get('cameraInfos', None)
+        
+        # self.camerainfos_topic = params.get('cameraInfos', None)
         self.colorstream_topic = params.get('colorStream', None)
-        print(self.colorstream_topic)
-        self.pointclouds_topic = params.get('pointclouds', None)
+        
+        # self.pointclouds_topic = params.get('pointclouds', None)
         self.depthstream_topic = params.get('depthStream', None)
         
         calib_config = params.get('calibration', None)
@@ -44,16 +44,16 @@ class CameraBuilder:
         self._registered_mode = 0b0000
         # self._registered_mode = 0b0001
 
-        self._get_info()
-        self.depth = np.empty((0, self._info['height'], self._info['width']), dtype=np.uint16)
+        # self._get_info()
+        # self.depth = np.empty((0, self._info['height'], self._info['width']), dtype=np.uint16)
 
-        self.update_rate = 10.
+        self.update_rate = 1.
         self.msg_t0 = -1.
         self.msg_tn = 0
         self.status_timer = rospy.Timer(rospy.Duration(1.0 / self.update_rate), self._status_callback)
         self.status_pub = rospy.Publisher(f'{self._get_name()}_status_msg', Bool, queue_size=1)
 
-        self.n_frame = 10
+        self.n_frame = 1
         print('CameraManager Init clear')
     
     def _get_name(self):
@@ -103,19 +103,19 @@ class CameraBuilder:
         try:
             bgr = bridge.imgmsg_to_cv2(colorStream_data, desired_encoding='bgr8')
             dep = bridge.imgmsg_to_cv2(depthStream_data, desired_encoding='passthrough')
-
-            __depth = np.concatenate((self.depth, np.expand_dims(dep, 0)), 0)
-            if len(__depth) > self.n_frame:
-                __depth = __depth[-self.n_frame:]
+            
+            # __depth = np.concatenate((self.depth, np.expand_dims(dep, 0)), 0)
+            # if len(__depth) > self.n_frame:
+            #     __depth = __depth[-self.n_frame:]
 
             self.color = bgr
-            self.depth = __depth
+            self.depth = dep
             
         except CvBridgeError as e:
             print(e)
 
     def _color_callback(self, colorStream_data):
-        
+        print('color_callback')
         self.msg_tn = rospy.get_rostime().to_sec()
         try:
             bgr = bridge.imgmsg_to_cv2(colorStream_data, desired_encoding='bgr8')
@@ -161,7 +161,9 @@ class CameraBuilder:
         return self._info["type"]
 
     def register_cb(self):
-        cam_mode = 0b0001
+        # rgb + depth = 0b0011
+        # rgb = 0b0001
+        cam_mode = 0b0011 
         
         if cam_mode is self.COLORSTRAM:
             
@@ -170,20 +172,21 @@ class CameraBuilder:
             color_sub.registerCallback(self._color_callback)
             
             self._is_registered = True
-        elif cam_mode is self.POINTCLOUD:
-            point_sub = message_filters.Subscriber(self.pointclouds_topic, PointCloud2)
-            point_sub.registerCallback(self._points_callback)
-            self._is_registered = True
-        elif cam_mode is self.COLORPOINT:
-            color_sub = message_filters.Subscriber(self.colorstream_topic, Image)
-            point_sub = message_filters.Subscriber(self.pointclouds_topic, PointCloud2)
-            ts = message_filters.ApproximateTimeSynchronizer([color_sub, point_sub], 2, 0.1)
-            ts.registerCallback(self._cam_callback)
-            self._is_registered = True
+        # elif cam_mode is self.POINTCLOUD:
+        #     point_sub = message_filters.Subscriber(self.pointclouds_topic, PointCloud2)
+        #     point_sub.registerCallback(self._points_callback)
+        #     self._is_registered = True
+        # elif cam_mode is self.COLORPOINT:
+        #     color_sub = message_filters.Subscriber(self.colorstream_topic, Image)
+        #     point_sub = message_filters.Subscriber(self.pointclouds_topic, PointCloud2)
+        #     ts = message_filters.ApproximateTimeSynchronizer([color_sub, point_sub], 2, 0.1)
+        #     ts.registerCallback(self._cam_callback)
+        #     self._is_registered = True
         elif cam_mode is self.COLORDEPTH:
+            print('color depth mode ')
             color_sub = message_filters.Subscriber(self.colorstream_topic, Image)
             depth_sub = message_filters.Subscriber(self.depthstream_topic, Image)
-            ts = message_filters.ApproximateTimeSynchronizer([color_sub, depth_sub], 5, 0.1)
+            ts = message_filters.ApproximateTimeSynchronizer([color_sub, depth_sub], 10, 0.1)
             ts.registerCallback(self._color_depth_callback)
             self._is_registered = True
         else:

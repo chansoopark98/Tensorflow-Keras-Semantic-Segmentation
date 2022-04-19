@@ -17,17 +17,19 @@ _CITATION = """
 """
 
 
+
 class FullSemantic(tfds.core.GeneratorBasedBuilder):
   """DatasetBuilder for cornell_grasp dataset."""
-
+  MANUAL_DOWNLOAD_INSTRUCTIONS = '/home/park/tensorflow_datasets/'
   VERSION = tfds.core.Version('1.0.0')
   RELEASE_NOTES = {
       '1.0.0': 'Initial release.',
   }
-
+  
   def _info(self) -> tfds.core.DatasetInfo:
     """Returns the dataset metadata."""
     # TODO(cornell_grasp): Specifies the tfds.core.DatasetInfo object
+    
     
     return tfds.core.DatasetInfo(
         builder=self,
@@ -49,12 +51,12 @@ class FullSemantic(tfds.core.GeneratorBasedBuilder):
   def _split_generators(self, dl_manager: tfds.download.DownloadManager):
     """Returns SplitGenerators."""
     # TODO(cornell_grasp): Downloads the data and defines the splits
-    archive_path = dl_manager.manual_dir / 'full_semantic.zip'
+    archive_path = dl_manager.manual_dir / 'concent_test.zip'
     extracted_path = dl_manager.extract(archive_path)
 
     # TODO(cornell_grasp): Returns the Dict[split names, Iterator[Key, Example]]
     return {
-        'train': self._generate_examples(img_path=extracted_path/'rgb', mask_path=extracted_path/'mask')
+        'train': self._generate_examples(img_path=extracted_path/'rgb', mask_path=extracted_path/'gt')
     }
 
   def _generate_examples(self, img_path, mask_path):

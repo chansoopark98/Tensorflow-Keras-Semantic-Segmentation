@@ -18,9 +18,9 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='Full-DDRNet-Focal-ADAM-B48-Epoch100-NewAugment')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=48)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=200)
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='DeepLabV3+_b8_e50_focal_test1')
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=50)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
@@ -45,7 +45,7 @@ SAVE_MODEL_NAME = args.model_name + '_' + args.model_prefix
 DATASET_DIR = args.dataset_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 TENSORBOARD_DIR = args.tensorboard_dir
-IMAGE_SIZE = (480, 640)
+IMAGE_SIZE = (1024, 1024)
 USE_WEIGHT_DECAY = args.use_weightDecay
 LOAD_WEIGHT = args.load_weight
 MIXED_PRECISION = args.mixed_precision
@@ -106,7 +106,7 @@ if MIXED_PRECISION:
 
 model = semantic_model(image_size=IMAGE_SIZE)
 
-mIoU = MIoU(3)
+mIoU = MIoU(4)
 
 model.compile(
     optimizer=optimizer,

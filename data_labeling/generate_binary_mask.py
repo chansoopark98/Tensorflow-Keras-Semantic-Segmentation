@@ -7,8 +7,8 @@ import argparse
 from utils import load_imgs, canny_edge, find_contours, canny_selector
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--image_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040834_exposure_1000_gain_100_10cm_gray3/rgb/')
-parser.add_argument("--result_path",     type=str,   help="raw image path", default='./data_labeling/data/img/040834_exposure_1000_gain_100_10cm_gray3/result/')
+parser.add_argument("--image_path",     type=str,   help="raw image path", default='./test_imgs/hand/')
+parser.add_argument("--result_path",     type=str,   help="raw image path", default='./test_imgs/hand/result/')
 
 
 args = parser.parse_args()
@@ -17,12 +17,11 @@ RESULT_PATH = args.result_path
 RESOLUTION = (1280,720)
 RGB_PATH = RESULT_PATH+'rgb/'
 MASK_PATH = RESULT_PATH+'mask/'
-
 os.makedirs(RESULT_PATH, exist_ok=True)
 os.makedirs(RGB_PATH, exist_ok=True)
 os.makedirs(MASK_PATH, exist_ok=True)
 
-img_list = glob.glob(os.path.join(IMAGE_PATH,'*.png'))
+img_list = glob.glob(os.path.join(IMAGE_PATH,'*.jpg'))
 img_list.sort()
 
 
@@ -33,11 +32,11 @@ if __name__ == '__main__':
         img = cv2.imread(img_list[idx])
 
 
-        date_name = img_list[idx].split('/')[4]
+        date_name = img_list[idx].split('/')[1]
         print('data_name', date_name)
         
         # img_name = img_list[idx].split('/')[5].split('\\')[1].split('.')[0]
-        img_name = img_list[idx].split('/')[4]
+        img_name = img_list[idx].split('/')[1]
         print('img_name', img_name)
         mask, img = load_imgs(img, resize=RESOLUTION)
         mask = canny_selector(mask)

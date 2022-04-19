@@ -6,12 +6,12 @@ import cv2
 import numpy as np
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--result_path",     type=str,   help="test result path", default='./test_imgs/')
+parser.add_argument("--result_path",     type=str,   help="test result path", default='./test_imgs/hand/')
 args = parser.parse_args()
 RESULT_PATH = args.result_path
 
 
-img_list = glob.glob(os.path.join(RESULT_PATH,'*.png'))
+img_list = glob.glob(os.path.join(RESULT_PATH,'*.jpg'))
 img_list.sort()
 
 def onChange(pos):
@@ -35,6 +35,7 @@ cv2.setTrackbarPos("maxRadius", "Trackbar Windows", 10)
 for i in range(len(img_list)):
     
     img = cv2.imread(img_list[i])
+    img = cv2.resize(img, (1280, 720))
     original = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     

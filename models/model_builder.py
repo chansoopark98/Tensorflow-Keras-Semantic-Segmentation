@@ -1,5 +1,6 @@
 import tensorflow as tf
 from .model_zoo.UNet import unet
+from .model_zoo.DeepLabV3plus import DeeplabV3_plus
 from .model_zoo.DDRNet_23_slim import ddrnet_23_slim
 
 def segmentation_model(image_size):
@@ -12,4 +13,5 @@ def segmentation_model(image_size):
 def semantic_model(image_size):
     # model_input, model_output = unet(input_shape=(image_size[0], image_size[1], 3), base_channel=16, output_channel=3, use_logits=True)
     # return tf.keras.Model(model_input, model_output)
-    return ddrnet_23_slim(input_shape=(image_size[0], image_size[1], 3), num_classes=3, use_aux=False)
+    return DeeplabV3_plus(nClasses=4, input_width=image_size[0], input_height=image_size[1])
+    # return ddrnet_23_slim(input_shape=(image_size[0], image_size[1], 3), num_classes=3, use_aux=False)

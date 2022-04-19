@@ -30,7 +30,7 @@ class SemanticGenerator:
     def _load_valid_datasets(self):
 
         valid_data = tfds.load('FullSemantic',
-                               data_dir=self.data_dir, split='train[90%:]')
+                               data_dir=self.data_dir, split='train')
 
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
         print("검증 데이터 개수:", number_valid)
@@ -39,7 +39,7 @@ class SemanticGenerator:
     def _load_train_datasets(self):
         
         train_data = tfds.load('FullSemantic',
-                               data_dir=self.data_dir, split='train[:90%]')
+                               data_dir=self.data_dir, split='train')
 
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -71,7 +71,6 @@ class SemanticGenerator:
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
         
-        labels /= 127
         labels = tf.cast(labels, tf.int32)
 
         return (img, labels, original)
@@ -126,7 +125,6 @@ class SemanticGenerator:
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
         
-        labels /= 127
         labels = tf.cast(labels, tf.int32)
 
         return (img, labels)
@@ -146,7 +144,6 @@ class SemanticGenerator:
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
         
-        labels /= 127
         labels = tf.cast(labels, tf.int32)
 
         return (img, labels)
