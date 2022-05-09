@@ -22,8 +22,6 @@ from utils.CameraManager import CameraBuilder
 tf.keras.backend.clear_session()
 bridge = CvBridge()
 
-
-
 rospy.init_node('topic_publisher', anonymous=True)
 pub = rospy.Publisher('counter', String, queue_size=1)
 seg_result_pub = rospy.Publisher('Segmentation_result', Image, queue_size=1)
@@ -61,7 +59,7 @@ if CAM_MODE == 1:
 if __name__ == '__main__':
     # Segmentation 모델 불러오기
     
-    model = semantic_model(image_size=(480, 640))
+    model = segmentation_model(image_size=(480, 640))
 
     # Segmentation 모델 가중치 불러오기
     weight_name = 'semantic_full_weight'
