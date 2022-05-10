@@ -13,8 +13,9 @@ def classifier(x, num_classes=19, upper=4, name=None):
     return x
 
 def segmentation_model(image_size):
-    
-    return ddrnet_23_slim(input_shape=(image_size[0], image_size[1], 3), num_classes=3, use_aux=False)
+    # model_input, model_output = unet(input_shape=(image_size[0], image_size[1], 3), use_logits=False)
+    # return tf.keras.Model(model_input, model_output)
+    return ddrnet_23_slim(input_shape=(image_size[0], image_size[1], 3), num_classes=1)
 
     
 
