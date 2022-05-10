@@ -16,8 +16,6 @@ It should also contain any processing which has been applied (if any),
 _CITATION = """
 """
 
-
-
 class FullSemantic(tfds.core.GeneratorBasedBuilder):
   """DatasetBuilder for cornell_grasp dataset."""
   MANUAL_DOWNLOAD_INSTRUCTIONS = '/home/park/tensorflow_datasets/'

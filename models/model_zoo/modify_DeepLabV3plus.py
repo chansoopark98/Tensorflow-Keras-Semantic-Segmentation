@@ -4,7 +4,7 @@ from tensorflow.keras.layers import (AveragePooling2D,
     DepthwiseConv2D, Reshape, ZeroPadding2D, Dense, GlobalMaxPooling2D, Permute, Lambda, Subtract)
 import tensorflow.keras.backend as K
 import tensorflow as tf
-import tensorflow_addons as tfa
+
 
 MOMENTUM = 0.99
 EPSILON = 1e-3
