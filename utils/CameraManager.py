@@ -12,7 +12,7 @@ from std_msgs.msg import Bool
 import numpy as np
 
 bridge = CvBridge()
-rospy.init_node('plaif_vision', anonymous=True)
+rospy.init_node('test_init', anonymous=True)
 class CameraBuilder:
     COLORSTRAM = 0b0001
     DEPTHSTREAM = 0b0010
