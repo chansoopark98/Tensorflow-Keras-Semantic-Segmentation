@@ -1,3 +1,4 @@
+from re import T
 import numpy as np
 import cv2
 from imageio import imread, imwrite
@@ -27,6 +28,8 @@ class ImageAugmentationLoader():
 
         self.OUT_RGB_PATH = self.OUTPUT_PATH + 'rgb/'
         self.OUT_MASK_PATH = self.OUTPUT_PATH + 'mask/'
+        os.makedirs(self.OUT_RGB_PATH, exist_ok=True)
+        os.makedirs(self.OUT_MASK_PATH, exist_ok=True)
 
         self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.jpg'))
         self.rgb_list = natsort.natsorted(self.rgb_list,reverse=True)
@@ -54,28 +57,18 @@ class ImageAugmentationLoader():
         return self.bg_list
 
 
-if __name__ == '__main__':
-    """
-    mask image pixel value =  124.0
-    """
-    image_loader = ImageAugmentationLoader(args=args)
-    rgb_list = image_loader.get_rgb_list()
-    mask_list = image_loader.get_mask_list()
-    bg_list = image_loader.get_bg_list()
+    def save_images(self, rgb, mask, prefix):
+        cv2.imwrite(self.OUT_RGB_PATH + prefix +'_.png', rgb)
+        cv2.imwrite(self.OUT_MASK_PATH + prefix + '_mask.png', mask)
 
-
-    for idx in range(len(rgb_list)):
-        rgb = cv2.imread(rgb_list[idx])
-        mask = cv2.imread(mask_list[idx])
-
-        mask = mask[:, :, 0]
+    
+    def change_image(self, rgb, mask):
         binary_mask = np.where(mask == 124, 1, 0).astype(np.uint8)
         binary_mask = np.expand_dims(binary_mask, axis=-1)
         # mask를 이용하여 contour를 계산
         contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         # 계산된 contour 개수만큼 반복 연산
-        print('Contours shape : ', len(contours))
         for contour in contours:
             
             # 마스크의 contour를 이용하여 합성 할 영역의 bounding box를 계산
@@ -92,8 +85,39 @@ if __name__ == '__main__':
 
             rgb[y:y+h, x:x+w] = copy_mask
 
-            plt.imshow(rgb)
-            plt.show()
+        return rgb, mask
+
+
+
+if __name__ == '__main__':
+    """
+    mask image pixel value =  124.0
+    """
+    image_loader = ImageAugmentationLoader(args=args)
+    rgb_list = image_loader.get_rgb_list()
+    mask_list = image_loader.get_mask_list()
+    bg_list = image_loader.get_bg_list()
+
+
+    for idx in range(len(rgb_list)):
+        original_rgb = cv2.imread(rgb_list[idx])
+        original_mask = cv2.imread(mask_list[idx])
+        
+        original_mask = original_mask[:, :, 0]
+
+        rgb = original_rgb.copy()
+        mask = original_mask.copy()
+
+        change_rgb, change_mask = image_loader.change_image(rgb=rgb, mask=mask)
+        
+
+        # save original
+        image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='_{0}_original_'.format(idx))
+
+        # save change rgb
+        image_loader.save_images(rgb=change_rgb, mask=change_mask, prefix='_{0}_change_'.format(idx))
+
+        
 
             
         
