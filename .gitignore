@@ -9,6 +9,7 @@ __pycache__/
 /checkpoints/
 /test_imgs/
 /tensorboard/
+/data_augmentation/raw_data/
 # C extensions
 *.so
 
