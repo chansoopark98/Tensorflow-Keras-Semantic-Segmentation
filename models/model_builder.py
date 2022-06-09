@@ -42,8 +42,8 @@ def semantic_model(image_size):
     model_input = base.input
     model_output = deepLabV3Plus(features=features, activation='swish')
 
-    model_output = classifier(model_output, num_classes=2, upper=4, name='output')
+    semantic_output = classifier(model_output, num_classes=2, upper=4, name='semantic_output')
 
-    model = models.Model(inputs=[model_input], outputs=[model_output])
+    model = models.Model(inputs=[model_input], outputs=[semantic_output])
     
     return model

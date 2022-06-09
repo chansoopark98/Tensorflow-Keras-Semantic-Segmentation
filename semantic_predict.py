@@ -31,7 +31,7 @@ RESULT_DIR = args.result_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (512, 512)
+IMAGE_SIZE = (320, 240)
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)

@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from utils.load_datasets import DatasetGenerator
 from utils.load_semantic_datasets import SemanticGenerator
 import argparse
-from skimage import color
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_dir", type=str, help="데이터셋 다운로드 디렉토리 설정", default='./datasets/')
@@ -14,7 +13,7 @@ args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
 DATASET_TYPE = args.dataset_type
 DATASET_NUMS = args.dataset_nums
-IMAGE_SIZE = (1024, 1024)
+IMAGE_SIZE = (320, 180)
 
 if __name__ == "__main__":
     if DATASET_TYPE == 'binary':
