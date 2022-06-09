@@ -7,11 +7,18 @@ import tensorflow as tf
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
+import tensorflow_addons as tfa
+
 
 def demo_prepare(path):
     img = tf.io.read_file(path)
-    img = tf.image.decode_image(img, channels=3)
-            
+    # img = tf.image.decode_image(img, channels=3)
+    
+
+    img = tf.image.decode_jpeg(img)
+    img = tfa.image.rotate(img, 1.57)
+    # img = tf.image.rot90(img)
+
     return (img)
 
 
@@ -75,6 +82,7 @@ for x in tqdm(test_set, total=test_steps):
 
 
     original = x[0]
+
     img = tf.cast(x, tf.float32)
 
     img = tf.image.resize(img, size=(IMAGE_SIZE[0], IMAGE_SIZE[1]),
@@ -94,7 +102,7 @@ for x in tqdm(test_set, total=test_steps):
     pred = tf.expand_dims(pred, axis=-1)
     pred = tf.image.resize(pred, size=(original.shape[0], original.shape[1]),
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-            
+
     draw_result = original
 
     draw_result = tf.where(pred==1, (255,0,0), draw_result)
