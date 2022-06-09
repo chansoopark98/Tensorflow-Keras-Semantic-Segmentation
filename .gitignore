@@ -10,6 +10,7 @@ __pycache__/
 /test_imgs/
 /tensorboard/
 /data_augmentation/raw_data/
+/demo_images/
 # C extensions
 *.so
 

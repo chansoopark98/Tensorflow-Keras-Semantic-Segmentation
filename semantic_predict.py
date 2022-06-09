@@ -6,6 +6,16 @@ import os
 import tensorflow as tf
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from tensorflow.keras.applications.imagenet_utils import preprocess_input
+
+def demo_prepare(path):
+    img = tf.io.read_file(path)
+    img = tf.image.decode_image(img, channels=3)
+            
+    return (img)
+
+
+
 
 tf.keras.backend.clear_session()
 
@@ -32,6 +42,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
 IMAGE_SIZE = (320, 240)
+demo = True
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -45,28 +56,45 @@ test_dataset_config = SemanticGenerator(
 test_set = test_dataset_config.get_testData(test_dataset_config.valid_data)
 test_steps = test_dataset_config.number_valid // BATCH_SIZE
 
+if demo:
+    filenames = os.listdir('./demo_images')
+    filenames.sort()
+    test_set = tf.data.Dataset.list_files('./demo_images/' + '*', shuffle=False)
+    test_set = test_set.map(demo_prepare)
+    test_set = test_set.batch(1)
+    test_steps = len(filenames) // 1
+
+
 model = semantic_model(image_size=IMAGE_SIZE)
 model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
 model.summary()
 
 batch_idx = 0
 avg_duration = 0
-for x, y, original in tqdm(test_set, total=test_steps):
+for x in tqdm(test_set, total=test_steps):
+
+
+    original = x[0]
+    img = tf.cast(x, tf.float32)
+
+    img = tf.image.resize(img, size=(IMAGE_SIZE[0], IMAGE_SIZE[1]),
+        method=tf.image.ResizeMethod.BILINEAR)
+
+    img = preprocess_input(img, mode='torch')
+
     start = time.process_time()
-    pred = model.predict_on_batch(x)
+    pred = model.predict_on_batch(img)
     duration = (time.process_time() - start)
     if duration <= 0.1:
         avg_duration += duration
 
-    img = x[0]
     pred = pred[0]
     pred = tf.argmax(pred, axis=-1)
-    label = y[0]
-    original = original[0]
 
     pred = tf.expand_dims(pred, axis=-1)
     pred = tf.image.resize(pred, size=(original.shape[0], original.shape[1]),
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            
     draw_result = original
 
     draw_result = tf.where(pred==1, (255,0,0), draw_result)
