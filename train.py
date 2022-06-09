@@ -13,7 +13,7 @@ import tensorflow_addons as tfa
 # 1. sudo apt-get install libtcmalloc-minimal4
 # 2. check dir ! 
 # dpkg -L libtcmalloc-minimal4
-# 3. LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python semantic_train.py
+# 3. LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python train.py
 
 tf.keras.backend.clear_session()
 
@@ -32,111 +32,141 @@ parser.add_argument("--tensorboard_dir",  type=str,   help="텐서보드 저장 
 parser.add_argument("--use_weightDecay",  type=bool,  help="weightDecay 사용 유무", default=False)
 parser.add_argument("--load_weight",  type=bool,  help="가중치 로드", default=False)
 parser.add_argument("--mixed_precision",  type=bool,  help="mixed_precision 사용", default=True)
-parser.add_argument("--distribution_mode",  type=bool,  help="분산 학습 모드 설정", default=False)
+parser.add_argument("--multi_gpu",  help="분산 학습 모드 설정", action='store_true')
 
 args = parser.parse_args()
-MODEL_PREFIX = args.model_prefix
-WEIGHT_DECAY = args.weight_decay
-OPTIMIZER_TYPE = args.optimizer
-BATCH_SIZE = args.batch_size
-EPOCHS = args.epoch
-base_lr = args.lr
-SAVE_MODEL_NAME = args.model_name + '_' + args.model_prefix
-DATASET_DIR = args.dataset_dir
-CHECKPOINT_DIR = args.checkpoint_dir
-TENSORBOARD_DIR = args.tensorboard_dir
-IMAGE_SIZE = (512, 512)
-USE_WEIGHT_DECAY = args.use_weightDecay
-LOAD_WEIGHT = args.load_weight
-MIXED_PRECISION = args.mixed_precision
-DISTRIBUTION_MODE = args.distribution_mode
-
-os.makedirs(DATASET_DIR, exist_ok=True)
-os.makedirs(CHECKPOINT_DIR, exist_ok=True)
-os.makedirs(CHECKPOINT_DIR + args.model_name, exist_ok=True)
-
-if DISTRIBUTION_MODE == False:
-    tf.config.set_soft_device_placement(True)
-
-
-train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, mode='train')
-valid_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, mode='validation')
-
-train_data = train_dataset_config.get_trainData(train_dataset_config.train_data)
-valid_data = valid_dataset_config.get_validData(valid_dataset_config.valid_data)
-
-if DISTRIBUTION_MODE:
-    mirrored_strategy = tf.distribute.MirroredStrategy()
-    train_data = mirrored_strategy.experimental_distribute_dataset(train_data)
-    valid_data = mirrored_strategy.experimental_distribute_dataset(valid_data)   
-
-steps_per_epoch = train_dataset_config.number_train // BATCH_SIZE
-validation_steps = valid_dataset_config.number_valid // BATCH_SIZE
-
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
-
-checkpoint_val_loss = ModelCheckpoint(CHECKPOINT_DIR + args.model_name+ '/_' + SAVE_MODEL_NAME + '_best_loss.h5',
-                                    monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-checkpoint_val_iou = ModelCheckpoint(CHECKPOINT_DIR + args.model_name +'/_' + SAVE_MODEL_NAME + '_best_iou.h5',
-                                    monitor='val_m_io_u', save_best_only=True, save_weights_only=True,
-                                    verbose=1, mode='max')
-
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR +'semantic/' +MODEL_PREFIX, write_graph=True, write_images=True)
-
-polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
-                                                        decay_steps=EPOCHS,
-                                                        end_learning_rate=0.0001, power=0.9)
-
-lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
-
-callback = [checkpoint_val_iou, checkpoint_val_loss,  tensorboard, lr_scheduler]
-
-if OPTIMIZER_TYPE == 'sgd':
-    optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=base_lr)
-elif OPTIMIZER_TYPE == 'adam':
-    optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
-elif OPTIMIZER_TYPE == 'radam':
-    optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
-                                            weight_decay=0.00001,
-                                            total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
-                                            warmup_proportion=0.1,
-                                            min_lr=0.0001)
-
-
-if MIXED_PRECISION:
-    policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-    mixed_precision.set_policy(policy)
-    optimizer = mixed_precision.LossScaleOptimizer(optimizer, loss_scale='dynamic')  # tf2.4.1 이전
-
-model = semantic_model(image_size=IMAGE_SIZE)
-
-mIoU = MIoU(2)
-
-model.compile(
-    optimizer=optimizer,
-    loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True),
-    metrics=[mIoU]
-    )
-
-if LOAD_WEIGHT:
-    weight_name = '_1002_best_miou'
-    model.load_weights(CHECKPOINT_DIR + weight_name + '.h5')
-
-model.summary()
-
-history = model.fit(train_data,
-                    validation_data=valid_data,
-                    steps_per_epoch=steps_per_epoch,
-                    validation_steps=validation_steps,
-                    epochs=EPOCHS,
-                    callbacks=callback)
-
-model.save_weights(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_final_loss.h5')
 
 
 class Train():
-    def __init__(self, args):
+    def __init__(self, args, mirrored_strategy=None):
         self.args = args
+        self.mirrored_strategy = mirrored_strategy
+        self.__set_args()
+        self.__set_callbacks()
+        self.configuration_dataset()
+        self.__set_optimizer()
+        self.configuration_model()
+        self.configuration_metric()
+        
+
+    def configuration_dataset(self):
+        self.train_dataset_config = SemanticGenerator(self.DATASET_DIR, self.IMAGE_SIZE, self.BATCH_SIZE, mode='train')
+        self.valid_dataset_config = SemanticGenerator(self.DATASET_DIR, self.IMAGE_SIZE, self.BATCH_SIZE, mode='validation')
+
+        self.train_data = self.train_dataset_config.get_trainData(self.train_dataset_config.train_data)
+        self.valid_data = self.valid_dataset_config.get_validData(self.valid_dataset_config.valid_data)
+
+        self.steps_per_epoch = self.train_dataset_config.number_train // self.BATCH_SIZE
+        self.validation_steps = self.valid_dataset_config.number_valid // self.BATCH_SIZE
+
+        if self.DISTRIBUTION_MODE:
+            self.train_data = self.mirrored_strategy.experimental_distribute_dataset(self.train_data)
+            self.valid_data = self.mirrored_strategy.experimental_distribute_dataset(self.valid_data)   
+
+
+    def __set_args(self):
+        self.MODEL_PREFIX = self.args.model_prefix
+        self.WEIGHT_DECAY = self.args.weight_decay
+        self.OPTIMIZER_TYPE = self.args.optimizer
+        self.BATCH_SIZE = self.args.batch_size
+        self.EPOCHS = self.args.epoch
+        self.INIT_LR = self.args.lr
+        self.SAVE_MODEL_NAME = self.args.model_name + '_' + self.args.model_prefix
+        self.DATASET_DIR = self.args.dataset_dir
+        self.CHECKPOINT_DIR = self.args.checkpoint_dir
+        self.TENSORBOARD_DIR = self.args.tensorboard_dir
+        self.IMAGE_SIZE = (512, 512)
+        self.USE_WEIGHT_DECAY = self.args.use_weightDecay
+        self.LOAD_WEIGHT = self.args.load_weight
+        self.MIXED_PRECISION = self.args.mixed_precision
+        self.DISTRIBUTION_MODE = self.args.multi_gpu
+
+        os.makedirs(self.DATASET_DIR, exist_ok=True)
+        os.makedirs(self.CHECKPOINT_DIR, exist_ok=True)
+        os.makedirs(self.CHECKPOINT_DIR + self.args.model_name, exist_ok=True)
+
+
+    def __set_callbacks(self):
+        reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
+
+        checkpoint_val_loss = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name+ '/_' + self.SAVE_MODEL_NAME + '_best_loss.h5',
+                                            monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+        checkpoint_val_iou = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name +'/_' + self.SAVE_MODEL_NAME + '_best_iou.h5',
+                                            monitor='val_m_io_u', save_best_only=True, save_weights_only=True,
+                                            verbose=1, mode='max')
+
+        tensorboard = tf.keras.callbacks.TensorBoard(log_dir=self.TENSORBOARD_DIR +'semantic/' + self.MODEL_PREFIX, write_graph=True, write_images=True)
+
+        polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=self.INIT_LR,
+                                                                decay_steps=self.EPOCHS,
+                                                                end_learning_rate=self.INIT_LR * 0.1, power=0.9)
+
+        lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
+
+        self.callback = [checkpoint_val_iou, checkpoint_val_loss,  tensorboard, lr_scheduler]
+
+
+    def __set_optimizer(self):
+        if self.OPTIMIZER_TYPE == 'sgd':
+            self.optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=self.INIT_LR)
+        elif self.OPTIMIZER_TYPE == 'adam':
+            self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.INIT_LR)
+        elif self.OPTIMIZER_TYPE == 'radam':
+            self.optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=self.INIT_LR,
+                                                    weight_decay=0.00001,
+                                                    total_steps=int(self.train_dataset_config.number_train / (self.BATCH_SIZE / self.EPOCHS)),
+                                                    warmup_proportion=0.1,
+                                                    min_lr=0.0001)
+
+        if self.MIXED_PRECISION:
+            policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+            mixed_precision.set_policy(policy)
+            self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer, loss_scale='dynamic')
 
     
-    def load_model(self)
+    def configuration_model(self):
+        self.model = semantic_model(image_size=self.IMAGE_SIZE)
+
+    
+    def configuration_metric(self):
+        mIoU = MIoU(2)
+        self.metrics = [mIoU]
+
+
+    def train(self):
+        self.model.compile(
+            optimizer=self.optimizer,
+            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True),
+            metrics=self.metrics
+            )
+
+        if self.LOAD_WEIGHT:
+            weight_name = '_1002_best_miou'
+            self.model.load_weights(self.CHECKPOINT_DIR + weight_name + '.h5')
+
+        self.model.summary()
+
+        self.model.fit(self.train_data,
+                            validation_data=self.valid_data,
+                            steps_per_epoch=self.steps_per_epoch,
+                            validation_steps=self.validation_steps,
+                            epochs=self.EPOCHS,
+                            callbacks=self.callback)
+
+        self.model.save_weights(self.CHECKPOINT_DIR + '_' + self.SAVE_MODEL_NAME + '_final_loss.h5')
+
+                
+
+if __name__ == '__main__':
+    if args.multi_gpu == False:
+        tf.config.set_soft_device_placement(True)
+
+        with tf.device('/device:GPU:0'):
+            training = Train(args=args)
+            training.train()
+
+    else:
+        mirrored_strategy = tf.distribute.MirroredStrategy()
+        with mirrored_strategy.scope():
+            training = Train(args=args, mirrored_strategy=mirrored_strategy)
+            training.train()
