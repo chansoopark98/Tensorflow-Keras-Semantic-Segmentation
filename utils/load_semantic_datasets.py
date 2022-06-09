@@ -29,7 +29,7 @@ class SemanticGenerator:
 
     def _load_valid_datasets(self):
 
-        valid_data = tfds.load('FullSemantic',
+        valid_data = tfds.load('full_semantic',
                                data_dir=self.data_dir, split='train')
 
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -38,7 +38,7 @@ class SemanticGenerator:
 
     def _load_train_datasets(self):
         
-        train_data = tfds.load('FullSemantic',
+        train_data = tfds.load('full_semantic',
                                data_dir=self.data_dir, split='train')
 
 
@@ -47,7 +47,7 @@ class SemanticGenerator:
         return train_data, number_train
 
     def _load_all_datasets(self):
-        data = tfds.load('FullSemantic',
+        data = tfds.load('full_semantic',
                                data_dir=self.data_dir, split='train')
 
 
@@ -68,9 +68,16 @@ class SemanticGenerator:
         # img = concat_img[:, :, :3]
         # labels = concat_img[:, :, 3:]
 
+        img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
+            method=tf.image.ResizeMethod.BILINEAR)
+        labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
+            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
         
+                
+        labels = tf.where(labels==124, 1, 0)
         labels = tf.cast(labels, tf.int32)
 
         return (img, labels, original)
@@ -104,6 +111,8 @@ class SemanticGenerator:
             method=tf.image.ResizeMethod.BILINEAR)
         labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+        labels = tf.where(labels==124, 1, 0)
 
         return (img, labels)
         
@@ -149,7 +158,9 @@ class SemanticGenerator:
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
         
+        labels = tf.where(labels==124, 1, 0)
         labels = tf.cast(labels, tf.int32)
+
 
         return (img, labels)
 

@@ -51,7 +51,7 @@ class FullSemantic(tfds.core.GeneratorBasedBuilder):
   def _split_generators(self, dl_manager: tfds.download.DownloadManager):
     """Returns SplitGenerators."""
     # TODO(cornell_grasp): Downloads the data and defines the splits
-    archive_path = dl_manager.manual_dir / 'concent_test.zip'
+    archive_path = dl_manager.manual_dir / 'display_demo.zip'
     extracted_path = dl_manager.extract(archive_path)
 
     # TODO(cornell_grasp): Returns the Dict[split names, Iterator[Key, Example]]

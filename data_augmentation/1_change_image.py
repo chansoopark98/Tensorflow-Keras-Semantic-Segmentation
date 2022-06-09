@@ -1,3 +1,4 @@
+from pickle import NONE
 from re import T
 import numpy as np
 import cv2
@@ -62,7 +63,7 @@ class ImageAugmentationLoader():
         cv2.imwrite(self.OUT_MASK_PATH + prefix + '_mask.png', mask)
 
     
-    def change_image(self, rgb, mask):
+    def change_image(self, rgb, mask, options):
         binary_mask = np.where(mask == 124, 1, 0).astype(np.uint8)
         binary_mask = np.expand_dims(binary_mask, axis=-1)
         # mask를 이용하여 contour를 계산
@@ -75,11 +76,27 @@ class ImageAugmentationLoader():
             x, y, w, h = cv2.boundingRect(contour)
 
             # 합성할 레퍼런스(background : bg) 이미지 랜덤으로 불러오기
-            rnd_int = random.randint(0, len(bg_list)-1)
+            rnd_int = random.randint(0, len(self.bg_list)-1)
 
-            bg_img = cv2.imread(bg_list[rnd_int]) # shape : (h, w, 3)
+            bg_img = cv2.imread(self.bg_list[rnd_int]) # shape : (h, w, 3)
             bg_img = cv2.resize(bg_img, (w, h)) # bounding box 크기만큼 resizing
 
+            if options is not None:
+                if options['blur'] == True:
+                    k = random.randrange(3,21,2)
+                    bg_img = cv2.GaussianBlur(bg_img, (k,k), 0)
+                
+
+                if options['rotation'] == True:
+                    rot = random.randint(5, 90)
+                    reverse = random.randint(1, 2)
+
+                    if reverse == 2:
+                        rot *= -1
+
+                    h, w = bg_img.shape[:2]
+                    rot_mat = cv2.getRotationMatrix2D((w/2, h/2), rot, 1)
+                    bg_img = cv2.warpAffine(bg_img, rot_mat, (w, h))
             
             copy_mask = np.where(binary_mask[y:y+h, x:x+w] == 1, bg_img, rgb[y:y+h, x:x+w])
 
@@ -98,6 +115,11 @@ if __name__ == '__main__':
     mask_list = image_loader.get_mask_list()
     bg_list = image_loader.get_bg_list()
 
+    change_img_options = {
+            'blur': True,
+            'rotation': True,
+            'times': 3,
+             }
 
     for idx in range(len(rgb_list)):
         original_rgb = cv2.imread(rgb_list[idx])
@@ -108,19 +130,20 @@ if __name__ == '__main__':
         rgb = original_rgb.copy()
         mask = original_mask.copy()
 
-        change_rgb, change_mask = image_loader.change_image(rgb=rgb, mask=mask)
         
-
+    
         # save original
-        image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='_{0}_original_'.format(idx))
+        image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='_{0}_original'.format(idx))
 
-        # save change rgb
-        image_loader.save_images(rgb=change_rgb, mask=change_mask, prefix='_{0}_change_'.format(idx))
+        # save change only image
+        change_rgb, change_mask = image_loader.change_image(rgb=rgb, mask=mask, options=None)
+        image_loader.save_images(rgb=change_rgb, mask=change_mask, prefix='_{0}_change'.format(idx))
 
-        
+        # save change with random blur & rotation
+        for change_times in range(change_img_options['times']):
+            change_rgb, change_mask = image_loader.change_image(rgb=rgb, mask=mask, options=change_img_options)
+            image_loader.save_images(rgb=change_rgb, mask=change_mask, prefix='_{0}_change_{1}'.format(idx, change_times))
 
-            
-        
         
 
         

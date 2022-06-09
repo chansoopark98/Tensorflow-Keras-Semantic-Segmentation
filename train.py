@@ -18,7 +18,7 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='DeepLabV3+_b8_e50_focal_test1')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='test1')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=50)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
@@ -55,6 +55,10 @@ os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(CHECKPOINT_DIR + args.model_name, exist_ok=True)
 
+if DISTRIBUTION_MODE == False:
+    tf.config.set_soft_device_placement(True)
+
+
 train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, mode='train')
 valid_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, BATCH_SIZE, mode='validation')
 
@@ -72,16 +76,16 @@ validation_steps = valid_dataset_config.number_valid // BATCH_SIZE
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
 checkpoint_val_loss = ModelCheckpoint(CHECKPOINT_DIR + args.model_name+ '/_' + SAVE_MODEL_NAME + '_best_loss.h5',
-                                      monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
+                                    monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
 checkpoint_val_iou = ModelCheckpoint(CHECKPOINT_DIR + args.model_name +'/_' + SAVE_MODEL_NAME + '_best_iou.h5',
-                                      monitor='val_m_io_u', save_best_only=True, save_weights_only=True,
-                                      verbose=1, mode='max')
+                                    monitor='val_m_io_u', save_best_only=True, save_weights_only=True,
+                                    verbose=1, mode='max')
 
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_DIR +'semantic/' +MODEL_PREFIX, write_graph=True, write_images=True)
 
 polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=base_lr,
-                                                          decay_steps=EPOCHS,
-                                                          end_learning_rate=0.0001, power=0.9)
+                                                        decay_steps=EPOCHS,
+                                                        end_learning_rate=0.0001, power=0.9)
 
 lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
 
@@ -93,10 +97,10 @@ elif OPTIMIZER_TYPE == 'adam':
     optimizer = tf.keras.optimizers.Adam(learning_rate=base_lr)
 elif OPTIMIZER_TYPE == 'radam':
     optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=base_lr,
-                                              weight_decay=0.00001,
-                                              total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
-                                              warmup_proportion=0.1,
-                                              min_lr=0.0001)
+                                            weight_decay=0.00001,
+                                            total_steps=int(train_dataset_config.number_train / ( BATCH_SIZE / EPOCHS)),
+                                            warmup_proportion=0.1,
+                                            min_lr=0.0001)
 
 
 if MIXED_PRECISION:
@@ -106,7 +110,7 @@ if MIXED_PRECISION:
 
 model = semantic_model(image_size=IMAGE_SIZE)
 
-mIoU = MIoU(4)
+mIoU = MIoU(2)
 
 model.compile(
     optimizer=optimizer,
@@ -128,3 +132,11 @@ history = model.fit(train_data,
                     callbacks=callback)
 
 model.save_weights(CHECKPOINT_DIR + '_' + SAVE_MODEL_NAME + '_final_loss.h5')
+
+
+class Train():
+    def __init__(self, args):
+        self.args = args
+
+    
+    def load_model(self)

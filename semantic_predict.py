@@ -21,7 +21,7 @@ parser.add_argument("--result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="모델 가중치 이름", default='semantic_full_weight.h5')
+                    help="모델 가중치 이름", default='_0608_test1_final_loss.h5')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -31,7 +31,7 @@ RESULT_DIR = args.result_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (480, 640)
+IMAGE_SIZE = (512, 512)
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -64,6 +64,12 @@ for x, y, original in tqdm(test_set, total=test_steps):
     label = y[0]
     original = original[0]
 
+    pred = tf.expand_dims(pred, axis=-1)
+    pred = tf.image.resize(pred, size=(original.shape[0], original.shape[1]),
+            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    draw_result = original
+
+    draw_result = tf.where(pred==1, (255,0,0), draw_result)
     rows = 1
     cols = 3
 
@@ -74,15 +80,17 @@ for x, y, original in tqdm(test_set, total=test_steps):
     ax0.set_title('img')
     ax0.axis("off")
 
-    ax0 = fig.add_subplot(rows, cols, 2)
-    ax0.imshow(label)
-    ax0.set_title('label')
-    ax0.axis("off")
-
-    ax1 = fig.add_subplot(rows, cols, 3)
-    ax1.imshow(pred)
+    ax1 = fig.add_subplot(rows, cols, 2)
+    ax1.imshow(pred[:, :, 0])
     ax1.set_title('pred')
     ax1.axis("off")
+
+    ax1 = fig.add_subplot(rows, cols, 3)
+    ax1.imshow(draw_result)
+    ax1.set_title('overwrite')
+    ax1.axis("off")
+
+    
 
     batch_idx += 1
     plt.savefig(RESULT_DIR + str(batch_idx) + '_output.png', dpi=300)
