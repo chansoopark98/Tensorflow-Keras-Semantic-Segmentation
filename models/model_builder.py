@@ -56,8 +56,6 @@ def semantic_model(image_size, model='MobileNetV3S'):
     semantic_output = classifier(model_output, num_classes=2, upper=4, name='output')
 
     model = models.Model(inputs=[model_input], outputs=[semantic_output])
-
-    model.summary()
     
     return model
 

@@ -29,9 +29,10 @@ def deepLabV3Plus(features, activation='swish'):
     b4 = Activation(activation)(b4)
     # upsample. have to use compat because of the option align_corners
     size_before = tf.keras.backend.int_shape(x)
-    b4 = tf.keras.layers.experimental.preprocessing.Resizing(
-            *size_before[1:3], interpolation="bilinear"
-        )(b4)
+    # b4 = tf.keras.layers.experimental.preprocessing.Resizing(
+    #         *size_before[1:3], interpolation="bilinear"
+    #     )(b4)
+    b4 = UpSampling2D((14, 14), interpolation="bilinear")(b4)
 
     # b4 = UpSampling2D(size=(32, 64), interpolation="bilinear")(b4)
     # simple 1x1
@@ -64,9 +65,10 @@ def deepLabV3Plus(features, activation='swish'):
     x = Dropout(0.1)(x)
 
     skip_size = tf.keras.backend.int_shape(skip1)
-    x = tf.keras.layers.experimental.preprocessing.Resizing(
-        *skip_size[1:3], interpolation="bilinear"
-    )(x)
+    # x = tf.keras.layers.experimental.preprocessing.Resizing(
+    #     *skip_size[1:3], interpolation="bilinear"
+    # )(x)
+    x = UpSampling2D((4, 4), interpolation="bilinear")(x)
 
     # aux_temp_aspp = x
 

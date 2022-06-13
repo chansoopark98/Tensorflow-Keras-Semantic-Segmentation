@@ -1,5 +1,5 @@
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Input, Conv2D, GlobalAveragePooling2D, Reshape, DepthwiseConv2D, Dense, Activation, BatchNormalization, Add, Multiply, Reshape
+from tensorflow.keras.layers import Input, Conv2D, GlobalAveragePooling2D, DepthwiseConv2D, Dense, Activation, BatchNormalization, Add, Multiply, Reshape
 from tensorflow.keras import backend as K
 
 """

@@ -30,7 +30,7 @@ class SemanticGenerator:
     def _load_valid_datasets(self):
 
         valid_data = tfds.load('full_semantic',
-                               data_dir=self.data_dir, split='train')
+                               data_dir=self.data_dir, split='train[:10%]')
 
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
         print("검증 데이터 개수:", number_valid)
@@ -39,7 +39,7 @@ class SemanticGenerator:
     def _load_train_datasets(self):
         
         train_data = tfds.load('full_semantic',
-                               data_dir=self.data_dir, split='train')
+                               data_dir=self.data_dir, split='train[10%:]')
 
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
