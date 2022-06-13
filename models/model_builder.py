@@ -5,6 +5,8 @@ from .model_zoo.DeepLabV3plus import DeeplabV3_plus
 from .model_zoo.modify_DeepLabV3plus import deepLabV3Plus
 from .model_zoo.EfficientNetV2 import EfficientNetV2S
 from .model_zoo.DDRNet_23_slim import ddrnet_23_slim
+from .model_zoo.mobileNetV3 import MobileNetV3_Small
+
 
 def classifier(x, num_classes=19, upper=4, name=None):
     x = tf.keras.layers.Conv2D(num_classes, 1, strides=1,
@@ -19,18 +21,27 @@ def segmentation_model(image_size):
 
     
 
-def semantic_model(image_size):
-    # model_input, model_output = unet(input_shape=(image_size[0], image_size[1], 3), base_channel=16, output_channel=3, use_logits=True)
-    # return tf.keras.Model(model_input, model_output)
+def semantic_model(image_size, model='MobileNetV3S'):
+    if model=='MobileNetV3S':
+        base = MobileNetV3_Small(shape=(image_size[0], image_size[1], 3), n_class=1000, alpha=1, include_top=False).build()
+        # 224 1
+        # 112 2
+        # 56 4 -> add
+        # 28 8
+        # 14 16 -> add_5
+        # get output stride 
+            # 1/4 : re_lu_1
+            # 1/16
+        c5 = base.get_layer('add_5').output  # 16x32 256 or get_layer('post_swish') => 확장된 채널 1280
+        c2 = base.get_layer('add').output  # 128x256 48
+    else:
+        base = EfficientNetV2S(input_shape=(image_size[0], image_size[1], 3), pretrained="imagenet")
+        c5 = base.get_layer('add_34').output
+        c2 = base.get_layer('add_4').output 
 
-    base = EfficientNetV2S(input_shape=(image_size[0], image_size[1], 3), pretrained="imagenet")
-    # base.load_weights('./checkpoints/efficientnetv2-s-imagenet.h5', by_name=True)")
-    # base = EfficientNetV2M(input_shape=input_shape, pretrained="imagenet")
 
-    base.summary()
 
-    c5 = base.get_layer('add_34').output  # 16x32 256 or get_layer('post_swish') => 확장된 채널 1280
-    c2 = base.get_layer('add_4').output  # 128x256 48
+
     """
     for EfficientNetV2S (input resolution: 512x1024)
     32x64 = 'add_34'
@@ -45,5 +56,11 @@ def semantic_model(image_size):
     semantic_output = classifier(model_output, num_classes=2, upper=4, name='output')
 
     model = models.Model(inputs=[model_input], outputs=[semantic_output])
+
+    model.summary()
     
     return model
+
+
+if __name__ == '__main__':
+    model = segmentation_model(image_size=(224, 224))

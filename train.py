@@ -18,9 +18,9 @@ import tensorflow_addons as tfa
 tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='320_180_test1_sigle_GPU_bs8')
-parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=50)
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='224_224_mobilenetv3s_test(no_pretrained)')
+parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
@@ -75,7 +75,7 @@ class Train():
         self.DATASET_DIR = self.args.dataset_dir
         self.CHECKPOINT_DIR = self.args.checkpoint_dir
         self.TENSORBOARD_DIR = self.args.tensorboard_dir
-        self.IMAGE_SIZE = (320, 180)
+        self.IMAGE_SIZE = (224, 224)
         self.USE_WEIGHT_DECAY = self.args.use_weightDecay
         self.LOAD_WEIGHT = self.args.load_weight
         self.MIXED_PRECISION = self.args.mixed_precision
