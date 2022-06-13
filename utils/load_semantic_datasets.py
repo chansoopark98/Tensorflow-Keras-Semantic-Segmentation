@@ -90,7 +90,7 @@ class SemanticGenerator:
         labels = tf.cast(sample['gt'], tf.float32)
 
         if tf.random.uniform([]) > 0.5:
-            scale = tf.random.uniform([], 1.0, 1.4)
+            scale = tf.random.uniform([], 1.0, 2.0,)
             new_h = self.image_size[0] * scale
             new_w = self.image_size[1] * scale
             
@@ -98,8 +98,6 @@ class SemanticGenerator:
                             method=tf.image.ResizeMethod.BILINEAR)
             labels = tf.image.resize(labels, size=(new_h, new_w),
                             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-            
 
             concat_img = tf.concat([img, labels], axis=-1)
             concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
@@ -121,21 +119,27 @@ class SemanticGenerator:
     def augmentation(self, img, labels):           
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_saturation(img, 0.1, 0.8)
+
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_brightness(img, 0.9)
+            img = tf.image.random_brightness(img, 0.8)
+
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_contrast(img, 0.1, 0.8)
+
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
+
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_up_down(img)
             labels = tf.image.flip_up_down(labels)
+
         if tf.random.uniform([]) > 0.5:
-            upper = 90 * (np.pi/180.0)
+            upper = 45 * (np.pi/180.0)
             lower = 0 * (np.pi/180.0)
             random_degree = tf.random.uniform([], minval=lower, maxval=upper)
             img = tfa.image.rotate(img, random_degree)
+            labels = tfa.image.rotate(labels, random_degree)
 
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')

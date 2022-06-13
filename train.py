@@ -19,9 +19,9 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 # Model name : ImageSize_BATCH_EPOCH_InitLR_Optimizer_GPU(single or multi)
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='224_8_50_0.001_adam_multi')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='224_8_50_0.001_adam_single')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
-parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
+parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=50)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
@@ -81,6 +81,8 @@ class Train():
         self.LOAD_WEIGHT = self.args.load_weight
         self.MIXED_PRECISION = self.args.mixed_precision
         self.DISTRIBUTION_MODE = self.args.multi_gpu
+        if self.DISTRIBUTION_MODE:
+            self.BATCH_SIZE *= 2
 
         os.makedirs(self.DATASET_DIR, exist_ok=True)
         os.makedirs(self.CHECKPOINT_DIR, exist_ok=True)
