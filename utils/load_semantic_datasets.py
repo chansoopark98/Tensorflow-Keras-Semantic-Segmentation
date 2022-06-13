@@ -1,6 +1,7 @@
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import tensorflow_datasets as tfds
 import tensorflow as tf
+import tensorflow_addons as tfa
 import numpy as np
 
 AUTO = tf.data.experimental.AUTOTUNE
@@ -121,7 +122,7 @@ class SemanticGenerator:
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_saturation(img, 0.1, 0.8)
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_brightness(img, 0.1)
+            img = tf.image.random_brightness(img, 0.9)
         if tf.random.uniform([]) > 0.5:
             img = tf.image.random_contrast(img, 0.1, 0.8)
         if tf.random.uniform([]) > 0.5:
@@ -130,6 +131,11 @@ class SemanticGenerator:
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_up_down(img)
             labels = tf.image.flip_up_down(labels)
+        if tf.random.uniform([]) > 0.5:
+            upper = 90 * (np.pi/180.0)
+            lower = 0 * (np.pi/180.0)
+            random_degree = tf.random.uniform([], minval=lower, maxval=upper)
+            img = tfa.image.rotate(img, random_degree)
 
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')
@@ -143,13 +149,6 @@ class SemanticGenerator:
         img = tf.cast(sample['rgb'], tf.float32)
         labels = tf.cast(sample['gt'], tf.float32)
 
-        
-        # concat_img = tf.concat([img, labels], axis=-1)
-        # concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
-        
-        # img = concat_img[:, :, :3]
-        # labels = concat_img[:, :, 3:]
-
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
             method=tf.image.ResizeMethod.BILINEAR)
         labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
@@ -161,7 +160,6 @@ class SemanticGenerator:
         labels = tf.where(labels==124, 1, 0)
         labels = tf.cast(labels, tf.int32)
 
-
         return (img, labels)
 
     def get_trainData(self, train_data):
@@ -171,11 +169,13 @@ class SemanticGenerator:
         train_data = train_data.padded_batch(self.batch_size)
         train_data = train_data.prefetch(AUTO)
         train_data = train_data.repeat()
+
         return train_data
 
     def get_validData(self, valid_data):
         valid_data = valid_data.map(self.preprocess_valid, num_parallel_calls=AUTO)
         valid_data = valid_data.padded_batch(self.batch_size).prefetch(AUTO)
+
         return valid_data
 
     def get_testData(self, valid_data):
