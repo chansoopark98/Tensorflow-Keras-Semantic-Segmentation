@@ -134,7 +134,6 @@ class ConvertToLite():
             metrics=self.metrics
             )
 
-        
 
         self.model_for_pruning.summary()
 

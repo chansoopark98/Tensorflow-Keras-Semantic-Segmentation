@@ -17,7 +17,6 @@ def deepLabV3Plus(features, activation='swish'):
     skip1, x = features # c1 48 / c2 64
 
     # Image Feature branch
-    shape_before = tf.shape(x)
     b4 = GlobalAveragePooling2D()(x)
     b4_shape = tf.keras.backend.int_shape(b4)
     # from (b_size, channels)->(b_size, 1, 1, channels)
@@ -28,7 +27,6 @@ def deepLabV3Plus(features, activation='swish'):
     b4 = BatchNormalization(name='image_pooling_BN', epsilon=1e-5)(b4)
     b4 = Activation(activation)(b4)
     # upsample. have to use compat because of the option align_corners
-    size_before = tf.keras.backend.int_shape(x)
     # b4 = tf.keras.layers.experimental.preprocessing.Resizing(
     #         *size_before[1:3], interpolation="bilinear"
     #     )(b4)
@@ -64,21 +62,11 @@ def deepLabV3Plus(features, activation='swish'):
 
     x = Dropout(0.1)(x)
 
-    skip_size = tf.keras.backend.int_shape(skip1)
-    # x = tf.keras.layers.experimental.preprocessing.Resizing(
-    #     *skip_size[1:3], interpolation="bilinear"
-    # )(x)
     x = UpSampling2D((4, 4), interpolation="bilinear")(x)
-
-    # aux_temp_aspp = x
-
-    # x = UpSampling2D((4,4), interpolation='bilinear')(x)
 
     dec_skip1 = Conv2D(48, (1, 1), padding='same',
                        kernel_regularizer=DECAY,
                        use_bias=False, name='feature_projection0')(skip1)
-    # dec_skip1 = BatchNormalization(
-    #     name='feature_projection0_BN', epsilon=1e-5)(dec_skip1)
     dec_skip1 = BN(
         name='feature_projection0_BN', epsilon=1e-5)(dec_skip1)
     dec_skip1 = Activation(activation)(dec_skip1)
