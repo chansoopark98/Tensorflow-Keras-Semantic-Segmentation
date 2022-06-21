@@ -75,8 +75,8 @@ class SemanticGenerator:
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(img, mode='torch')
-        
+        # img = preprocess_input(img, mode='torch')
+        img /= 255.
                 
         labels = tf.where(labels==124, 1, 0)
         labels = tf.cast(labels, tf.int32)
@@ -142,7 +142,8 @@ class SemanticGenerator:
         #     labels = tfa.image.rotate(labels, random_degree)
 
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(img, mode='torch')
+        # img = preprocess_input(img, mode='torch')
+        img /= 255.
         
         labels = tf.cast(labels, tf.int32)
 
@@ -159,7 +160,8 @@ class SemanticGenerator:
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(img, mode='torch')
+        # img = preprocess_input(img, mode='torch')
+        img /= 255.
         
         labels = tf.where(labels==124, 1, 0)
         labels = tf.cast(labels, tf.int32)
