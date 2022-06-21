@@ -130,16 +130,16 @@ class SemanticGenerator:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
 
-        if tf.random.uniform([]) > 0.5:
-            img = tf.image.flip_up_down(img)
-            labels = tf.image.flip_up_down(labels)
+        # if tf.random.uniform([]) > 0.5:
+        #     img = tf.image.flip_up_down(img)
+        #     labels = tf.image.flip_up_down(labels)
 
-        if tf.random.uniform([]) > 0.5:
-            upper = 45 * (np.pi/180.0)
-            lower = 0 * (np.pi/180.0)
-            random_degree = tf.random.uniform([], minval=lower, maxval=upper)
-            img = tfa.image.rotate(img, random_degree)
-            labels = tfa.image.rotate(labels, random_degree)
+        # if tf.random.uniform([]) > 0.5:
+        #     upper = 45 * (np.pi/180.0)
+        #     lower = 0 * (np.pi/180.0)
+        #     random_degree = tf.random.uniform([], minval=lower, maxval=upper)
+        #     img = tfa.image.rotate(img, random_degree)
+        #     labels = tfa.image.rotate(labels, random_degree)
 
         img = tf.cast(img, tf.float32)
         img = preprocess_input(img, mode='torch')

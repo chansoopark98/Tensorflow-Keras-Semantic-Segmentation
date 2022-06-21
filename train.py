@@ -2,7 +2,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 from models.model_builder import semantic_model
 from utils.load_semantic_datasets import SemanticGenerator
-from utils.loss import ce_loss, SparseCategoricalFocalLoss
+from utils.loss import ce_loss, SparseCategoricalFocalLoss, bce_loss
 from utils.metrics import MIoU
 import argparse
 import time
@@ -19,11 +19,13 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 # Model name : ImageSize_BATCH_EPOCH_InitLR_Optimizer_GPU(single or multi)
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='224_8_100_0.001_adam_multi')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='224_8_100_0.001_adam_single_binary')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=8)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=100)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
+parser.add_argument("--num_classes",   type=int, help="분류할 클래수 개수 설정", default=2)
+parser.add_argument("--image_size",   type=tuple, help="조정할 이미지 크기 설정", default=(224, 224))
 parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -68,6 +70,7 @@ class Train():
     def __set_args(self):
         self.MODEL_PREFIX = self.args.model_prefix
         self.WEIGHT_DECAY = self.args.weight_decay
+        self.NUM_CLASSES = self.args.num_classes
         self.OPTIMIZER_TYPE = self.args.optimizer
         self.BATCH_SIZE = self.args.batch_size
         self.EPOCHS = self.args.epoch
@@ -76,7 +79,7 @@ class Train():
         self.DATASET_DIR = self.args.dataset_dir
         self.CHECKPOINT_DIR = self.args.checkpoint_dir
         self.TENSORBOARD_DIR = self.args.tensorboard_dir
-        self.IMAGE_SIZE = (224, 224)
+        self.IMAGE_SIZE = self.args.image_size
         self.USE_WEIGHT_DECAY = self.args.use_weightDecay
         self.LOAD_WEIGHT = self.args.load_weight
         self.MIXED_PRECISION = self.args.mixed_precision
@@ -95,7 +98,7 @@ class Train():
         checkpoint_val_loss = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name+ '/_' + self.SAVE_MODEL_NAME + '_best_loss.h5',
                                             monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
         checkpoint_val_iou = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name +'/_' + self.SAVE_MODEL_NAME + '_best_iou.h5',
-                                            monitor='val_m_io_u', save_best_only=True, save_weights_only=True,
+                                            monitor='val_accuracy', save_best_only=True, save_weights_only=True,
                                             verbose=1, mode='max')
 
         tensorboard = tf.keras.callbacks.TensorBoard(log_dir=self.TENSORBOARD_DIR +'semantic/' + self.MODEL_PREFIX, write_graph=True, write_images=True)
@@ -128,18 +131,18 @@ class Train():
 
     
     def configuration_model(self):
-        self.model = semantic_model(image_size=self.IMAGE_SIZE)
+        self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES)
 
     
     def configuration_metric(self):
-        mIoU = MIoU(2)
+        mIoU = MIoU(self.NUM_CLASSES)
         self.metrics = [mIoU]
 
 
     def train(self):
         self.model.compile(
             optimizer=self.optimizer,
-            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True),
+            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True), # bce_loss, SparseCategoricalFocalLoss(gamma=2, from_logits=True)
             metrics=self.metrics
             )
 

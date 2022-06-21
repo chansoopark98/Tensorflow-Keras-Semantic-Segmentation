@@ -117,7 +117,3 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
                                              gamma=self.gamma,
                                              from_logits=self.from_logits)
 
-
-
-
-
