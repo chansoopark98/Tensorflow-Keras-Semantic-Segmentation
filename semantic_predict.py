@@ -8,20 +8,13 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import tensorflow_addons as tfa
-
+import cv2
 
 def demo_prepare(path):
     img = tf.io.read_file(path)
-    # img = tf.image.decode_image(img, channels=3)
-    
-
-    img = tf.image.decode_jpeg(img)
-    img = tfa.image.rotate(img, 1.57)
-    # img = tf.image.rot90(img)
+    img = tf.image.decode_image(img)
 
     return (img)
-
-
 
 
 tf.keras.backend.clear_session()
@@ -38,7 +31,7 @@ parser.add_argument("--result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="모델 가중치 이름", default='_0608_test1_final_loss.h5')
+                    help="모델 가중치 이름", default='/0622/_0622_320-180_8_50_0.001_adam_single_EFFNet_best_iou.h5')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -48,7 +41,7 @@ RESULT_DIR = args.result_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (320, 240)
+IMAGE_SIZE = (320, 180)
 demo = True
 
 os.makedirs(DATASET_DIR, exist_ok=True)
@@ -72,7 +65,7 @@ if demo:
     test_steps = len(filenames) // 1
 
 
-model = semantic_model(image_size=IMAGE_SIZE)
+model = semantic_model(image_size=IMAGE_SIZE, model='effnet')
 model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
 model.summary()
 
@@ -82,30 +75,34 @@ for x in tqdm(test_set, total=test_steps):
 
 
     original = x[0]
-
-    img = tf.cast(x, tf.float32)
+    
+    original = cv2.rotate(original.numpy(), cv2.ROTATE_90_CLOCKWISE)
+    
+    img = tf.cast(original, tf.float32)
 
     img = tf.image.resize(img, size=(IMAGE_SIZE[0], IMAGE_SIZE[1]),
         method=tf.image.ResizeMethod.BILINEAR)
+    
+    img = tf.expand_dims(img, axis=0)
 
     img = preprocess_input(img, mode='torch')
 
     start = time.process_time()
+
     pred = model.predict_on_batch(img)
     duration = (time.process_time() - start)
     if duration <= 0.1:
         avg_duration += duration
 
-    pred = pred[0]
+
     pred = tf.argmax(pred, axis=-1)
+    pred = pred[0]
 
     pred = tf.expand_dims(pred, axis=-1)
     pred = tf.image.resize(pred, size=(original.shape[0], original.shape[1]),
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-    draw_result = original
-
-    draw_result = tf.where(pred==1, (255,0,0), draw_result)
+    draw_result = tf.where(pred==1, (255,0,0), original)
     rows = 1
     cols = 3
 
@@ -125,7 +122,6 @@ for x in tqdm(test_set, total=test_steps):
     ax1.imshow(draw_result)
     ax1.set_title('overwrite')
     ax1.axis("off")
-
     
 
     batch_idx += 1
