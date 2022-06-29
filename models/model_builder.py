@@ -27,20 +27,36 @@ def semantic_model(image_size, model='MobileNetV3S', num_classes=2):
             image_size[0], image_size[1], 3), n_class=1000, alpha=1, include_top=False).build()
         c5 = base.get_layer('add_5').output
         c2 = base.get_layer('add').output  # 128x256 48
-    else:
+        features = [c2, c5]
+
+        model_input = base.input
+        model_output = deepLabV3Plus(features=features, activation='swish')
+
+        semantic_output = classifier(
+            model_output, num_classes=num_classes, upper=4, name='output')
+
+        model = models.Model(inputs=[model_input], outputs=[semantic_output])
+
+    elif model== 'EFFV2S':
         base = EfficientNetV2S(input_shape=(
             image_size[0], image_size[1], 3), pretrained="imagenet")
         c5 = base.get_layer('add_34').output
         c2 = base.get_layer('add_4').output
 
-    features = [c2, c5]
+        features = [c2, c5]
 
-    model_input = base.input
-    model_output = deepLabV3Plus(features=features, activation='swish')
+        model_input = base.input
+        model_output = deepLabV3Plus(features=features, activation='swish')
 
-    semantic_output = classifier(
-        model_output, num_classes=num_classes, upper=4, name='output')
+        semantic_output = classifier(
+            model_output, num_classes=num_classes, upper=4, name='output')
 
-    model = models.Model(inputs=[model_input], outputs=[semantic_output])
+        model = models.Model(inputs=[model_input], outputs=[semantic_output])
+
+
+    elif model == 'ddrnet':
+        model = ddrnet_23_slim(input_shape=[image_size[0], image_size[1], 3], num_classes=2, use_aux=False)
+
+
 
     return model

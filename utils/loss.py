@@ -4,6 +4,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import itertools
 from typing import Any, Optional
+from tensorflow.keras.losses import SparseCategoricalCrossentropy, Reduction
 
 import tensorflow as tf
 
@@ -25,7 +26,8 @@ def ce_loss(y_true, y_pred):
 
 def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
                                   class_weight: Optional[Any] = None,
-                                  from_logits: bool = False, axis: int = -1
+                                  from_logits: bool = False, axis: int = -1,
+                                  use_multi_gpu: bool = False,
                                   ) -> tf.Tensor:
     # Process focusing parameter
     gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)
@@ -74,10 +76,12 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         probs = y_pred
         logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
 
-    xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+    if use_multi_gpu:
+        xent_loss = SparseCategoricalCrossentropy(from_logits=True, reduction=Reduction.NONE)(y_true, logits)
+    else:
+            xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=y_true,
-        logits=logits,
-    )
+        logits=logits)
 
     y_true_rank = y_true.shape.rank
     probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
@@ -99,11 +103,12 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 @tf.keras.utils.register_keras_serializable()
 class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
     def __init__(self, gamma, class_weight: Optional[Any] = None,
-                 from_logits: bool = False, **kwargs):
+                 from_logits: bool = False, use_multi_gpu: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
         self.class_weight = class_weight
         self.from_logits = from_logits
+        self.use_multi_gpu = use_multi_gpu
 
     def get_config(self):
         config = super().get_config()
@@ -115,5 +120,6 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         return sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
                                              class_weight=self.class_weight,
                                              gamma=self.gamma,
-                                             from_logits=self.from_logits)
+                                             from_logits=self.from_logits,
+                                             use_multi_gpu=self.use_multi_gpu)
 

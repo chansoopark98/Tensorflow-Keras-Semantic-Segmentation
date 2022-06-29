@@ -19,13 +19,13 @@ tf.keras.backend.clear_session()
 
 parser = argparse.ArgumentParser()
 # Model name : ImageSize_BATCH_EPOCH_InitLR_Optimizer_GPU(single or multi)
-parser.add_argument("--model_prefix",     type=str,   help="Model name", default='320-180_8_50_0.001_adam_single_EFFNet')
+parser.add_argument("--model_prefix",     type=str,   help="Model name", default='224-224_8_50_0.001_adam_single_DDRNet')
 parser.add_argument("--batch_size",     type=int,   help="배치 사이즈값 설정", default=16)
 parser.add_argument("--epoch",          type=int,   help="에폭 설정", default=50)
 parser.add_argument("--lr",             type=float, help="Learning rate 설정", default=0.001)
 parser.add_argument("--weight_decay",   type=float, help="Weight Decay 설정", default=0.0005)
 parser.add_argument("--num_classes",   type=int, help="분류할 클래수 개수 설정", default=2)
-parser.add_argument("--image_size",   type=tuple, help="조정할 이미지 크기 설정", default=(320, 180))
+parser.add_argument("--image_size",   type=tuple, help="조정할 이미지 크기 설정", default=(224, 224))
 parser.add_argument("--optimizer",     type=str,   help="Optimizer", default='adam')
 parser.add_argument("--model_name",     type=str,   help="저장될 모델 이름",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
@@ -131,7 +131,7 @@ class Train():
 
     
     def configuration_model(self):
-        self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='effnet')
+        self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='ddrnet')
 
     
     def configuration_metric(self):
@@ -142,7 +142,7 @@ class Train():
     def train(self):
         self.model.compile(
             optimizer=self.optimizer,
-            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True), # bce_loss, SparseCategoricalFocalLoss(gamma=2, from_logits=True)
+            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE), # bce_loss, SparseCategoricalFocalLoss(gamma=2, from_logits=True)
             metrics=self.metrics
             )
 

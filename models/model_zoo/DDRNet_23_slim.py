@@ -132,12 +132,6 @@ def segmentation_head(x_in, interplanes, outplanes, scale_factor=None, name='tes
     x = layers.Activation("relu")(x)
     x = layers.Conv2D(outplanes, kernel_size=(1, 1), use_bias=range, padding="valid")(x)
 
-    # if scale_factor is not None:
-    input_shape = tf.keras.backend.int_shape(x)
-    height2 = input_shape[1] * scale_factor
-    width2 = input_shape[2] * scale_factor
-    x = tf.image.resize(x, size =(height2, width2), name=name)
-
     return x
 
 """
@@ -287,21 +281,15 @@ def ddrnet_23_slim(input_shape=[1024,2048,3], num_classes=1, planes=32, use_aux=
 
     x_ = layers.Add()([x, x_])
 
-    x_ = segmentation_head( (x_), head_planes, num_classes, scale_factor, name='output')
+    x_ = segmentation_head(x_, head_planes, num_classes, scale_factor, name='output')
+    
+    # if scale_factor is not None:
 
-    # apply softmax at the output layer
-    if num_classes == 1:
-        x_ = tf.nn.sigmoid(x_, name='sigmoid_output')
+    
+    output = layers.UpSampling2D(size=(scale_factor, scale_factor), interpolation='bilinear', name='output')(x_)
 
-    if use_aux:
-        x_extra = segmentation_head( temp_output, head_planes, num_classes, scale_factor, name='aux') # without scaling
-        if num_classes == 1:
-            x_extra = tf.nn.sigmoid(x_extra, name='sig_aux')
-        model_output = [x_, x_extra]
-    else:
-        model_output = x_
 
-    model = models.Model(inputs=[x_in], outputs=[model_output])
+    model = models.Model(inputs=x_in, outputs=output)
 
     # set weight initializers
     for layer in model.layers:
