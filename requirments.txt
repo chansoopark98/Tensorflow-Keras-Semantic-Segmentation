@@ -1,7 +1,4 @@
-tensorflow==2.6.2
+tensorflow==2.9.1
 tensorflow-datasets
 tensorflow-addons
-imageio
 opencv-python
-pyrealsense2
-tifffile

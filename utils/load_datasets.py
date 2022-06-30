@@ -146,6 +146,5 @@ class DatasetGenerator:
         return valid_data
 
     def get_testData(self, valid_data):
-        valid_data = valid_data.map(self.load_test)
-        valid_data = valid_data.batch(self.batch_size).prefetch(AUTO)
+        valid_data = valid_data.map(self.load_test).prefetch(AUTO)
         return valid_data

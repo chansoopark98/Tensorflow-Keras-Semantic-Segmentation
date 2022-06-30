@@ -109,19 +109,19 @@ class SemanticGenerator:
     @tf.function
     def augmentation(self, img, labels):           
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_jpeg_quality(img, 40, 90)
+            img = tf.image.random_jpeg_quality(img, 30, 90)
         
         if tf.random.uniform([]) > 0.7:
             img = tf.image.random_hue(img, 0.2)
 
         if tf.random.uniform([]) > 0.7:
-            img = tf.image.random_saturation(img, 5, 10)
+            img = tf.image.random_saturation(img, 1, 5)
 
         if tf.random.uniform([]) > 0.7:
-            img = tf.image.random_brightness(img, 0.2)
+            img = tf.image.random_brightness(img, 0.3)
 
         if tf.random.uniform([]) > 0.7:
-            img = tf.image.random_contrast(img, 0.2, 0.5)
+            img = tf.image.random_contrast(img, 0.5, 1)
 
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_left_right(img)
