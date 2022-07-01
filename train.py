@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser()
 # Set Convert to SavedMoel
 parser.add_argument("--saved_model",  help="SavedModel.pb 변환", action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="저장된 모델 가중치 경로",
-                    default='Your_model_weights.h5')
+                    default='./checkpoints/0629/_0629_224-224_16_100_0.001_adam_single_DDRNet_best_iou.h5')
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
@@ -56,9 +56,8 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
     if args.saved_model:
-        model = ModelConfiguration(args=args)(args=args)
-        # model.saved_model()
-        model.convert_to_trt()
+        model = ModelConfiguration(args=args)
+        model.saved_model()
 
     else:
         if args.multi_gpu == False:

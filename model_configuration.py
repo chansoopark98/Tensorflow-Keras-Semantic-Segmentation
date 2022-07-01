@@ -8,19 +8,13 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.python.compiler import tensorrt as trt
+import numpy as np
 
 
 class ModelConfiguration():
     def __init__(self, args, mirrored_strategy=None):
         self.args = args
         self.mirrored_strategy = mirrored_strategy
-        self.__set_args()
-        self.__set_callbacks()
-        self.configuration_dataset()
-        self.__set_optimizer()
-        self.configuration_model()
-        self.configuration_metric()
-        
 
     def configuration_dataset(self):
         self.train_dataset_config = SemanticGenerator(self.DATASET_DIR, self.IMAGE_SIZE, self.BATCH_SIZE, mode='train')
@@ -111,6 +105,13 @@ class ModelConfiguration():
 
 
     def train(self):
+        self.__set_args()
+        self.__set_callbacks()
+        self.configuration_dataset()
+        self.__set_optimizer()
+        self.configuration_model()
+        self.configuration_metric()
+
         self.model.compile(
             optimizer=self.optimizer,
             loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE), # bce_loss, SparseCategoricalFocalLoss(gamma=2, from_logits=True)
@@ -130,16 +131,18 @@ class ModelConfiguration():
 
 
     def saved_model(self):
-        self.model.load_weights(args.saved_model_path)
+        self.__set_args()
+        self.configuration_model()
+        self.model.load_weights(self.args.saved_model_path)
         export_path = os.path.join(self.CHECKPOINT_DIR, 'export_path', '1')
         os.makedirs(export_path, exist_ok=True)
         self.export_path = export_path
-
+        self.model.summary()
         tf.keras.models.save_model(
             self.model,
             self.export_path,
             overwrite=True,
-            include_optimizer=True,
+            include_optimizer=False,
             save_format=None,
             signatures=None,
             options=None
@@ -148,9 +151,11 @@ class ModelConfiguration():
     
     
     def convert_to_trt(self):
-        self.model.load_weights(args.saved_model_path)
-
-        input_saved_model_dir = './checkpoints/export_path/'
+        
+        
+        # self.model.load_weights(self.args.saved_model_path)
+        self.IMAGE_SIZE = (224, 224)
+        input_saved_model_dir = './checkpoints/export_path/1/'
         output_saved_model_dir = './checkpoints/export_path_trt/'
 
         os.makedirs(output_saved_model_dir, exist_ok=True)
@@ -159,16 +164,17 @@ class ModelConfiguration():
                                 precision_mode='FP16',
                                 maximum_cached_engines=16)
         converter = tf.experimental.tensorrt.Converter(
-            input_saved_model_dir=input_saved_model_dir, conversion_params=params)
+            input_saved_model_dir=input_saved_model_dir, conversion_params=params, use_dynamic_shape=False)
         converter.convert()
 
         # Define a generator function that yields input data, and use it to execute
         # the graph to build TRT engines.
         def my_input_fn():
-            inp1 = tf.random.normal(size=(1, self.IMAGE_SIZE[0], self.IMAGE_SIZE[1], 3)).astype(tf.float32)
-            inp2 = tf.random.normal(size=(1, self.IMAGE_SIZE[0], self.IMAGE_SIZE[1], 3)).astype(tf.float32)
-            yield (inp1, inp2)
-
+            
+            inp1 = tf.random.normal((1, 224, 224, 3), dtype=tf.float32)
+            inp2 = np.random.normal(size=(1,self.IMAGE_SIZE[0], self.IMAGE_SIZE[1], 3)).astype(np.float32)
+            yield [inp1]
+        
         converter.build(input_fn=my_input_fn)  # Generate corresponding TRT engines
         converter.save(output_saved_model_dir)  # Generated engines will be saved.
 

@@ -22,6 +22,12 @@ def classifier(x, num_classes=19, upper=4, name=None):
   
 
 def semantic_model(image_size, model='MobileNetV3S', num_classes=2):
+    """
+    Args:
+        image_size (tuple) : [B, H, W]
+        model (str) : Model name
+        num_classes (int) : number of classifer's
+    """
     if model == 'MobileNetV3S':
         base = MobileNetV3_Small(shape=(
             image_size[0], image_size[1], 3), n_class=1000, alpha=1, include_top=False).build()
