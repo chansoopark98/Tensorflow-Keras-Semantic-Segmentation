@@ -1,4 +1,5 @@
 tensorflow==2.9.1
-tensorflow-datasets
-tensorflow-addons
-opencv-python
+tensorflow-serving-api==2.9.0
+tensorflow-datasets==4.6.0
+tensorflow-addons==0.17.1
+opencv-python=4.6.0.66

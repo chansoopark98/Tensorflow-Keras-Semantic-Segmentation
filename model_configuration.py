@@ -156,7 +156,7 @@ class ModelConfiguration():
         # self.model.load_weights(self.args.saved_model_path)
         self.IMAGE_SIZE = (224, 224)
         input_saved_model_dir = './checkpoints/export_path/1/'
-        output_saved_model_dir = './checkpoints/export_path_trt/'
+        output_saved_model_dir = './checkpoints/export_path_trt/1/'
 
         os.makedirs(output_saved_model_dir, exist_ok=True)
 
