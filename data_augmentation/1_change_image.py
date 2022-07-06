@@ -80,9 +80,12 @@ class ImageAugmentationLoader():
     def change_image(self, img_idx, rgb, mask, obj_mask, options):
         """
         rgb = (H, W, 3)
-        mask = (H, W, 3
+        mask = (H, W, 3 , 124
         obj_mask = (H, W, 3)"""
         # TODO : Add random crop 
+
+        plt.imshow(mask)
+        plt.show()
         
         obj_mask = np.argmax(obj_mask ,axis=-1)
 
@@ -111,7 +114,6 @@ class ImageAugmentationLoader():
 
 
             for contour in contours:
-                
                 contour_len += 1
                 # 마스크의 contour를 이용하여 합성 할 영역의 bounding box를 계산
                 x, y, w, h = cv2.boundingRect(contour)
