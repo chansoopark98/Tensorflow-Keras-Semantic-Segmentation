@@ -13,12 +13,12 @@ args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
 DATASET_TYPE = args.dataset_type
 DATASET_NUMS = args.dataset_nums
-IMAGE_SIZE = (224, 224)
+IMAGE_SIZE = (640, 360)
 
 if __name__ == "__main__":
 
-    train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, batch_size=1, mode='train')
-    train_data = train_dataset_config.get_testData(train_dataset_config.train_data)
+    train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, batch_size=1, mode='validation')
+    train_data = train_dataset_config.get_testData(train_dataset_config.valid_data)
 
     rows = 1
     cols = 3

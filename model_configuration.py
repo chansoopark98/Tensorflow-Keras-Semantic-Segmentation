@@ -2,7 +2,7 @@ from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from keras import mixed_precision
 from models.model_builder import semantic_model
 from utils.load_semantic_datasets import SemanticGenerator
-from utils.loss import ce_loss, SparseCategoricalFocalLoss, bce_loss
+from utils.loss import distribute_ce_loss, SparseCategoricalFocalLoss, bce_loss, DistributeLoss
 from utils.metrics import MIoU
 import os
 import tensorflow as tf
@@ -86,17 +86,24 @@ class ModelConfiguration():
                                                     total_steps=int(self.train_dataset_config.number_train / (self.BATCH_SIZE / self.EPOCHS)),
                                                     warmup_proportion=0.1,
                                                     min_lr=0.0001)
-        elif self.OPTIMIZER_TYPE == 'adamW':
             
-            self.optimizer = tf.keras.optimizers.experimental.AdamW(learning_rate=self.INIT_LR, weight_decay=self.WEIGHT_DECAY)
-
         if self.MIXED_PRECISION:
-            mixed_precision.set_global_policy('mixed_float16')
-            self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer)
+            
+            policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+            mixed_precision.set_policy(policy)
+            self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer, loss_scale='dynamic')
+
+            # 2.9.2
+            #mixed_precision.set_global_policy('mixed_float16')
+            # self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer)
 
     
-    def configuration_model(self):
-        self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='EFFV2S')
+    def configuration_model(self, image_size=None, num_classes=None):
+        if image_size is None:
+            self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='EFFV2S')
+        else:
+            self.model = semantic_model(image_size=image_size, num_classes=num_classes, model='EFFV2S')
+            return self.model
 
     
     def configuration_metric(self):
@@ -112,9 +119,13 @@ class ModelConfiguration():
         self.configuration_model()
         self.configuration_metric()
 
+        # SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE)
+
+        
+        loss = DistributeLoss(global_batch_size=self.BATCH_SIZE)
         self.model.compile(
             optimizer=self.optimizer,
-            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE), # bce_loss, SparseCategoricalFocalLoss(gamma=2, from_logits=True)
+            loss=loss.ce_loss,
             metrics=self.metrics
             )
 

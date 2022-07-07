@@ -121,9 +121,9 @@ class ImageAugmentationLoader():
         crop_times = options['crop_times']
 
         for crop_idx in range(crop_times):
-            scale = tf.random.uniform([], 0.5, 1.4)
+            scale = tf.random.uniform([], 0.5, 1)
             # rgb.shape -> h ,w, 3
-            new_w = (rgb.shape[1] * 0.5) * scale
+            new_w = rgb.shape[1] * scale
             new_h = new_w * 1.6
 
             crop_img = rgb.copy()
@@ -136,81 +136,132 @@ class ImageAugmentationLoader():
             
             crop_img = concat_img[:, :, :3]
             crop_mask = concat_img[:, :, 3:]
-            self.save_images(rgb=crop_img.numpy(), mask=crop_mask.numpy(), prefix='_{0}_original_{1}_crop_'.format(img_idx, crop_idx))                                                            
-
-
-        # TODO change argmax
-
-        # binary_mask = binary_mask[:, :, 0]
-        contour_idx = 0
-
-        obj_mask = cv2.cvtColor(obj_mask, cv2.COLOR_RGB2GRAY)
-        obj_mask = obj_mask.astype(np.uint8)
-
-        obj_idx = np.unique(obj_mask)
-        obj_idx = np.delete(obj_idx, 0)
-
-        for idx in obj_idx: # 1 ~ obj nums
-            binary_mask = np.where(obj_mask==idx, 255, 0)
             
-            binary_mask = binary_mask.astype(np.uint8)
-            contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            self.save_images(rgb=crop_img.numpy(), mask=crop_mask.numpy(), prefix='_{0}_original_{1}_crop_'.format(img_idx, crop_idx))     
+
+
+        
+        br_rgb = self.bg_brightness(bg=rgb.copy())     
+        self.save_images(rgb=br_rgb.copy(), mask=mask.copy(), prefix='_{0}_brightness_'.format(img_idx))                                                    
+
+        for crop_idx in range(2):
+            scale = tf.random.uniform([], 0.5, 1)
+            # rgb.shape -> h ,w, 3
+            new_w = rgb.shape[1] * scale
+            new_h = new_w * 1.6
+
+            crop_img = br_rgb.copy()
+            crop_mask = mask.copy()
+            crop_mask = tf.expand_dims(crop_mask, axis=-1)
+            crop_img = tf.cast(crop_img, tf.uint8)
+
+            concat_img = tf.concat([crop_img, crop_mask], axis=-1)
+            concat_img = tf.image.random_crop(concat_img, size=[new_h, new_w, 4])
+            
+            crop_img = concat_img[:, :, :3]
+            crop_mask = concat_img[:, :, 3:]
+            
+            self.save_images(rgb=crop_img.numpy(), mask=crop_mask.numpy(), prefix='_{0}_brightness_{1}_crop_'.format(img_idx, crop_idx))  
+
+        
+        histogram_rgb = self.histogram_equalization(rgb=rgb.copy())     
+        self.save_images(rgb=histogram_rgb.copy(), mask=mask.copy(), prefix='_{0}_histogram_'.format(img_idx))                                                    
+
+        for crop_idx in range(2):
+            scale = tf.random.uniform([], 0.5, 1)
+            # rgb.shape -> h ,w, 3
+            new_w = rgb.shape[1] * scale
+            new_h = new_w * 1.6
+
+            crop_img = histogram_rgb.copy()
+            crop_mask = mask.copy()
+            crop_mask = tf.expand_dims(crop_mask, axis=-1)
+            crop_img = tf.cast(crop_img, tf.uint8)
+
+            concat_img = tf.concat([crop_img, crop_mask], axis=-1)
+            concat_img = tf.image.random_crop(concat_img, size=[new_h, new_w, 4])
+            
+            crop_img = concat_img[:, :, :3]
+            crop_mask = concat_img[:, :, 3:]
+            
+            self.save_images(rgb=crop_img.numpy(), mask=crop_mask.numpy(), prefix='_{0}_histogram_{1}_crop_'.format(img_idx, crop_idx))  
+
+
+        
+
+
+        # # TODO change argmax
+
+        # # binary_mask = binary_mask[:, :, 0]
+        # contour_idx = 0
+
+        # obj_mask = cv2.cvtColor(obj_mask, cv2.COLOR_RGB2GRAY)
+        # obj_mask = obj_mask.astype(np.uint8)
+
+        # obj_idx = np.unique(obj_mask)
+        # obj_idx = np.delete(obj_idx, 0)
+
+        # for idx in obj_idx: # 1 ~ obj nums
+        #     binary_mask = np.where(obj_mask==idx, 255, 0)
+            
+        #     binary_mask = binary_mask.astype(np.uint8)
+        #     contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             
 
-            for contour in contours:
-                contour_idx += 1
-                # 마스크의 contour를 이용하여 합성 할 영역의 bounding box를 계산
-                x, y, w, h = cv2.boundingRect(contour)
+        #     for contour in contours:
+        #         contour_idx += 1
+        #         # 마스크의 contour를 이용하여 합성 할 영역의 bounding box를 계산
+        #         x, y, w, h = cv2.boundingRect(contour)
 
-                # 합성할 레퍼런스(background : bg) 이미지 랜덤으로 불러오기
-                rnd_int = random.randint(0, len(self.bg_list)-1)
+        #         # 합성할 레퍼런스(background : bg) 이미지 랜덤으로 불러오기
+        #         rnd_int = random.randint(0, len(self.bg_list)-1)
 
-                bg_img = cv2.imread(self.bg_list[rnd_int]) # shape : (h, w, 3)
-                bg_img = cv2.resize(bg_img, (w, h)) # bounding box 크기만큼 resizing
+        #         bg_img = cv2.imread(self.bg_list[rnd_int]) # shape : (h, w, 3)
+        #         bg_img = cv2.resize(bg_img, (w, h)) # bounding box 크기만큼 resizing
 
 
-                if options['blur'] == True:
-                    k = random.randrange(3,21,2)
-                    bg_img = cv2.GaussianBlur(bg_img, (k,k), 0)
+        #         if options['blur'] == True:
+        #             k = random.randrange(3,21,2)
+        #             bg_img = cv2.GaussianBlur(bg_img, (k,k), 0)
                 
 
-                if options['brightness'] == True:
-                    bg_img = self.bg_brightness(bg=bg_img)
+        #         if options['brightness'] == True:
+        #             bg_img = self.bg_brightness(bg=bg_img)
                 
-                binary_mask_copy = binary_mask.copy()
-                binary_mask_copy = np.expand_dims(binary_mask_copy, axis=-1)
+        #         binary_mask_copy = binary_mask.copy()
+        #         binary_mask_copy = np.expand_dims(binary_mask_copy, axis=-1)
 
-                copy_mask = np.where(binary_mask_copy[y:y+h, x:x+w] == 255, bg_img, rgb[y:y+h, x:x+w])
+        #         copy_mask = np.where(binary_mask_copy[y:y+h, x:x+w] == 255, bg_img, rgb[y:y+h, x:x+w])
                 
 
-                rgb[y:y+h, x:x+w] = copy_mask
-                self.save_images(rgb=rgb, mask=mask, prefix='_{0}_obj_{1}_contour_{2}_original'.format(img_idx, idx, contour_idx))
+        #         rgb[y:y+h, x:x+w] = copy_mask
+        #         self.save_images(rgb=rgb, mask=mask, prefix='_{0}_obj_{1}_contour_{2}_original'.format(img_idx, idx, contour_idx))
 
-                if options['histogram_eq'] == True:
-                    his_eq_rgb = self.histogram_equalization(rgb=rgb.copy())
-                    self.save_images(rgb=his_eq_rgb, mask=mask, prefix='_{0}_obj_{1}_contour_{2}_histogram_eq'.format(img_idx, idx, contour_idx))
+        #         if options['histogram_eq'] == True:
+        #             his_eq_rgb = self.histogram_equalization(rgb=rgb.copy())
+        #             self.save_images(rgb=his_eq_rgb, mask=mask, prefix='_{0}_obj_{1}_contour_{2}_histogram_eq'.format(img_idx, idx, contour_idx))
                 
-                # random crop
-                aug_crop_times = options['aug_crop_times']
+        #         # random crop
+        #         aug_crop_times = options['aug_crop_times']
 
-                for crop_idx in range(aug_crop_times):
-                    scale = tf.random.uniform([], 0.5, 1.4)
-                # rgb.shape -> h ,w, 3
-                    new_w = (rgb.shape[1] * 0.5) * scale
-                    new_h = new_w * 1.6
+        #         for crop_idx in range(aug_crop_times):
+        #             scale = tf.random.uniform([], 0.5, 1.4)
+        #         # rgb.shape -> h ,w, 3
+        #             new_w = (rgb.shape[1] * 0.5) * scale
+        #             new_h = new_w * 1.6
 
-                    crop_img = rgb.copy()
-                    crop_mask = mask.copy()
-                    crop_mask = tf.expand_dims(crop_mask, axis=-1)
-                    crop_img = tf.cast(crop_img, tf.uint8)
+        #             crop_img = rgb.copy()
+        #             crop_mask = mask.copy()
+        #             crop_mask = tf.expand_dims(crop_mask, axis=-1)
+        #             crop_img = tf.cast(crop_img, tf.uint8)
 
-                    concat_img = tf.concat([crop_img, crop_mask], axis=-1)
-                    concat_img = tf.image.random_crop(concat_img, size=[new_h, new_w, 4])
+        #             concat_img = tf.concat([crop_img, crop_mask], axis=-1)
+        #             concat_img = tf.image.random_crop(concat_img, size=[new_h, new_w, 4])
                     
-                    crop_img = concat_img[:, :, :3]
-                    crop_mask = concat_img[:, :, 3:]
-                    self.save_images(rgb=crop_img.numpy(), mask=crop_mask.numpy(), prefix='_{0}_obj_{1}_contour_{2}_crop_{3}_'.format(img_idx, idx, contour_idx, crop_idx))                                                            
+        #             crop_img = concat_img[:, :, :3]
+        #             crop_mask = concat_img[:, :, 3:]
+        #             self.save_images(rgb=crop_img.numpy(), mask=crop_mask.numpy(), prefix='_{0}_obj_{1}_contour_{2}_crop_{3}_'.format(img_idx, idx, contour_idx, crop_idx))                                                            
 
 
 
@@ -247,9 +298,9 @@ if __name__ == '__main__':
         obj_mask = original_obj_mask.copy()
 
 
-        rgb = cv2.resize(rgb, [1080, 1920], interpolation=cv2.INTER_LINEAR)
-        mask = cv2.resize(mask, [1080, 1920], interpolation=cv2.INTER_NEAREST)
-        obj_mask = cv2.resize(obj_mask, [1080, 1920], interpolation=cv2.INTER_NEAREST)
+        # rgb = cv2.resize(rgb, [1080, 1920], interpolation=cv2.INTER_LINEAR)
+        # mask = cv2.resize(mask, [1080, 1920], interpolation=cv2.INTER_NEAREST)
+        # obj_mask = cv2.resize(obj_mask, [1080, 1920], interpolation=cv2.INTER_NEAREST)
         
     
         # save original

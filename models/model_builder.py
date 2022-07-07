@@ -45,7 +45,7 @@ def semantic_model(image_size, model='MobileNetV3S', num_classes=2):
 
     elif model== 'EFFV2S':
         base = EfficientNetV2S(input_shape=(
-            image_size[0], image_size[1], 3), pretrained="imagenet")
+            image_size[0], image_size[1], 3), pretrained='imagenet')
         c5 = base.get_layer('add_34').output
         c2 = base.get_layer('add_4').output
 
@@ -61,7 +61,7 @@ def semantic_model(image_size, model='MobileNetV3S', num_classes=2):
 
 
     elif model == 'ddrnet':
-        model = ddrnet_23_slim(input_shape=[image_size[0], image_size[1], 3], num_classes=2, use_aux=False)
+        model = ddrnet_23_slim(input_shape=[image_size[0], image_size[1], 3], num_classes=num_classes, use_aux=False)
 
 
 

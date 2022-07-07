@@ -11,6 +11,19 @@ import tensorflow as tf
 _EPSILON = tf.keras.backend.epsilon()
 
 
+class DistributeLoss():
+    def __init__(self, global_batch_size):
+        self.global_batch_size = global_batch_size
+
+    
+    def ce_loss(self, y_true, y_pred):
+        ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(
+            from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(y_true=y_true, y_pred=y_pred)
+        ce_loss = tf.reduce_mean(ce_loss)
+        return ce_loss
+        
+
+
 def bce_loss(y_true, y_pred):
     return losses.binary_crossentropy(y_true=y_true, y_pred=y_pred, from_logits=False)
 
@@ -18,8 +31,8 @@ def focal_bce_loss(y_true, y_pred):
     return tfa.losses.SigmoidFocalCrossEntropy()(y_true=y_true, y_pred=y_pred)
 
 
-def ce_loss(y_true, y_pred):
-    ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(y_true=y_true, y_pred=y_pred)
+def distribute_ce_loss(y_true, y_pred):
+    ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(y_true=y_true, y_pred=y_pred)
 
     return ce_loss
 

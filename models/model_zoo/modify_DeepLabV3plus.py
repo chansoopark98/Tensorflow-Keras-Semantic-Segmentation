@@ -2,9 +2,7 @@ from tensorflow.keras.layers import (AveragePooling2D,
     MaxPooling2D, SeparableConv2D, UpSampling2D, Activation, BatchNormalization,
     GlobalAveragePooling2D, Conv2D, Dropout, Concatenate, multiply, Add, concatenate,
     DepthwiseConv2D, Reshape, ZeroPadding2D, Dense, GlobalMaxPooling2D, Permute, Lambda, Subtract)
-import tensorflow.keras.backend as K
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 MOMENTUM = 0.99
 EPSILON = 1e-3

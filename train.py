@@ -14,23 +14,23 @@ parser = argparse.ArgumentParser()
 # Set Convert to SavedMoel
 parser.add_argument("--saved_model",  help="SavedModel.pb 변환", action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="저장된 모델 가중치 경로",
-                    default='./checkpoints/0629/_0629_224-224_16_100_0.001_adam_single_DDRNet_best_iou.h5')
+                    default='./checkpoints/0629/_0629_224-224_16_100_0.002_adam_single_DDRNet_best_iou.h5')
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='224_244-b16-e100-adam-new_data-EFFV2S-single')
+                    default='640_360-b16-e100-adam-lr_0.002-ce_loss-effnet-aug-multi')
 parser.add_argument("--batch_size",       type=int,    help="배치 사이즈값 설정",
-                    default=16)
+                    default=8)
 parser.add_argument("--epoch",            type=int,    help="에폭 설정",
                     default=100)
 parser.add_argument("--lr",               type=float,  help="Learning rate 설정",
-                    default=0.001)
+                    default=0.002)
 parser.add_argument("--weight_decay",     type=float,  help="Weight Decay 설정",
                     default=0.0005)
 parser.add_argument("--num_classes",      type=int,    help="분류할 클래수 개수 설정",
                     default=3)
 parser.add_argument("--image_size",       type=tuple,  help="조정할 이미지 크기 설정",
-                    default=(224, 224))
+                    default=(640, 360))
 parser.add_argument("--optimizer",        type=str,    help="Optimizer",
                     default='adam')
 parser.add_argument("--use_weightDecay",  type=bool,   help="weightDecay 사용 유무",
@@ -48,7 +48,11 @@ parser.add_argument("--checkpoint_dir",   type=str,    help="모델 저장 디�
 parser.add_argument("--tensorboard_dir",  type=str,    help="텐서보드 저장 경로",
                     default='tensorboard/')
 
-# Set Distribute training (Multi gpu)
+# Set Distribute training (When use Single gpu)
+parser.add_argument("--gpu_num",          type=int,    help="사용 할 GPU 번호 설정",
+                    default=0)
+
+# Set Distribute training (When use Multi gpu)
 parser.add_argument("--multi_gpu",  help="분산 학습 모드 설정", action='store_true')
 
 args = parser.parse_args()
@@ -63,7 +67,8 @@ if __name__ == '__main__':
         if args.multi_gpu == False:
             tf.config.set_soft_device_placement(True)
 
-            with tf.device('/device:GPU:0'):
+            gpu_number = '/device:GPU:' + str(args.gpu_num)
+            with tf.device(gpu_number):
                 model = ModelConfiguration(args=args)
                 model.train()
 
