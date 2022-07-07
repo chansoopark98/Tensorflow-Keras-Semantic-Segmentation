@@ -161,6 +161,13 @@ def make_layer(x_in, block, inplanes, planes, blocks_num, stride=1, expansion=1)
     return x
 
 
+def transposed_conv(x, filter, kernel_size, stride):
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2DTranspose(filters=filter, kernel_size=(
+        kernel_size, kernel_size), strides=(stride, stride), padding='same', use_bias=False)(x)
+    x = layers.BatchNormalization()(x)
+
+
 """
 ddrnet 23 slim
 input_shape : shape of input data
@@ -234,7 +241,9 @@ def ddrnet_23_slim(input_shape=[1024,2048,3], num_classes=1, planes=32, use_aux=
     x_temp = layers.Activation("relu")(layers_inside[2])
     x_temp = layers.Conv2D(highres_planes, kernel_size=(1,1), use_bias=False)(x_temp)
     x_temp = layers.BatchNormalization()(x_temp)
-    x_temp = tf.image.resize(x_temp, (height_output, width_output)) # 1/16 -> 1/8
+
+    x_temp = tf.image.resize(x_temp, (height_output, width_output)) # 1/16 -> 1/8            #-> resize
+
     x_ = layers.Add()([x_, x_temp]) # next high branch input, 1/8
 
     if use_aux:
@@ -262,7 +271,10 @@ def ddrnet_23_slim(input_shape=[1024,2048,3], num_classes=1, planes=32, use_aux=
     x_temp = layers.Activation("relu")(layers_inside[3])
     x_temp = layers.Conv2D(highres_planes, kernel_size=(1, 1), use_bias=False)(x_temp)
     x_temp = layers.BatchNormalization()(x_temp)
+
+
     x_temp = tf.image.resize(x_temp, (height_output, width_output))
+
     x_ = layers.Add()([x_, x_temp])
 
     # layer 5

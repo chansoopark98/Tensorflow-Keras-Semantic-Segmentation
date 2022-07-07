@@ -15,6 +15,9 @@ class SemanticGenerator:
             batch_size: 배치 사이즈 크기
             mode: 사용할 데이터셋 모드 [train, validation, all]
             data_type: roi (Custom2), full (Custom3)
+
+            # 124 -> 1
+            # 197 -> 2
         """
         self.data_dir = data_dir
         self.image_size = image_size
@@ -31,7 +34,7 @@ class SemanticGenerator:
     def _load_valid_datasets(self):
 
         valid_data = tfds.load('full_semantic',
-                               data_dir=self.data_dir, split='train[:5%]')
+                               data_dir=self.data_dir, split='train[:10%]')
 
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
         print("검증 데이터 개수:", number_valid)
@@ -40,7 +43,7 @@ class SemanticGenerator:
     def _load_train_datasets(self):
         
         train_data = tfds.load('full_semantic',
-                               data_dir=self.data_dir, split='train[5%:]')
+                               data_dir=self.data_dir, split='train[10%:]')
 
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
@@ -56,6 +59,17 @@ class SemanticGenerator:
         print("전체 데이터 개수", number_all)
         return data, number_all
 
+    
+    @tf.function
+    def __convert_label(self, labels):
+
+        labels = tf.where(labels==124., 1., labels)
+        labels = tf.where(labels==197., 2., labels)
+        labels = tf.cast(labels, tf.int32)
+
+        return labels
+
+
 
     def load_test(self, sample):
         original = sample['rgb']
@@ -69,9 +83,8 @@ class SemanticGenerator:
             
         img = tf.cast(img, tf.float32)
         img = (img / 127.5) - 1.
-                
-        labels = tf.where(labels==124, 1, 0)
-        labels = tf.cast(labels, tf.int32)
+            
+        labels = self.__convert_label(labels=labels)
 
         return (img, labels, original)
 
@@ -86,41 +99,40 @@ class SemanticGenerator:
         labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         
-        if tf.random.uniform([]) > 0.7:
-            scale = tf.random.uniform([], 1.1, 1.5,)
-            new_h = self.image_size[0] * scale
-            new_w = self.image_size[1] * scale
+        # if tf.random.uniform([]) > 0.7:
+        #     scale = tf.random.uniform([], 1.1, 1.5,)
+        #     new_h = self.image_size[0] * scale
+        #     new_w = self.image_size[1] * scale
             
-            img = tf.image.resize(img, size=(new_h, new_w),
-                            method=tf.image.ResizeMethod.BILINEAR)
-            labels = tf.image.resize(labels, size=(new_h, new_w),
-                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        #     img = tf.image.resize(img, size=(new_h, new_w),
+        #                     method=tf.image.ResizeMethod.BILINEAR)
+        #     labels = tf.image.resize(labels, size=(new_h, new_w),
+        #                     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-            concat_img = tf.concat([img, labels], axis=-1)
-            concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
+        #     concat_img = tf.concat([img, labels], axis=-1)
+        #     concat_img = tf.image.random_crop(concat_img, (self.image_size[0], self.image_size[1], 4))
         
-            img = concat_img[:, :, :3]
-            labels = concat_img[:, :, 3:]
+        #     img = concat_img[:, :, :3]
+        #     labels = concat_img[:, :, 3:]
 
-        labels = tf.where(labels==124, 1, 0)
 
         return (img, labels)
         
     @tf.function
     def augmentation(self, img, labels):           
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_jpeg_quality(img, 30, 90)
+            img = tf.image.random_jpeg_quality(img, 50, 90)
         
-        if tf.random.uniform([]) > 0.7:
+        if tf.random.uniform([]) > 0.8:
             img = tf.image.random_hue(img, 0.2)
 
-        if tf.random.uniform([]) > 0.7:
-            img = tf.image.random_saturation(img, 1, 5)
+        if tf.random.uniform([]) > 0.8:
+            img = tf.image.random_saturation(img, 0.5, 1.5)
 
-        if tf.random.uniform([]) > 0.7:
-            img = tf.image.random_brightness(img, 0.3)
+        if tf.random.uniform([]) > 0.8:
+            img = tf.image.random_brightness(img, 32. / 255.)
 
-        if tf.random.uniform([]) > 0.7:
+        if tf.random.uniform([]) > 0.8:
             img = tf.image.random_contrast(img, 0.5, 1)
 
         if tf.random.uniform([]) > 0.5:
@@ -130,6 +142,8 @@ class SemanticGenerator:
 
         img = tf.cast(img, tf.float32)
         img = (img / 127.5) - 1.
+        labels = tf.where(labels==124., 1., labels)
+        labels = tf.where(labels==197., 2., labels)
         labels = tf.cast(labels, tf.int32)
 
         return (img, labels)
@@ -147,7 +161,8 @@ class SemanticGenerator:
         img = tf.cast(img, tf.float32)
         img = (img / 127.5) - 1.
         
-        labels = tf.where(labels==124, 1, 0)
+        labels = tf.where(labels==124., 1., labels)
+        labels = tf.where(labels==197., 2., labels)
         labels = tf.cast(labels, tf.int32)
 
         return (img, labels)

@@ -18,7 +18,7 @@ parser.add_argument("--saved_model_path", type=str,   help="저장된 모델 가
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='Your_model_name')
+                    default='224_244-b16-e100-adam-new_data-EFFV2S-single')
 parser.add_argument("--batch_size",       type=int,    help="배치 사이즈값 설정",
                     default=16)
 parser.add_argument("--epoch",            type=int,    help="에폭 설정",
@@ -28,11 +28,11 @@ parser.add_argument("--lr",               type=float,  help="Learning rate 설�
 parser.add_argument("--weight_decay",     type=float,  help="Weight Decay 설정",
                     default=0.0005)
 parser.add_argument("--num_classes",      type=int,    help="분류할 클래수 개수 설정",
-                    default=2)
+                    default=3)
 parser.add_argument("--image_size",       type=tuple,  help="조정할 이미지 크기 설정",
                     default=(224, 224))
 parser.add_argument("--optimizer",        type=str,    help="Optimizer",
-                    default='adamW')
+                    default='adam')
 parser.add_argument("--use_weightDecay",  type=bool,   help="weightDecay 사용 유무",
                     default=False)
 parser.add_argument("--mixed_precision",  type=bool,   help="mixed_precision 사용",

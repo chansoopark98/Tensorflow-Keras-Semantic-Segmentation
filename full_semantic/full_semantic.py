@@ -4,6 +4,8 @@ import tensorflow_datasets as tfds
 import os
 import glob
 import natsort
+import random
+
 # TODO(custom_1): Markdown description  that will appear on the catalog page.
 _DESCRIPTION = """
 Description is **formatted** as markdown.
@@ -70,6 +72,14 @@ class FullSemantic(tfds.core.GeneratorBasedBuilder):
     mask_files = glob.glob(mask)
     # mask_files.sort()
     mask_files = natsort.natsorted(mask_files,reverse=True)
+
+    # shuffle list same orders
+    
+
+    temp = list(zip(img_files, mask_files))
+    random.shuffle(temp)
+    img_files, mask_files = zip(*temp)
+    img_files, mask_files = list(img_files), list(mask_files)
     
     for i in range(len(img_files)):
       yield i, {

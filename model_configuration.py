@@ -96,7 +96,7 @@ class ModelConfiguration():
 
     
     def configuration_model(self):
-        self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='ddrnet')
+        self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='EFFV2S')
 
     
     def configuration_metric(self):

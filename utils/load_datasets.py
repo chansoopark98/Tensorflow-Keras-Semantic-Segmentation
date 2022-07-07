@@ -72,9 +72,9 @@ class DatasetGenerator:
                         method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         img = preprocess_input(img, mode='torch')
-        mask = tf.where(mask>=200., 255., 0.)
-        mask /= 255.
-        mask = tf.clip_by_value(mask, 0., 1.)
+        # mask = tf.where(mask>=200., 255., 0.)
+        # mask /= 255.
+        # mask = tf.clip_by_value(mask, 0., 1.)
 
         return (img, mask, original)
 
