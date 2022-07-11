@@ -189,7 +189,7 @@ class SemanticGenerator:
 
     def get_validData(self, valid_data):
         valid_data = valid_data.map(self.preprocess_valid, num_parallel_calls=AUTO)
-        valid_data = valid_data.padded_batch(self.batch_size).prefetch(AUTO).repeat()
+        valid_data = valid_data.padded_batch(self.batch_size).prefetch(AUTO)
 
         return valid_data
 

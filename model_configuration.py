@@ -125,7 +125,7 @@ class ModelConfiguration():
         loss = DistributeLoss(global_batch_size=self.BATCH_SIZE)
         self.model.compile(
             optimizer=self.optimizer,
-            loss=loss.ce_loss,
+            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE),
             metrics=self.metrics
             )
 

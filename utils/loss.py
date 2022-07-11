@@ -91,6 +91,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     if use_multi_gpu:
         xent_loss = SparseCategoricalCrossentropy(from_logits=True, reduction=Reduction.NONE)(y_true, logits)
+        xent_loss = tf.reduce_mean(xent_loss)
     else:
             xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=y_true,

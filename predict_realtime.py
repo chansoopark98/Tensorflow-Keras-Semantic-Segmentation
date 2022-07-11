@@ -6,7 +6,7 @@ from model_configuration import ModelConfiguration
 import glob
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 
-video_path = '/home/park/0704_capture/videos'
+video_path = '/home/park/0708_capture/videos'
 video_list = os.path.join(video_path, '*.mp4')
 
 save_video_path = video_path + '/result/'

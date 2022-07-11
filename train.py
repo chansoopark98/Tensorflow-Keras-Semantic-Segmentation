@@ -18,7 +18,7 @@ parser.add_argument("--saved_model_path", type=str,   help="저장된 모델 가
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='640_360-b16-e100-adam-lr_0.002-ce_loss-effnet-aug-multi')
+                    default='640_360-b16-e100-adam-lr_0.002-focal_loss-new_data-effnet-aug-multi')
 parser.add_argument("--batch_size",       type=int,    help="배치 사이즈값 설정",
                     default=8)
 parser.add_argument("--epoch",            type=int,    help="에폭 설정",
