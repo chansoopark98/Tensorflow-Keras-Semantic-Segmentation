@@ -5,22 +5,51 @@ import tensorflow_addons as tfa
 import itertools
 from typing import Any, Optional
 from tensorflow.keras.losses import SparseCategoricalCrossentropy, Reduction
-
+from tensorflow.keras.layers import Flatten
 import tensorflow as tf
 
 _EPSILON = tf.keras.backend.epsilon()
 
 
 class DistributeLoss():
-    def __init__(self, global_batch_size):
+    def __init__(self, image_size, num_classes, global_batch_size):
+        self.image_size = image_size
+        self.num_classes = num_classes
         self.global_batch_size = global_batch_size
+        self.tversky_smooth = 0.000001
+        self.tversky_focal_gamma = 0.75
 
     
-    def ce_loss(self, y_true, y_pred):
-        ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(y_true=y_true, y_pred=y_pred)
-        ce_loss = tf.reduce_mean(ce_loss)
+    def sparse_ce_loss(self, y_true, y_pred):
+        # ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(
+        #     from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(y_true=y_true, y_pred=y_pred)
+        # ce_loss = tf.reduce_mean(ce_loss)
+        
+        ce_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=y_true,
+            logits=y_pred)
+        ce_loss = tf.reduce_sum(ce_loss) * (1. / self.global_batch_size)
+        ce_loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)
         return ce_loss
+
+    
+    def tversky_loss(self, y_true, y_pred):
+        # y_pred = tf.reshape(y_pred, (self.image_size[0] * self.image_size[1], self.num_classes))
+        y_pred = tf.nn.softmax(y_pred)
+
+        
+        y_true_pos = Flatten()(y_true)
+        y_pred_pos = Flatten()(y_pred)
+        true_pos = tf.reduce_sum(y_true_pos * y_pred_pos)
+        false_neg = tf.reduce_sum(y_true_pos * (1-y_pred_pos))
+        false_pos = tf.reduce_sum((1-y_true_pos)*y_pred_pos)
+        alpha = 0.7
+        return (true_pos + self.tversky_smooth)/(true_pos + alpha*false_neg + (1-alpha)*false_pos + self.tversky_smooth)
+    
+    def focal_tversky_loss(self, y_true, y_pred):
+        pt = self.tversky_loss(y_true=y_true, y_pred=y_pred)
+        loss = tf.pow((1-pt), self.tversky_focal_gamma)
+        return tf.reduce_sum(loss) * (1. / self.global_batch_size)
         
 
 

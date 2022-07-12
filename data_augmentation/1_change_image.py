@@ -104,7 +104,7 @@ class ImageAugmentationLoader():
 
     
     def random_crop(self, rgb, mask):
-        widht_scale = tf.random.uniform([], 0.6, 1)
+        widht_scale = tf.random.uniform([], 0.7, 1)
         
         new_w = rgb.shape[1] * widht_scale
         new_h = new_w * 1.6 # 1:1.6 해상도 유지
@@ -163,20 +163,39 @@ class ImageAugmentationLoader():
                 # 합성할 레퍼런스(background : bg) 이미지 랜덤으로 불러오기
                 rnd_int = random.randint(0, len(self.bg_list)-1)
 
-                bg_img = cv2.imread(self.bg_list[rnd_int]) # shape : (h, w, 3)
-                bg_img = cv2.resize(bg_img, (w, h)) # bounding box 크기만큼 resizing
+                copy_rgb = rgb.copy()
 
                 
                 k = random.randrange(5,21,2)
-                bg_img = cv2.GaussianBlur(bg_img, (k,k), 0)
                 
-                bg_img = self.bg_brightness(bg=bg_img)
-                bg_img = self.histogram_equalization(rgb=bg_img)
+                copy_rgb = cv2.GaussianBlur(copy_rgb, (k,k), 0)
+                copy_rgb = self.bg_brightness(bg=copy_rgb)
+                copy_rgb = self.histogram_equalization(rgb=copy_rgb)
+
                 
+                copy_rgb = tf.image.random_jpeg_quality(copy_rgb, 10, 90)
+
+                copy_rgb = tf.image.random_hue(copy_rgb, 0.05)
+            
+            
+                copy_rgb = tf.image.random_saturation(copy_rgb, 0.5, 1.5)
+            
+
+            
+                copy_rgb = tf.image.random_brightness(copy_rgb, 32. / 255.)
+            
+
+            
+                copy_rgb = tf.image.random_contrast(copy_rgb, 0.5, 1)
+                copy_rgb = copy_rgb.numpy()
+
+                
+
+                    
                 binary_mask_copy = binary_mask.copy()
                 binary_mask_copy = np.expand_dims(binary_mask_copy, axis=-1)
 
-                copy_mask = np.where(binary_mask_copy[y:y+h, x:x+w] == 255, bg_img, rgb[y:y+h, x:x+w])
+                copy_mask = np.where(binary_mask_copy[y:y+h, x:x+w] == 255, copy_rgb[y:y+h, x:x+w], rgb[y:y+h, x:x+w])
                 
                 rgb[y:y+h, x:x+w] = copy_mask
         
@@ -192,8 +211,8 @@ class ImageAugmentationLoader():
     4. 기본 이미지 히스토그램 이퀄라이징 + 랜덤 크롭 (3)
 
 
-    5. BG 변경 (각 라벨마다) // 여기서 BG 이미지는 가우시안 블러, 밝기 보정
-    6. BG 변경 + 이미지 랜덤 크롭 (3)
+    5. 라벨 영역 blur
+    
 """
 
 
@@ -236,28 +255,28 @@ if __name__ == '__main__':
         image_loader.save_images(rgb=hist_rgb, mask=mask.copy(), prefix='idx_{0}_his_eq_0_'.format(idx))
 
         # 3. 기본 이미지 랜덤 크롭 (3)
-        for crop_idx in range(3):
+        for crop_idx in range(2):
             crop_rgb, crop_mask = image_loader.random_crop(rgb=rgb.copy(), mask=mask.copy())
             image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_crop_{1}_'.format(idx, crop_idx))
 
         # 4. 기본 이미지 히스토그램 이퀄라이징 + 랜덤 크롭 (3)
-        for hist_crop_idx in range(3):
+        for hist_crop_idx in range(2):
             hist_rgb = image_loader.histogram_equalization(rgb=rgb.copy())
             crop_rgb, crop_mask = image_loader.random_crop(rgb=hist_rgb, mask=mask.copy())
             image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_hist_eq_crop_{1}_'.format(idx, hist_crop_idx))
 
-        # 5. BG 변경 (각 라벨마다) // 여기서 BG 이미지는 가우시안 블러, 밝기 보정
+        # 5. 라벨 영역 color jitter
         if len(np.delete(np.unique(np.mean(obj_mask.copy(), axis=-1)),0)) != 0: # Zero mask가 아닌 경우에만
-            change_rgb, change_mask = image_loader.change_image(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), options=change_img_options)
-            image_loader.save_images(rgb=change_rgb, mask=change_mask, prefix='idx_{0}_change_bg_0_'.format(idx))
-        
+            for change_label_area_idx in range(2):
+                change_rgb, change_mask = image_loader.change_image(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), options=change_img_options)
+                image_loader.save_images(rgb=change_rgb, mask=change_mask, prefix='idx_{0}_change_bg_{1}_'.format(idx, change_label_area_idx))
         
         # 6. BG 변경 + 이미지 랜덤 크롭 (3)
-        for change_crop_idx in range(3):
-            if len(np.delete(np.unique(np.mean(obj_mask.copy(), axis=-1)),0)) != 0: # Zero mask가 아닌 경우에만
-                change_rgb, change_mask = image_loader.change_image(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), options=change_img_options)
-                crop_rgb, crop_mask = image_loader.random_crop(rgb=change_rgb, mask=change_mask)
-                image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_change_bg_crop_{1}_'.format(idx, change_crop_idx))
+        # for change_crop_idx in range(3):
+        #     if len(np.delete(np.unique(np.mean(obj_mask.copy(), axis=-1)),0)) != 0: # Zero mask가 아닌 경우에만
+        #         change_rgb, change_mask = image_loader.change_image(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), options=change_img_options)
+        #         crop_rgb, crop_mask = image_loader.random_crop(rgb=change_rgb, mask=change_mask)
+        #         image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_change_bg_crop_{1}_'.format(idx, change_crop_idx))
 
             
 

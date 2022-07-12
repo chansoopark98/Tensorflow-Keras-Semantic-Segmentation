@@ -101,6 +101,7 @@ class ModelConfiguration():
     def configuration_model(self, image_size=None, num_classes=None):
         if image_size is None:
             self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='EFFV2S')
+            self.model.summary()
         else:
             self.model = semantic_model(image_size=image_size, num_classes=num_classes, model='EFFV2S')
             return self.model
@@ -121,11 +122,12 @@ class ModelConfiguration():
 
         # SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE)
 
+        loss = DistributeLoss(image_size=self.IMAGE_SIZE,
+                              num_classes=self.NUM_CLASSES, global_batch_size=self.BATCH_SIZE)
         
-        loss = DistributeLoss(global_batch_size=self.BATCH_SIZE)
         self.model.compile(
             optimizer=self.optimizer,
-            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE),
+            loss=loss.sparse_ce_loss,
             metrics=self.metrics
             )
 

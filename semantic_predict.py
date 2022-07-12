@@ -1,4 +1,4 @@
-from models.model_builder import semantic_model
+from models.model_builder import semantic_model, test_model
 from utils.load_semantic_datasets import SemanticGenerator
 import argparse
 import time
@@ -41,8 +41,8 @@ RESULT_DIR = args.result_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (320, 180)
-demo = True
+IMAGE_SIZE = (640, 320)
+demo = False
 
 os.makedirs(DATASET_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -65,65 +65,40 @@ if demo:
     test_steps = len(filenames) // 1
 
 
-model = semantic_model(image_size=IMAGE_SIZE, model='effnet')
-model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
+model = test_model(image_size=IMAGE_SIZE)
+# model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
 model.summary()
+
+# warm up
+model.predict(tf.zeros((1, 640, 320, 3)))
+
 
 batch_idx = 0
 avg_duration = 0
-for x in tqdm(test_set, total=test_steps):
+for x, label, original in tqdm(test_set, total=test_steps):
 
 
-    original = x[0]
-    
-    original = cv2.rotate(original.numpy(), cv2.ROTATE_90_CLOCKWISE)
-    
-    img = tf.cast(original, tf.float32)
 
-    img = tf.image.resize(img, size=(IMAGE_SIZE[0], IMAGE_SIZE[1]),
-        method=tf.image.ResizeMethod.BILINEAR)
-    
-    img = tf.expand_dims(img, axis=0)
+    # img = tf.cast(x, tf.float32)
 
-    img = preprocess_input(img, mode='torch')
+    # img = tf.image.resize(img, size=(IMAGE_SIZE[0], IMAGE_SIZE[1]),
+    #     method=tf.image.ResizeMethod.BILINEAR)
 
     start = time.process_time()
 
-    pred = model.predict_on_batch(img)
+    pred = model.predict(x)
     duration = (time.process_time() - start)
-    if duration <= 0.1:
-        avg_duration += duration
 
-
-    pred = tf.argmax(pred, axis=-1)
-    pred = pred[0]
-
-    pred = tf.expand_dims(pred, axis=-1)
-    pred = tf.image.resize(pred, size=(original.shape[0], original.shape[1]),
-            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-    draw_result = tf.where(pred==1, (255,0,0), original)
-    rows = 1
-    cols = 3
-
-    fig = plt.figure()
-
-    ax0 = fig.add_subplot(rows, cols, 1)
-    ax0.imshow(original)
-    ax0.set_title('img')
-    ax0.axis("off")
-
-    ax1 = fig.add_subplot(rows, cols, 2)
-    ax1.imshow(pred[:, :, 0])
-    ax1.set_title('pred')
-    ax1.axis("off")
-
-    ax1 = fig.add_subplot(rows, cols, 3)
-    ax1.imshow(draw_result)
-    ax1.set_title('overwrite')
-    ax1.axis("off")
-    
+    avg_duration += duration
 
     batch_idx += 1
-    plt.savefig(RESULT_DIR + str(batch_idx) + '_output.png', dpi=300)
+
+    # 0.13917000932443477sec. -> seperable conv + transposed
+    # 0.1392808986529772sec... -> conv + transposed
+
+    # 0.13598978692402514sec -> seperable conv+ upsampling
+    # 0.1388885202587266sec -> upsampling
+
+    # 0.1397708012381925sec. -> deep sep + upsampling
+    # 0.13894884432443516sec. -> deep sep + trasnposed
 print(f"avg inference time : {(avg_duration / test_dataset_config.number_valid)}sec.")

@@ -22,8 +22,8 @@ color_map = [
 model_config = ModelConfiguration(args=None)
 model = model_config.configuration_model(image_size=(640, 360), num_classes=3)
 
-weight_dir = '/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/0707'
-weight_name = '_0707_640_360-b16-e100-adam-lr_0.002-ce_loss-effnet-aug-multi_best_iou.h5'
+weight_dir = '/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/0711'
+weight_name = '_0711_0711_640_360-b16-e100-adam-lr_0.002-ce_loss-new_data-effnet-aug-multi_best_iou.h5'
 weightPath = os.path.join(weight_dir, weight_name)
 model.load_weights(weightPath)
 
