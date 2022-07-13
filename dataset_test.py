@@ -53,3 +53,4 @@ if __name__ == "__main__":
         ax0.set_title('original')
         ax0.axis("off")
         plt.show()
+        plt.close()

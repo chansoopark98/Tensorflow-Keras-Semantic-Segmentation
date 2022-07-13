@@ -1,5 +1,6 @@
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
-from keras import mixed_precision
+# from tensorflow.keras.mixed_precision import experimental as mixed_precision
+from tensorflow.keras import mixed_precision
 from models.model_builder import semantic_model
 from utils.load_semantic_datasets import SemanticGenerator
 from utils.loss import distribute_ce_loss, SparseCategoricalFocalLoss, bce_loss, DistributeLoss
@@ -88,14 +89,14 @@ class ModelConfiguration():
                                                     min_lr=0.0001)
             
         if self.MIXED_PRECISION:
-            
-            policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
-            mixed_precision.set_policy(policy)
-            self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer, loss_scale='dynamic')
+             
+            # policy = mixed_precision.Policy('mixed_float16', loss_scale=1024)
+            # mixed_precision.set_policy(policy)
+            # self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer, loss_scale='dynamic')
 
             # 2.9.2
-            #mixed_precision.set_global_policy('mixed_float16')
-            # self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer)
+            mixed_precision.set_global_policy('mixed_float16')
+            self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer)
 
     
     def configuration_model(self, image_size=None, num_classes=None):
@@ -167,7 +168,7 @@ class ModelConfiguration():
         
         
         # self.model.load_weights(self.args.saved_model_path)
-        self.IMAGE_SIZE = (224, 224)
+        self.IMAGE_SIZE = (640, 480)
         input_saved_model_dir = './checkpoints/export_path/1/'
         output_saved_model_dir = './checkpoints/export_path_trt/1/'
 
@@ -184,7 +185,7 @@ class ModelConfiguration():
         # the graph to build TRT engines.
         def my_input_fn():
             
-            inp1 = tf.random.normal((1, 224, 224, 3), dtype=tf.float32)
+            inp1 = tf.random.normal((1, self.IMAGE_SIZE[0], self.IMAGE_SIZE[1], 3), dtype=tf.float32)
             inp2 = np.random.normal(size=(1,self.IMAGE_SIZE[0], self.IMAGE_SIZE[1], 3)).astype(np.float32)
             yield [inp1]
         

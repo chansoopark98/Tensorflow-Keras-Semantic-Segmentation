@@ -4,6 +4,7 @@ import cv2
 import os
 from model_configuration import ModelConfiguration
 import glob
+import matplotlib.pyplot as plt
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 
 video_path = '/home/park/0708_capture/videos'
@@ -20,10 +21,10 @@ color_map = [
 ]
 
 model_config = ModelConfiguration(args=None)
-model = model_config.configuration_model(image_size=(640, 360), num_classes=3)
+model = model_config.configuration_model(image_size=(640, 480), num_classes=3)
 
-weight_dir = '/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/0711'
-weight_name = '_0711_0711_640_360-b16-e100-adam-lr_0.002-ce_loss-new_data-effnet-aug-multi_best_iou.h5'
+weight_dir = '/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/0713'
+weight_name = '_0713_0713_640_480-b16-e100-adam-lr_0.002-ce_loss-EFFV2S-effnet-new_aug-multi_best_iou.h5'
 weightPath = os.path.join(weight_dir, weight_name)
 model.load_weights(weightPath)
 
@@ -48,8 +49,8 @@ for video_file in video_list:
     frame_size = (frameWidth, frameHeight)
     print('frame_size={}'.format(frame_size))
 
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out_video = cv2.VideoWriter(save_video_path+ str(video_idx)+ '.mp4', fourcc, fps, frame_size)
+    fourcc = cv2.VideoWriter_fourcc(*'MPEG')
+    out_video = cv2.VideoWriter(save_video_path+ str(video_idx)+ '.avi', fourcc, fps, frame_size)
 
     frame_idx = 0
     while True:
@@ -60,13 +61,30 @@ for video_file in video_list:
         if not(retval):
             break
         print(frame_idx)
+        original_frame_shape = frame.shape
+        frame_shape = frame.shape
+        
+        width = frame_shape[1]
+        height = frame_shape[0]
+
+        crop_width_size = int(width * 0.8)
+        crop_height_size = int(crop_width_size * 1.6)
+
+        center_x = width // 2
+        center_y = height // 2
+
+        frame = frame[center_y-(crop_height_size//2):crop_height_size, center_x - (crop_width_size//2):crop_width_size]
+        
+        # plt.imshow(frame)
+        # plt.show()
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        img = tf.image.resize(frame, size=(640, 360),
+        img = tf.image.resize(frame, size=(640, 480),
                 method=tf.image.ResizeMethod.BILINEAR)
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(img, mode='tf')
+        img /= 255.
+        # img = preprocess_input(img, mode='tf')
         img = tf.expand_dims(img, axis=0)
 
         output = model.predict(img)
@@ -100,12 +118,14 @@ for video_file in video_list:
         convert_rgb = np.concatenate([draw_r, draw_g, draw_b], axis=-1).astype(np.uint8)
         
         convert_rgb = cv2.cvtColor(convert_rgb, cv2.COLOR_RGB2BGR)
-
+        convert_rgb = tf.image.resize(convert_rgb, (original_frame_shape[0], original_frame_shape[1]), method=tf.image.ResizeMethod.BILINEAR)
+        convert_rgb = convert_rgb.numpy().astype(np.uint8)
         out_video.write(convert_rgb)
             
         
-            
+    out_video.release()
+
     if cap.isOpened():	# 영상 파일(카메라)이 정상적으로 열렸는지(초기화되었는지) 여부
         cap.release()	# 영상 파일(카메라) 사용을 종료
-        out_video.release()
+        
 
