@@ -101,10 +101,10 @@ class ModelConfiguration():
     
     def configuration_model(self, image_size=None, num_classes=None):
         if image_size is None:
-            self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='EFFV2S')
+            self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='ddrnet')
             self.model.summary()
         else:
-            self.model = semantic_model(image_size=image_size, num_classes=num_classes, model='EFFV2S')
+            self.model = semantic_model(image_size=image_size, num_classes=num_classes, model='ddrnet')
             return self.model
 
     
@@ -121,14 +121,11 @@ class ModelConfiguration():
         self.configuration_model()
         self.configuration_metric()
 
-        # SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE)
 
-        loss = DistributeLoss(image_size=self.IMAGE_SIZE,
-                              num_classes=self.NUM_CLASSES, global_batch_size=self.BATCH_SIZE)
-        
         self.model.compile(
             optimizer=self.optimizer,
-            loss=loss.sparse_ce_loss,
+            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                                            global_batch_size=self.BATCH_SIZE),
             metrics=self.metrics
             )
 
@@ -168,7 +165,7 @@ class ModelConfiguration():
         
         
         # self.model.load_weights(self.args.saved_model_path)
-        self.IMAGE_SIZE = (640, 480)
+        self.IMAGE_SIZE = (320, 240)
         input_saved_model_dir = './checkpoints/export_path/1/'
         output_saved_model_dir = './checkpoints/export_path_trt/1/'
 
@@ -176,7 +173,7 @@ class ModelConfiguration():
 
         params = tf.experimental.tensorrt.ConversionParams(
                                 precision_mode='FP16',
-                                maximum_cached_engines=16)
+                                maximum_cached_engines=16,)
         converter = tf.experimental.tensorrt.Converter(
             input_saved_model_dir=input_saved_model_dir, conversion_params=params, use_dynamic_shape=False)
         converter.convert()

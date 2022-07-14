@@ -13,7 +13,7 @@ args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
 DATASET_TYPE = args.dataset_type
 DATASET_NUMS = args.dataset_nums
-IMAGE_SIZE = (640, 360)
+IMAGE_SIZE = (320, 180)
 
 if __name__ == "__main__":
 

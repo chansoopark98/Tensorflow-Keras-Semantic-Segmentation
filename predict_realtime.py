@@ -28,6 +28,7 @@ weight_name = '_0713_0713_640_480-b16-e100-adam-lr_0.002-ce_loss-EFFV2S-effnet-n
 weightPath = os.path.join(weight_dir, weight_name)
 model.load_weights(weightPath)
 
+# 11 12 20
 
 video_idx = 0
 
@@ -49,8 +50,9 @@ for video_file in video_list:
     frame_size = (frameWidth, frameHeight)
     print('frame_size={}'.format(frame_size))
 
-    fourcc = cv2.VideoWriter_fourcc(*'MPEG')
-    out_video = cv2.VideoWriter(save_video_path+ str(video_idx)+ '.avi', fourcc, fps, frame_size)
+    # fourcc = cv2.VideoWriter_fourcc(*'MPEG')
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out_video = cv2.VideoWriter(save_video_path+ str(video_idx)+ '.mp4', fourcc, fps, frame_size)
 
     frame_idx = 0
     while True:

@@ -21,10 +21,6 @@ class DistributeLoss():
 
     
     def sparse_ce_loss(self, y_true, y_pred):
-        # ce_loss = tf.keras.losses.SparseCategoricalCrossentropy(
-        #     from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(y_true=y_true, y_pred=y_pred)
-        # ce_loss = tf.reduce_mean(ce_loss)
-        
         ce_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=y_true,
             logits=y_pred)
@@ -70,6 +66,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
                                   class_weight: Optional[Any] = None,
                                   from_logits: bool = False, axis: int = -1,
                                   use_multi_gpu: bool = False,
+                                  global_batch_size: int = 8,
                                   ) -> tf.Tensor:
     # Process focusing parameter
     gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)
@@ -118,11 +115,9 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         probs = y_pred
         logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
 
-    if use_multi_gpu:
-        xent_loss = SparseCategoricalCrossentropy(from_logits=True, reduction=Reduction.NONE)(y_true, logits)
-        xent_loss = tf.reduce_mean(xent_loss)
-    else:
-            xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+    
+
+    xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=y_true,
         logits=logits)
 
@@ -131,7 +126,11 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     if not scalar_gamma:
         gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
     focal_modulation = (1 - probs) ** gamma
+
     loss = focal_modulation * xent_loss
+    if use_multi_gpu:
+        loss = tf.reduce_sum(loss) * (1. / global_batch_size)
+        loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)
 
     if class_weight is not None:
         class_weight = tf.gather(class_weight, y_true, axis=0,
@@ -146,12 +145,14 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 @tf.keras.utils.register_keras_serializable()
 class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
     def __init__(self, gamma, class_weight: Optional[Any] = None,
-                 from_logits: bool = False, use_multi_gpu: bool = False, **kwargs):
+                 from_logits: bool = False, use_multi_gpu: bool = False,
+                 global_batch_size: int = 16, **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
         self.class_weight = class_weight
         self.from_logits = from_logits
         self.use_multi_gpu = use_multi_gpu
+        self.global_batch_size = global_batch_size
 
     def get_config(self):
         config = super().get_config()
@@ -164,5 +165,6 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
                                              class_weight=self.class_weight,
                                              gamma=self.gamma,
                                              from_logits=self.from_logits,
-                                             use_multi_gpu=self.use_multi_gpu)
+                                             use_multi_gpu=self.use_multi_gpu,
+                                             global_batch_size=self.global_batch_size)
 

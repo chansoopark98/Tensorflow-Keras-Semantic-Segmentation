@@ -31,7 +31,7 @@ parser.add_argument("--result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="모델 가중치 이름", default='/0622/_0622_320-180_8_50_0.001_adam_single_EFFNet_best_iou.h5')
+                    help="모델 가중치 이름", default='/0714/_0714_0714_320_240-b16-e100-adam-lr_0.001-focal_loss-ddrnet-new_aug-multi_best_iou.h5')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -41,7 +41,7 @@ RESULT_DIR = args.result_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (640, 320)
+IMAGE_SIZE = (320, 180)
 demo = False
 
 os.makedirs(DATASET_DIR, exist_ok=True)
@@ -70,19 +70,13 @@ model = test_model(image_size=IMAGE_SIZE)
 model.summary()
 
 # warm up
-model.predict(tf.zeros((1, 640, 320, 3)))
+model.predict(tf.zeros((1, IMAGE_SIZE[0], IMAGE_SIZE[1], 3)))
 
 
 batch_idx = 0
 avg_duration = 0
-for x, label, original in tqdm(test_set, total=test_steps):
+for x, label in tqdm(test_set, total=test_steps):
 
-
-
-    # img = tf.cast(x, tf.float32)
-
-    # img = tf.image.resize(img, size=(IMAGE_SIZE[0], IMAGE_SIZE[1]),
-    #     method=tf.image.ResizeMethod.BILINEAR)
 
     start = time.process_time()
 
