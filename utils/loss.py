@@ -49,8 +49,16 @@ class DistributeLoss():
         
 
 
-def bce_loss(y_true, y_pred):
-    return losses.binary_crossentropy(y_true=y_true, y_pred=y_pred, from_logits=False)
+def bce_loss(y_true, y_pred, global_batch_size=16, use_multi_gpu=False):
+    loss = losses.binary_crossentropy(y_true=y_true, y_pred=y_pred, from_logits=True)
+
+    if use_multi_gpu:
+        loss = tf.reduce_sum(loss) * (1. / global_batch_size)
+        loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)
+    else:
+        loss = tf.reduce_mean(loss)
+
+    return loss
 
 def focal_bce_loss(y_true, y_pred):
     return tfa.losses.SigmoidFocalCrossEntropy()(y_true=y_true, y_pred=y_pred)
@@ -128,6 +136,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     focal_modulation = (1 - probs) ** gamma
 
     loss = focal_modulation * xent_loss
+    
     if use_multi_gpu:
         loss = tf.reduce_sum(loss) * (1. / global_batch_size)
         loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)
@@ -146,13 +155,15 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
     def __init__(self, gamma, class_weight: Optional[Any] = None,
                  from_logits: bool = False, use_multi_gpu: bool = False,
-                 global_batch_size: int = 16, **kwargs):
+                 global_batch_size: int = 16, num_classes: int = 16,
+                  **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
         self.class_weight = class_weight
         self.from_logits = from_logits
         self.use_multi_gpu = use_multi_gpu
         self.global_batch_size = global_batch_size
+        self.num_classes = num_classes
 
     def get_config(self):
         config = super().get_config()
@@ -161,10 +172,28 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         return config
 
     def call(self, y_true, y_pred):
-        return sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
+        y_true = tf.cast(y_true, dtype=tf.float32)
+        y_pred = tf.cast(y_pred, dtype=tf.float32)
+
+        semantic_y_true = y_true[:, :, :, 0]
+        semantic_y_pred = y_pred[:, :, :, :self.num_classes]
+
+        print('semantic gt {0},  semantic pred {1}'.format(semantic_y_true, semantic_y_pred))
+
+        confidence_y_true = y_true[:, :, :, 1]
+        confidence_y_pred = y_pred[:, :, :, self.num_classes:][:, :, :, 0]
+
+        print('semantic gt {0},  semantic pred {1}'.format(confidence_y_true, confidence_y_pred))
+
+        confidence_loss = bce_loss(y_true=confidence_y_true, y_pred=confidence_y_pred,
+                                   global_batch_size=self.global_batch_size, use_multi_gpu=self.use_multi_gpu)
+
+        semantic_loss = sparse_categorical_focal_loss(y_true=semantic_y_true, y_pred=semantic_y_pred,
                                              class_weight=self.class_weight,
                                              gamma=self.gamma,
                                              from_logits=self.from_logits,
                                              use_multi_gpu=self.use_multi_gpu,
                                              global_batch_size=self.global_batch_size)
+
+        return confidence_loss + semantic_loss
 

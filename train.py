@@ -18,7 +18,7 @@ parser.add_argument("--saved_model_path", type=str,   help="저장된 모델 가
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='0714_320_240-b16-e100-adam-lr_0.001-focal_loss-ddrnet-new_aug-multi')
+                    default='B16_E100_LR0.001_320-240_SingleGPU')
 parser.add_argument("--batch_size",       type=int,    help="배치 사이즈값 설정",
                     default=16)
 parser.add_argument("--epoch",            type=int,    help="에폭 설정",

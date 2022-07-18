@@ -104,17 +104,20 @@ class ImageAugmentationLoader():
 
     
     def random_crop(self, rgb, mask):
-        widht_scale = tf.random.uniform([], 0.7, 1)
+        # height 1400     width 1050
+        resized_rgb = tf.image.resize(images=rgb, size=(1400, 1050), method=tf.image.ResizeMethod.BILINEAR)
+        resized_mask = tf.image.resize(images=mask, size=(1400, 1050), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+        widht_scale = tf.random.uniform([], 0.6, 0.95)
         
         new_w = rgb.shape[1] * widht_scale
-        new_h = new_w * 1.6 # 1:1.6 해상도 유지
+        new_h = new_w * 1.3333
+        
+        resized_rgb = tf.cast(resized_rgb, tf.uint8)
+        resized_mask = tf.expand_dims(resized_mask, axis=-1)
+        
 
-        crop_img = rgb.copy()
-        crop_mask = mask.copy()
-        crop_mask = tf.expand_dims(crop_mask, axis=-1)
-        crop_img = tf.cast(crop_img, tf.uint8)
-
-        concat_img = tf.concat([crop_img, crop_mask], axis=-1)
+        concat_img = tf.concat([resized_rgb, resized_mask], axis=-1)
         concat_img = tf.image.random_crop(concat_img, size=[new_h, new_w, 4])
         
         crop_img = concat_img[:, :, :3].numpy()

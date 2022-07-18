@@ -298,10 +298,15 @@ def ddrnet_23_slim(input_shape=[1024,2048,3], num_classes=1, planes=32, use_aux=
     # if scale_factor is not None:
 
     
-    output = layers.UpSampling2D(size=(scale_factor, scale_factor), interpolation='bilinear', name='output')(x_)
+    output = layers.UpSampling2D(size=(scale_factor, scale_factor), interpolation='bilinear', name='segmentation_output')(x_)
 
+    # classification confidence 
+    confidence = layers.Conv2D(1, kernel_size=(3, 3), use_bias=False, padding="same", name='confidence_output')(output)
 
-    model = models.Model(inputs=x_in, outputs=output)
+    # model_output = tf.concat([output, confidence], axis=-1, name='output')
+    model_output = layers.Concatenate(name='output')([output, confidence])
+
+    model = models.Model(inputs=x_in, outputs=model_output)
 
     # set weight initializers
     for layer in model.layers:

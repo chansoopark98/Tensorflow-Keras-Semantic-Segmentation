@@ -36,7 +36,8 @@ class SemanticGenerator:
         valid_data = tfds.load('full_semantic',
                                data_dir=self.data_dir, split='train[:10%]')
 
-        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+        # number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+        number_valid = 487
         print("검증 데이터 개수:", number_valid)
         return valid_data, number_valid
 
@@ -46,7 +47,8 @@ class SemanticGenerator:
                                data_dir=self.data_dir, split='train[10%:]')
 
 
-        number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+        # number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+        number_train = 4379
         print("학습 데이터 개수", number_train)
         return train_data, number_train
 
@@ -73,7 +75,7 @@ class SemanticGenerator:
 
     def load_test(self, sample):
         img = sample['rgb']
-        labels = tf.cast(sample['gt'], tf.int32)
+        labels = tf.cast(sample['gt'], tf.float32)
 
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
             method=tf.image.ResizeMethod.BILINEAR)
@@ -85,11 +87,14 @@ class SemanticGenerator:
         # img = tf.clip_by_value(img, -1, 1)
         
         
-        labels = tf.where(labels==124, 1, labels)
-        labels = tf.where(labels==197, 2, labels)
-        labels = labels[:, :, 0]
+        labels = tf.where(labels==124., 1., labels)
+        labels = tf.where(labels==197., 2., labels)
 
-        return (img, labels)
+        confidence = tf.cast(tf.where(labels>=1., 1., 0.), dtype=tf.float32)
+        
+        gt = tf.concat([labels, confidence], axis=-1)
+
+        return (img, gt)
 
 
     @tf.function
@@ -142,24 +147,22 @@ class SemanticGenerator:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
         
-        # img = preprocess_input(x=img, mode='tf')
+        
         img /= 255.
-
-        labels = tf.cast(labels, tf.int32)
-        labels = tf.where(labels==124, 1, labels)
-        labels = tf.where(labels==197, 2, labels)
-        labels = labels[:, :, 0]
         
-
-        # labels = tf.cast(labels, tf.float32)
+        labels = tf.where(labels==124., 1., labels)
+        labels = tf.where(labels==197., 2., labels)
         
+        confidence = tf.cast(tf.where(labels>=1., 1., 0), dtype=tf.float32)
+        
+        gt = tf.concat([labels, confidence], axis=-1)
 
-        return (img, labels)
+        return (img, gt)
 
     @tf.function
     def preprocess_valid(self, sample):
         img = sample['rgb']
-        labels = tf.cast(sample['gt'], tf.int32)
+        labels = tf.cast(sample['gt'], tf.float32)
 
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
             method=tf.image.ResizeMethod.BILINEAR)
@@ -171,13 +174,14 @@ class SemanticGenerator:
         # img = tf.clip_by_value(img, -1, 1)
         
         
-        labels = tf.where(labels==124, 1, labels)
-        labels = tf.where(labels==197, 2, labels)
-        labels = labels[:, :, 0]
+        labels = tf.where(labels==124., 1., labels)
+        labels = tf.where(labels==197., 2., labels)
 
-        # labels = tf.cast(labels, tf.float32)
+        confidence = tf.cast(tf.where(labels>=1., 1., 0.), dtype=tf.float32)
+        
+        gt = tf.concat([labels, confidence], axis=-1)
 
-        return (img, labels)
+        return (img, gt)
 
     def get_trainData(self, train_data):
         train_data = train_data.shuffle(512)

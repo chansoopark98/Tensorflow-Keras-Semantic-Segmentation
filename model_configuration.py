@@ -125,7 +125,7 @@ class ModelConfiguration():
         self.model.compile(
             optimizer=self.optimizer,
             loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                                            global_batch_size=self.BATCH_SIZE),
+                                            global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES),
             metrics=self.metrics
             )
 
