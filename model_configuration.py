@@ -3,7 +3,7 @@ from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras import mixed_precision
 from models.model_builder import semantic_model
 from utils.load_semantic_datasets import SemanticGenerator
-from utils.loss import distribute_ce_loss, SparseCategoricalFocalLoss, bce_loss, DistributeLoss
+from utils.loss import SemanticLoss
 from utils.metrics import MIoU
 import os
 import tensorflow as tf
@@ -13,7 +13,7 @@ import numpy as np
 
 
 class ModelConfiguration():
-    def __init__(self, args, mirrored_strategy=None):
+    def __init__(self, args: object, mirrored_strategy: object=None):
         self.args = args
         self.mirrored_strategy = mirrored_strategy
 
@@ -69,7 +69,7 @@ class ModelConfiguration():
 
         polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=self.INIT_LR,
                                                                 decay_steps=self.EPOCHS,
-                                                                end_learning_rate=self.INIT_LR * 0.1, power=0.9)
+                                                                end_learning_rate=self.INIT_LR * 0.01, power=0.9)
 
         lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay,verbose=1)
 
@@ -101,10 +101,10 @@ class ModelConfiguration():
     
     def configuration_model(self, image_size=None, num_classes=None):
         if image_size is None:
-            self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='ddrnet')
+            self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='EFFV2S') # EFFV2S, ddrnet
             self.model.summary()
         else:
-            self.model = semantic_model(image_size=image_size, num_classes=num_classes, model='ddrnet')
+            self.model = semantic_model(image_size=image_size, num_classes=num_classes, model='EFFV2S')
             return self.model
 
     
@@ -112,6 +112,7 @@ class ModelConfiguration():
         mIoU = MIoU(self.NUM_CLASSES)
         self.metrics = [mIoU]
 
+    
 
     def train(self):
         self.__set_args()
@@ -124,7 +125,7 @@ class ModelConfiguration():
 
         self.model.compile(
             optimizer=self.optimizer,
-            loss=SparseCategoricalFocalLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+            loss=SemanticLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
                                             global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES),
             metrics=self.metrics
             )

@@ -31,7 +31,7 @@ parser.add_argument("--result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="모델 가중치 이름", default='/0719/_0719_B8_E100_LR0.001_640-480_MultiGPU_sigmoid_activation_best_iou.h5')
+                    help="모델 가중치 이름", default='/0719/_0719_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_best_iou.h5')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -42,7 +42,7 @@ CHECKPOINT_DIR = args.checkpoint_dir
 WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
 IMAGE_SIZE = (320, 240)
-num_classes = 3
+num_classes = 2
 demo = False
 
 os.makedirs(DATASET_DIR, exist_ok=True)
@@ -67,7 +67,7 @@ if demo:
 
 
 # model = test_model(image_size=IMAGE_SIZE)
-model = semantic_model(image_size=IMAGE_SIZE, model='ddrnet', num_classes=3)
+model = semantic_model(image_size=IMAGE_SIZE, model='ddrnet', num_classes=num_classes)
 model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
 model.summary()
 

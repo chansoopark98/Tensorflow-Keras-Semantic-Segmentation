@@ -243,35 +243,13 @@ class ImageAugmentationLoader():
                 x, y, w, h = cv2.boundingRect(contour)
 
                 # 합성할 레퍼런스(background : bg) 이미지 랜덤으로 불러오기
-                rnd_int = random.randint(0, len(self.bg_list)-1)
+                # rnd_int = random.randint(0, len(self.bg_list)-1)
 
                 copy_rgb = rgb.copy()
-
                 
-                k = random.randrange(5,21,2)
-                
-                copy_rgb = cv2.GaussianBlur(copy_rgb, (k,k), 0)
+                copy_rgb = self.image_random_bluring(rgb= copy_rgb)
                 copy_rgb = self.image_random_brightness(rgb=copy_rgb)
                 copy_rgb = self.image_histogram_equalization(rgb=copy_rgb)
-
-                
-                copy_rgb = tf.image.random_jpeg_quality(copy_rgb, 10, 90)
-
-                copy_rgb = tf.image.random_hue(copy_rgb, 0.05)
-            
-            
-                copy_rgb = tf.image.random_saturation(copy_rgb, 0.5, 1.5)
-            
-
-            
-                copy_rgb = tf.image.random_brightness(copy_rgb, 32. / 255.)
-            
-
-            
-                copy_rgb = tf.image.random_contrast(copy_rgb, 0.5, 1)
-                copy_rgb = copy_rgb.numpy()
-
-                
 
                     
                 binary_mask_copy = binary_mask.copy()
@@ -324,8 +302,7 @@ if __name__ == '__main__':
         
 
         # 2. 이미지 Color augmentation (1)
-        color_aug_rgb = image_loader.image_histogram_equalization(rgb=rgb.copy())
-        color_aug_rgb = image_loader.image_random_bluring(rgb=color_aug_rgb)
+        color_aug_rgb = image_loader.image_random_bluring(rgb=rgb.copy())
         color_aug_rgb = image_loader.image_random_brightness(rgb=color_aug_rgb)
         image_loader.save_images(rgb=color_aug_rgb, mask=mask.copy(), prefix='idx_{0}_colorAug_'.format(idx))
 
@@ -333,8 +310,8 @@ if __name__ == '__main__':
         # 3. 이미지 Random Color augmentation Crop (2)
         for crop_idx in range(2):
             color_aug_rgb = rgb.copy()
-            if tf.random.uniform([]) > 0.5:
-                color_aug_rgb = image_loader.image_histogram_equalization(rgb=color_aug_rgb)
+            # if tf.random.uniform([]) > 0.5:
+                # color_aug_rgb = image_loader.image_histogram_equalization(rgb=color_aug_rgb)
             if tf.random.uniform([]) > 0.5:
                 color_aug_rgb = image_loader.image_random_bluring(rgb=color_aug_rgb)
             if tf.random.uniform([]) > 0.5:

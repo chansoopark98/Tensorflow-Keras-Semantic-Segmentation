@@ -4,6 +4,7 @@ import tensorflow_datasets as tfds
 import os
 import glob
 import natsort
+import numpy as np
 import random
 
 # TODO(custom_1): Markdown description  that will appear on the catalog page.
@@ -74,12 +75,15 @@ class FullSemantic(tfds.core.GeneratorBasedBuilder):
     mask_files = natsort.natsorted(mask_files,reverse=True)
 
     # shuffle list same orders
-    
 
-    temp = list(zip(img_files, mask_files))
-    random.shuffle(temp)
-    img_files, mask_files = zip(*temp)
-    img_files, mask_files = list(img_files), list(mask_files)
+    img_files = np.array(img_files)
+    mask_files = np.array(mask_files)
+
+    indices = np.arange(img_files.shape[0])
+    np.random.shuffle(indices)
+
+    img_files = list(img_files[indices])
+    mask_files = list(mask_files[indices])
     
     for i in range(len(img_files)):
       yield i, {

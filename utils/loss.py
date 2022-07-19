@@ -152,10 +152,10 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     return loss
 
 @tf.keras.utils.register_keras_serializable()
-class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
+class SemanticLoss(tf.keras.losses.Loss):
     def __init__(self, gamma, class_weight: Optional[Any] = None,
                  from_logits: bool = False, use_multi_gpu: bool = False,
-                 global_batch_size: int = 16, num_classes: int = 16,
+                 global_batch_size: int = 16, num_classes: int = 3,
                   **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
@@ -168,7 +168,8 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
     def get_config(self):
         config = super().get_config()
         config.update(gamma=self.gamma, class_weight=self.class_weight,
-                      from_logits=self.from_logits)
+                      from_logits=self.from_logits, use_multi_gpu=self.use_multi_gpu,
+                      global_batch_size=self.global_batch_size, num_classes=self.num_classes)
         return config
 
     def call(self, y_true, y_pred):
@@ -178,12 +179,8 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         semantic_y_true = y_true[:, :, :, 0]
         semantic_y_pred = y_pred[:, :, :, :self.num_classes]
 
-        print('semantic gt {0},  semantic pred {1}'.format(semantic_y_true, semantic_y_pred))
-
         confidence_y_true = y_true[:, :, :, 1]
         confidence_y_pred = y_pred[:, :, :, self.num_classes:][:, :, :, 0]
-
-        print('semantic gt {0},  semantic pred {1}'.format(confidence_y_true, confidence_y_pred))
 
         confidence_loss = bce_loss(y_true=confidence_y_true, y_pred=confidence_y_pred,
                                    global_batch_size=self.global_batch_size, use_multi_gpu=self.use_multi_gpu)
