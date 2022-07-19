@@ -140,8 +140,6 @@ class ModelConfiguration(SemanticGenerator):
                        epochs=self.EPOCHS,
                        callbacks=self.callback)
 
-        self.model.save_weights(self.CHECKPOINT_DIR + '_' + self.SAVE_MODEL_NAME + '_final_loss.h5')
-
 
     def saved_model(self):
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,

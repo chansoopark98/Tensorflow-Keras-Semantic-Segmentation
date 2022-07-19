@@ -18,7 +18,7 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='test')
+                    default='_0719_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_scale_crop')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=8)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
