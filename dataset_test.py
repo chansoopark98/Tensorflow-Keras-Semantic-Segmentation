@@ -1,6 +1,5 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from utils.load_datasets import DatasetGenerator
 from utils.load_semantic_datasets import SemanticGenerator
 import argparse
 

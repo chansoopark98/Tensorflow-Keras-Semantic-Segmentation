@@ -16,8 +16,8 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import random
-import plaif_vision_utils as putils
-from plaif_vision.srv import srv_grasp, srv_graspResponse
+import vision_utils as putils
+from vision.srv import srv_grasp, srv_graspResponse
 
 from visualization_msgs.msg import Marker
 
@@ -25,7 +25,7 @@ global center_x
 global center_y 
 global marker_id
 marker_id = 0
-rospy.init_node('plaif_vision', anonymous=True)
+rospy.init_node('vision', anonymous=True)
 
 bridge = CvBridge()
 
@@ -471,7 +471,7 @@ class ProcessManager():
                 marker.id = marker_id
                 # marker.frame_locked = True
                 marker.action = marker.ADD
-                marker.ns = "plaif_vision"
+                marker.ns = "vision"
 
                 # Set the scale of the marker
                 marker.scale.x = 0.02
