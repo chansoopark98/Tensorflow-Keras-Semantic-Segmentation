@@ -8,7 +8,7 @@ AUTO = tf.data.experimental.AUTOTUNE
 
 class SemanticGenerator:
     def __init__(self, data_dir: str, image_size: tuple, batch_size: int,
-                 mode: str, dataset_name: str = 'full_semantic'):
+                 dataset_name: str = 'full_semantic'):
         """
         Args:
             data_dir: Dataset relative path ( default : './datasets/' )
@@ -17,17 +17,15 @@ class SemanticGenerator:
             mode: Dataset mode to use [train, validation, all]
             data_type: Tensorflow dataset name (e.g: 'full_semantic')
         """
+        # Configuration
         self.data_dir = data_dir
         self.image_size = image_size
         self.batch_size = batch_size
         self.dataset_name = dataset_name
-
-        if mode == 'train':
-            self.train_data, self.number_train = self._load_train_datasets()
-        elif mode == 'all':
-            self.data, self.number_all = self._load_all_datasets()
-        else:
-            self.valid_data, self.number_valid = self._load_valid_datasets()
+        
+        # Get datasets
+        self.train_data, self.number_train = self._load_train_datasets()
+        self.valid_data, self.number_valid = self._load_valid_datasets()
 
 
     def _load_valid_datasets(self):
@@ -171,4 +169,5 @@ class SemanticGenerator:
     def get_testData(self, valid_data):
         valid_data = valid_data.map(self.load_test)
         valid_data = valid_data.batch(self.batch_size).prefetch(AUTO)
+        
         return valid_data
