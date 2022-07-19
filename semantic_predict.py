@@ -31,7 +31,7 @@ parser.add_argument("--result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="모델 저장 디렉토리 설정", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="모델 가중치 이름", default='/0714/_0714_0714_320_240-b16-e100-adam-lr_0.001-focal_loss-ddrnet-new_aug-multi_best_iou.h5')
+                    help="모델 가중치 이름", default='/0719/_0719_B8_E100_LR0.001_640-480_MultiGPU_sigmoid_activation_best_iou.h5')
 
 args = parser.parse_args()
 BATCH_SIZE = args.batch_size
@@ -41,7 +41,8 @@ RESULT_DIR = args.result_dir
 CHECKPOINT_DIR = args.checkpoint_dir
 WEIGHT_NAME = args.weight_name
 MASK_RESULT_DIR = RESULT_DIR + 'mask_result/'
-IMAGE_SIZE = (320, 180)
+IMAGE_SIZE = (320, 240)
+num_classes = 3
 demo = False
 
 os.makedirs(DATASET_DIR, exist_ok=True)
@@ -65,34 +66,72 @@ if demo:
     test_steps = len(filenames) // 1
 
 
-model = test_model(image_size=IMAGE_SIZE)
-# model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
+# model = test_model(image_size=IMAGE_SIZE)
+model = semantic_model(image_size=IMAGE_SIZE, model='ddrnet', num_classes=3)
+model.load_weights(CHECKPOINT_DIR + WEIGHT_NAME)
 model.summary()
 
 # warm up
 model.predict(tf.zeros((1, IMAGE_SIZE[0], IMAGE_SIZE[1], 3)))
 
-
+rows = 1
+cols = 4
 batch_idx = 0
 avg_duration = 0
-for x, label in tqdm(test_set, total=test_steps):
+for x, gt, original_img in tqdm(test_set, total=test_steps):
 
+    
 
     start = time.process_time()
 
     pred = model.predict(x)
+    pred = pred[0]
     duration = (time.process_time() - start)
+
+    semantic_pred = pred[:, :, :num_classes]
+    confidence_pred = pred[:, :, num_classes:]
+    
+
+    original_img = original_img[0]
+    x = x[0]
+    original_mask = gt[0, :, :, 0]
+
+    semantic_pred = tf.argmax(semantic_pred, axis=-1)
+
+    
+    
+    
+
+
+    # mask = tf.cast(mask, tf.int8)
+
+    fig = plt.figure()
+    ax0 = fig.add_subplot(rows, cols, 1)
+    ax0.imshow(original_img)
+    ax0.set_title('original_img')
+    ax0.axis("off")
+
+    ax0 = fig.add_subplot(rows, cols, 2)
+    ax0.imshow(original_mask)
+    ax0.set_title('original_mask')
+    ax0.axis("off")
+
+    
+    ax0 = fig.add_subplot(rows, cols, 3)
+    ax0.imshow(semantic_pred)
+    ax0.set_title('semantic_pred')
+    ax0.axis("off")
+
+
+    ax0 = fig.add_subplot(rows, cols, 4)
+    ax0.imshow(confidence_pred)
+    ax0.set_title('confidence_pred')
+    ax0.axis("off")
+    plt.show()
+    plt.close()
 
     avg_duration += duration
 
     batch_idx += 1
 
-    # 0.13917000932443477sec. -> seperable conv + transposed
-    # 0.1392808986529772sec... -> conv + transposed
-
-    # 0.13598978692402514sec -> seperable conv+ upsampling
-    # 0.1388885202587266sec -> upsampling
-
-    # 0.1397708012381925sec. -> deep sep + upsampling
-    # 0.13894884432443516sec. -> deep sep + trasnposed
 print(f"avg inference time : {(avg_duration / test_dataset_config.number_valid)}sec.")

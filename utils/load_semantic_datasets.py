@@ -75,6 +75,7 @@ class SemanticGenerator:
 
     def load_test(self, sample):
         img = sample['rgb']
+        original_img = img
         labels = tf.cast(sample['gt'], tf.float32)
 
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
@@ -94,7 +95,7 @@ class SemanticGenerator:
         
         gt = tf.concat([labels, confidence], axis=-1)
 
-        return (img, gt)
+        return (img, gt, original_img)
 
 
     @tf.function

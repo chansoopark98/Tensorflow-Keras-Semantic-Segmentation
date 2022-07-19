@@ -50,7 +50,7 @@ class DistributeLoss():
 
 
 def bce_loss(y_true, y_pred, global_batch_size=16, use_multi_gpu=False):
-    loss = losses.binary_crossentropy(y_true=y_true, y_pred=y_pred, from_logits=True)
+    loss = losses.binary_crossentropy(y_true=y_true, y_pred=y_pred, from_logits=False)
 
     if use_multi_gpu:
         loss = tf.reduce_sum(loss) * (1. / global_batch_size)
@@ -136,7 +136,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     focal_modulation = (1 - probs) ** gamma
 
     loss = focal_modulation * xent_loss
-    
+
     if use_multi_gpu:
         loss = tf.reduce_sum(loss) * (1. / global_batch_size)
         loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)

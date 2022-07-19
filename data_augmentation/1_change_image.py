@@ -1,3 +1,4 @@
+from cv2 import resize
 import numpy as np
 import cv2
 from imageio import imread, imwrite
@@ -70,60 +71,138 @@ class ImageAugmentationLoader():
     def get_bg_list(self):
         return self.bg_list
 
+
+    def image_resize(self, rgb, mask, obj_mask=None, size=(1600, 900)):
+        resized_rgb = tf.image.resize(images=rgb, size=size, method=tf.image.ResizeMethod.BILINEAR).numpy().astype(np.uint8)
+        resized_mask = tf.image.resize(images=mask, size=size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR).numpy().astype(np.uint8)
+
+        if obj_mask is not None:
+            resized_obj_mask = tf.image.resize(images=obj_mask, size=size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR).numpy().astype(np.uint8)
+            return resized_rgb, resized_mask, resized_obj_mask
+        
+        else:
+            return resized_rgb, resized_mask
+        
+
     
-    def histogram_equalization(self, rgb):
-        hist, _ = np.histogram(rgb.flatten(), 256,[0,256])
+    def image_histogram_equalization(self, rgb):
+        # hist, _ = np.histogram(rgb.flatten(), 256,[0,256])
 
-        cdf = hist.cumsum()
+        # cdf = hist.cumsum()
 
-        cdf_m = np.ma.masked_equal(cdf,0)
-        cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
+        # cdf_m = np.ma.masked_equal(cdf,0)
+        # cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min())
 
-        cdf = np.ma.filled(cdf_m,0).astype('uint8')
+        # cdf = np.ma.filled(cdf_m,0).astype('uint8')
+        
+        # return cdf[rgb]
+        R, G, B = cv2.split(rgb)
 
-        return cdf[rgb]
+        output1_R = cv2.equalizeHist(R)
+        output1_G = cv2.equalizeHist(G)
+        output1_B = cv2.equalizeHist(B)
+
+        equ = cv2.merge((output1_R, output1_G, output1_B))
+
+        return equ
 
     
-    def bg_brightness(self, bg):
+    def image_random_bluring(self, rgb, gaussian_min=7, gaussian_max=21):         
+        k = random.randrange(gaussian_min, gaussian_max, 2)    
+        rgb = cv2.GaussianBlur(rgb, (k,k), 0)
+
+        return rgb
+
+    
+    def image_random_brightness(self, rgb):
         random_val = np.random.uniform(low=0.5, high=1.0)
         val = 100
         val *= random_val
-        array = np.full(bg.shape, (val, val, val), dtype=np.uint8)
-        return cv2.add(bg, array)
+        array = np.full(rgb.shape, (val, val, val), dtype=np.uint8)
+        return cv2.add(rgb, array)
 
-    def bg_rotation(self, bg):
-        rot = random.randint(5, 90)
+    
+    def image_random_translation(self, rgb, mask, max_dx, max_dy):
+        
+        random_dx = random.randint(50, max_dx)
+        random_dy = random.randint(50, max_dy)
+
+        rows, cols = rgb.shape[:2]
+        print(rows, cols)
+        trans_mat = np.float64([[1, 0, random_dx], [0, 1, random_dy]])
+
+
+        trans_rgb = cv2.warpAffine(rgb, trans_mat, (cols, rows))
+        trans_mask = cv2.warpAffine(mask, trans_mat, (cols, rows))
+
+        return trans_rgb, trans_mask
+
+
+    def image_random_rotation(self, rgb, mask, rot_min=10, rot_max=45):
+        rot = random.randint(rot_min, rot_max)
         reverse = random.randint(1, 2)
 
         if reverse == 2:
             rot *= -1
 
-        h, w = bg_img.shape[:2]
+        h, w = rgb.shape[:2]
         rot_mat = cv2.getRotationMatrix2D((w/2, h/2), rot, 1)
-        bg_img = cv2.warpAffine(bg_img, rot_mat, (w, h))
+        rgb = cv2.warpAffine(rgb, rot_mat, (w, h))
+        mask = cv2.warpAffine(mask, rot_mat, (w, h))
+        
+        return rgb, mask
 
     
-    def random_crop(self, rgb, mask):
-        # height 1400     width 1050
-        resized_rgb = tf.image.resize(images=rgb, size=(1400, 1050), method=tf.image.ResizeMethod.BILINEAR)
-        resized_mask = tf.image.resize(images=mask, size=(1400, 1050), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
+    def image_random_crop(self, rgb, mask, aspect_ratio=1.77):
         widht_scale = tf.random.uniform([], 0.6, 0.95)
         
         new_w = rgb.shape[1] * widht_scale
-        new_h = new_w * 1.3333
+        new_h = new_w * aspect_ratio
         
-        resized_rgb = tf.cast(resized_rgb, tf.uint8)
-        resized_mask = tf.expand_dims(resized_mask, axis=-1)
+        if len(mask.shape) == 2:
+            mask = tf.expand_dims(mask, axis=-1)
         
-
-        concat_img = tf.concat([resized_rgb, resized_mask], axis=-1)
+        concat_img = tf.concat([rgb, mask], axis=-1)
         concat_img = tf.image.random_crop(concat_img, size=[new_h, new_w, 4])
         
         crop_img = concat_img[:, :, :3].numpy()
         crop_mask = concat_img[:, :, 3:].numpy()
 
         return crop_img, crop_mask
+
+    def plot_images(self, rgb, mask):
+        rows = 1
+        cols = 3
+
+        if len(mask.shape) == 2:
+            mask = np.expand_dims(mask, axis=-1)
+
+        # convert to unit8 type
+        rgb = rgb.astype(np.uint8)
+        mask = mask.astype(np.uint8)
+
+        fig = plt.figure()
+        ax0 = fig.add_subplot(rows, cols, 1)
+        ax0.imshow(rgb)
+        ax0.set_title('img')
+        ax0.axis("off")
+
+        ax0 = fig.add_subplot(rows, cols, 2)
+        ax0.imshow(mask)
+        ax0.set_title('mask')
+        ax0.axis("off")
+
+        
+        mask = tf.concat([mask, mask, mask], axis=-1) 
+
+        draw_mask = tf.where(mask>=1, mask, rgb)
+        
+        ax0 = fig.add_subplot(rows, cols, 3)
+        ax0.imshow(draw_mask)
+        ax0.set_title('draw_mask')
+        ax0.axis("off")
+        plt.show()
+        plt.close()
 
                 
 
@@ -133,7 +212,7 @@ class ImageAugmentationLoader():
         cv2.imwrite(self.OUT_MASK_PATH + prefix + '_mask.png', mask)
 
 
-    def change_image(self, rgb, mask, obj_mask, options):
+    def change_image(self, rgb, obj_mask, options):
         """
         rgb = (H, W, 3)
         mask = (H, W, 3 , 124
@@ -172,8 +251,8 @@ class ImageAugmentationLoader():
                 k = random.randrange(5,21,2)
                 
                 copy_rgb = cv2.GaussianBlur(copy_rgb, (k,k), 0)
-                copy_rgb = self.bg_brightness(bg=copy_rgb)
-                copy_rgb = self.histogram_equalization(rgb=copy_rgb)
+                copy_rgb = self.image_random_brightness(rgb=copy_rgb)
+                copy_rgb = self.image_histogram_equalization(rgb=copy_rgb)
 
                 
                 copy_rgb = tf.image.random_jpeg_quality(copy_rgb, 10, 90)
@@ -202,23 +281,9 @@ class ImageAugmentationLoader():
                 
                 rgb[y:y+h, x:x+w] = copy_mask
         
-        return rgb, mask
-                # self.save_images(rgb=rgb, mask=mask, prefix='_{0}_obj_{1}_contour_{2}_original'.format(img_idx, idx, contour_idx))
+        return rgb
+
                                                               
-
-
-"""
-    1. 기본 이미지 (1)
-    2. 기본 이미지 히스토그램 이퀄라이징 (1)
-    3. 기본 이미지 랜덤 크롭 (3)
-    4. 기본 이미지 히스토그램 이퀄라이징 + 랜덤 크롭 (3)
-
-
-    5. 라벨 영역 blur
-    
-"""
-
-
 if __name__ == '__main__':
     """
     mask image pixel value =  124.0
@@ -239,40 +304,60 @@ if __name__ == '__main__':
 
     for idx in range(len(rgb_list)):
         original_rgb = cv2.imread(rgb_list[idx])
-
         original_mask = cv2.imread(mask_list[idx])
-        
-        original_mask = original_mask[:, :, 0]
-
         original_obj_mask = cv2.imread(obj_mask_list[idx])
 
-        rgb = original_rgb.copy()
-        mask = original_mask.copy()
-        obj_mask = original_obj_mask.copy()
+        original_mask = original_mask[:, :, :1]
+        
+        
+        rgb, mask, obj_mask = image_loader.image_resize(
+            rgb=original_rgb, mask=original_mask, obj_mask=original_obj_mask, size=(1600, 900))
     
-        # 1. 기본 이미지 (1)
-        image_loader.save_images(rgb=rgb.copy(), mask=mask.copy(), prefix='idx_{0}_original_0_'.format(idx))
+        # 1. 기본 이미지 (1) + Random rotation (1) + Random translation (1)
+        image_loader.save_images(rgb=rgb.copy(), mask=mask.copy(), prefix='idx_{0}_original_'.format(idx))
 
-        # 2.기본 이미지 히스토그램 이퀄라이징 (1)
-        hist_rgb = image_loader.histogram_equalization(rgb=rgb.copy())
-        image_loader.save_images(rgb=hist_rgb, mask=mask.copy(), prefix='idx_{0}_his_eq_0_'.format(idx))
+        rot_rgb, rot_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy())
+        image_loader.save_images(rgb=rot_rgb, mask=rot_mask, prefix='idx_{0}_randomRot_'.format(idx))
 
-        # 3. 기본 이미지 랜덤 크롭 (3)
+        trans_rgb, trans_mask = image_loader.image_random_translation(rgb=rgb.copy(), mask=mask.copy(), max_dx=300, max_dy=400)
+        image_loader.save_images(rgb=trans_rgb, mask=trans_mask, prefix='idx_{0}_randomTrans_'.format(idx))
+        
+
+        # 2. 이미지 Color augmentation (1)
+        color_aug_rgb = image_loader.image_histogram_equalization(rgb=rgb.copy())
+        color_aug_rgb = image_loader.image_random_bluring(rgb=color_aug_rgb)
+        color_aug_rgb = image_loader.image_random_brightness(rgb=color_aug_rgb)
+        image_loader.save_images(rgb=color_aug_rgb, mask=mask.copy(), prefix='idx_{0}_colorAug_'.format(idx))
+
+
+        # 3. 이미지 Random Color augmentation Crop (2)
         for crop_idx in range(2):
-            crop_rgb, crop_mask = image_loader.random_crop(rgb=rgb.copy(), mask=mask.copy())
-            image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_crop_{1}_'.format(idx, crop_idx))
+            color_aug_rgb = rgb.copy()
+            if tf.random.uniform([]) > 0.5:
+                color_aug_rgb = image_loader.image_histogram_equalization(rgb=color_aug_rgb)
+            if tf.random.uniform([]) > 0.5:
+                color_aug_rgb = image_loader.image_random_bluring(rgb=color_aug_rgb)
+            if tf.random.uniform([]) > 0.5:
+                color_aug_rgb = image_loader.image_random_brightness(rgb=color_aug_rgb)
 
-        # 4. 기본 이미지 히스토그램 이퀄라이징 + 랜덤 크롭 (3)
-        for hist_crop_idx in range(2):
-            hist_rgb = image_loader.histogram_equalization(rgb=rgb.copy())
-            crop_rgb, crop_mask = image_loader.random_crop(rgb=hist_rgb, mask=mask.copy())
-            image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_hist_eq_crop_{1}_'.format(idx, hist_crop_idx))
+            crop_rgb, crop_mask = image_loader.image_random_crop(rgb=color_aug_rgb, mask=mask.copy(), aspect_ratio=1.33)
+            image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_colorAugCrop_{1}_'.format(idx, crop_idx))
+            
+
+        # 4. Random rotation + crop (2)1
+        for rot_crop_idx in range(2):
+            rot_rgb, rot_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy())
+            crop_rgb, crop_mask = image_loader.image_random_crop(rgb=rot_rgb, mask=rot_mask, aspect_ratio=1.33)
+            image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_RanRotCrop_{1}_'.format(idx, rot_crop_idx))
+            
+        
 
         # 5. 라벨 영역 color jitter
         if len(np.delete(np.unique(np.mean(obj_mask.copy(), axis=-1)),0)) != 0: # Zero mask가 아닌 경우에만
             for change_label_area_idx in range(2):
-                change_rgb, change_mask = image_loader.change_image(rgb=rgb.copy(), mask=mask.copy(), obj_mask=obj_mask.copy(), options=change_img_options)
-                image_loader.save_images(rgb=change_rgb, mask=change_mask, prefix='idx_{0}_change_bg_{1}_'.format(idx, change_label_area_idx))
+                change_rgb = image_loader.change_image(rgb=rgb.copy(), obj_mask=obj_mask.copy(), options=change_img_options)
+                image_loader.save_images(rgb=change_rgb, mask=mask.copy(), prefix='idx_{0}_change_bg_{1}_'.format(idx, change_label_area_idx))
+                
         
         # 6. BG 변경 + 이미지 랜덤 크롭 (3)
         # for change_crop_idx in range(3):
