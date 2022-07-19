@@ -25,15 +25,6 @@ class SemanticGenerator:
         self.valid_data, self.number_valid = self._load_valid_datasets()
 
 
-    def _load_valid_datasets(self):
-        valid_data = tfds.load(self.dataset_name,
-                               data_dir=self.data_dir, split='train[:10%]')
-
-        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
-        print("Nuber of validation dataset = {0}".format(number_valid))
-        return valid_data, number_valid
-
-
     def _load_train_datasets(self):
         train_data = tfds.load(self.dataset_name,
                                data_dir=self.data_dir, split='train[10%:]')
@@ -41,6 +32,15 @@ class SemanticGenerator:
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         print("Nuber of train dataset = {0}".format(number_train))
         return train_data, number_train
+
+
+    def _load_valid_datasets(self):
+        valid_data = tfds.load(self.dataset_name,
+                               data_dir=self.data_dir, split='train[:10%]')
+
+        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+        print("Nuber of validation dataset = {0}".format(number_valid))
+        return valid_data, number_valid
 
 
     def load_test(self, sample):

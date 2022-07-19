@@ -23,8 +23,6 @@ class ModelBuilder():
     def classifier(self, x: tf.Tensor, num_classes: int = 19, upper: int = 4,
                    name: str = None, activation: str = None) -> tf.Tensor:
 
-        
-
         x = Conv2D(num_classes, kernel_size=1, strides=1, activation=activation,
                    kernel_initializer=self.kernel_initializer)(x)
 
@@ -56,7 +54,6 @@ class ModelBuilder():
         model_output = Concatenate(name='output')([semantic_output, confidence_output])
 
         model = models.Model(inputs=[model_input], outputs=[model_output])
-
         
         # set weight initializers
         for layer in model.layers:
@@ -64,7 +61,6 @@ class ModelBuilder():
                 layer.kernel_initializer = self.kernel_initializer
             if hasattr(layer, 'depthwise_initializer'):
                 layer.depthwise_initializer = self.kernel_initializer
-        
         
         """
         When using a custom model, please use it in the form of a functional model
@@ -75,4 +71,5 @@ class ModelBuilder():
         #                                            num_classes=self.num_classes, use_aux=False)
         # model = models.Model(inputs=model_input, outputs=model_output)
         """
+        
         return model

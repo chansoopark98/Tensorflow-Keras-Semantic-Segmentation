@@ -7,6 +7,16 @@ import glob
 import matplotlib.pyplot as plt
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 
+
+if demo:
+    filenames = os.listdir('./demo_images')
+    filenames.sort()
+    test_set = tf.data.Dataset.list_files('./demo_images/' + '*', shuffle=False)
+    test_set = test_set.map(demo_prepare)
+    test_set = test_set.batch(1)
+    test_steps = len(filenames) // 1
+    
+
 video_path = '/home/park/0708_capture/videos'
 video_list = os.path.join(video_path, '*.mp4')
 

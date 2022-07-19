@@ -1,6 +1,6 @@
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras import mixed_precision
-from models.model_builder import semantic_model
+from models.model_builder import ModelBuilder
 from utils.load_semantic_datasets import SemanticGenerator
 from utils.loss import SemanticLoss
 from utils.metrics import MIoU
@@ -105,27 +105,22 @@ class ModelConfiguration(SemanticGenerator):
             self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer)
 
     
-    def configuration_model(self, image_size=None, num_classes=None):
-        if image_size is None:
-            self.model = semantic_model(image_size=self.IMAGE_SIZE, num_classes=self.NUM_CLASSES, model='EFFV2S') # EFFV2S, ddrnet
-            self.model.summary()
-        else:
-            self.model = semantic_model(image_size=image_size, num_classes=num_classes, model='EFFV2S')
-            return self.model
+    def __configuration_model(self):
+        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,num_classes=self.NUM_CLASSES).build_model()
+        self.model.summary()
 
     
-    def configuration_metric(self):
+    def __configuration_metric(self):
         mIoU = MIoU(self.NUM_CLASSES)
         self.metrics = [mIoU]
 
-    
 
     def train(self):
         self.configuration_dataset()
         self.__set_callbacks()
         self.__set_optimizer()
-        self.configuration_model()
-        self.configuration_metric()
+        self.__configuration_model()
+        self.__configuration_metric()
 
 
         self.model.compile(
