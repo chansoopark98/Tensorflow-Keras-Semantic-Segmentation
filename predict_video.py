@@ -7,13 +7,6 @@ import glob
 from utils.predict_utils import get_color_map
 import argparse
 
-# if demo:
-#     filenames = os.listdir('./demo_images')
-#     filenames.sort()
-#     test_set = tf.data.Dataset.list_files('./demo_images/' + '*', shuffle=False)
-#     test_set = test_set.map(demo_prepare)
-#     test_set = test_set.batch(1)
-#     test_steps = len(filenames) // 1
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,

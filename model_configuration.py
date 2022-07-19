@@ -20,7 +20,7 @@ class ModelConfiguration(SemanticGenerator):
         self.mirrored_strategy = mirrored_strategy
         self.__set_args()
         super().__init__(data_dir=self.DATASET_DIR, image_size=self.IMAGE_SIZE,
-                         batch_size=self.BATCH_SIZE, mode='train', dataset_name='full_semantic')
+                         batch_size=self.BATCH_SIZE, dataset_name='full_semantic')
 
 
     def configuration_dataset(self):
@@ -93,11 +93,12 @@ class ModelConfiguration(SemanticGenerator):
         elif self.OPTIMIZER_TYPE == 'adam':
             self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.INIT_LR)
         elif self.OPTIMIZER_TYPE == 'radam':
-            self.optimizer =  tfa.optimizers.RectifiedAdam(learning_rate=self.INIT_LR,
-                                                    weight_decay=0.00001,
-                                                    total_steps=int(self.number_train / (self.BATCH_SIZE / self.EPOCHS)),
-                                                    warmup_proportion=0.1,
-                                                    min_lr=0.0001)
+            self.optimizer = tfa.optimizers.RectifiedAdam(learning_rate=self.INIT_LR,
+                                                          weight_decay=0.00001,
+                                                          total_steps=int(
+                                                          self.number_train / (self.BATCH_SIZE / self.EPOCHS)),
+                                                          warmup_proportion=0.1,
+                                                          min_lr=0.0001)
             
         if self.MIXED_PRECISION:
             # Wrapping optimizer when use distribute training (multi-gpu training)
@@ -106,10 +107,11 @@ class ModelConfiguration(SemanticGenerator):
 
     
     def __configuration_model(self):
-        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,num_classes=self.NUM_CLASSES).build_model()
+        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
+                                  num_classes=self.NUM_CLASSES).build_model()
         self.model.summary()
 
-    
+
     def __configuration_metric(self):
         mIoU = MIoU(self.NUM_CLASSES)
         self.metrics = [mIoU]
@@ -126,30 +128,32 @@ class ModelConfiguration(SemanticGenerator):
         self.model.compile(
             optimizer=self.optimizer,
             loss=SemanticLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                                            global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES),
-            metrics=self.metrics
-            )
+                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES),
+            metrics=self.metrics)
 
         self.model.summary()
 
         self.model.fit(self.train_data,
-                            validation_data=self.valid_data,
-                            steps_per_epoch=self.steps_per_epoch,
-                            validation_steps=self.validation_steps,
-                            epochs=self.EPOCHS,
-                            callbacks=self.callback)
+                       validation_data=self.valid_data,
+                       steps_per_epoch=self.steps_per_epoch,
+                       validation_steps=self.validation_steps,
+                       epochs=self.EPOCHS,
+                       callbacks=self.callback)
 
         self.model.save_weights(self.CHECKPOINT_DIR + '_' + self.SAVE_MODEL_NAME + '_final_loss.h5')
 
 
     def saved_model(self):
-        self.__set_args()
-        self.configuration_model()
+        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
+                                  num_classes=self.NUM_CLASSES).build_model()
         self.model.load_weights(self.args.saved_model_path)
         export_path = os.path.join(self.CHECKPOINT_DIR, 'export_path', '1')
+        
         os.makedirs(export_path, exist_ok=True)
         self.export_path = export_path
+
         self.model.summary()
+
         tf.keras.models.save_model(
             self.model,
             self.export_path,
@@ -160,31 +164,3 @@ class ModelConfiguration(SemanticGenerator):
             options=None
         )
         print("save model clear")
-    
-    
-    def convert_to_trt(self):
-        # self.model.load_weights(self.args.saved_model_path)
-        self.IMAGE_SIZE = (320, 240)
-        input_saved_model_dir = './checkpoints/export_path/1/'
-        output_saved_model_dir = './checkpoints/export_path_trt/1/'
-
-        os.makedirs(output_saved_model_dir, exist_ok=True)
-
-        params = tf.experimental.tensorrt.ConversionParams(
-                                precision_mode='FP16',
-                                maximum_cached_engines=16,)
-        converter = tf.experimental.tensorrt.Converter(
-            input_saved_model_dir=input_saved_model_dir, conversion_params=params, use_dynamic_shape=False)
-        converter.convert()
-
-        # Define a generator function that yields input data, and use it to execute
-        # the graph to build TRT engines.
-        def my_input_fn():
-            inp1 = tf.random.normal((1, self.IMAGE_SIZE[0], self.IMAGE_SIZE[1], 3), dtype=tf.float32)
-            yield [inp1]
-        
-        converter.build(input_fn=my_input_fn)  # Generate corresponding TRT engines
-        converter.save(output_saved_model_dir)  # Generated engines will be saved.
-
-
-        

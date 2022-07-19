@@ -1,16 +1,22 @@
-from model_configuration import ModelConfiguration
+from utils.convert_trt import convert_to_trt
 import argparse
 
 
 parser = argparse.ArgumentParser()
 
 # Set Convert to TensorRT
-parser.add_argument("--saved_model_path", type=str,   help="저장된 모델 가중치 경로",
-                    default='Your_model_weights.h5')
-
+parser = argparse.ArgumentParser()
+parser.add_argument("--image_size",     type=tuple,
+                    help="Model image size (input resolution)", default=(320, 240))
+parser.add_argument("--input_saved_model_dir",    type=str,
+                    help="Dataset directory", default='./checkpoints/export_path/1/')
+parser.add_argument("--output_saved_model_dir", type=str,
+                    help="Test result save directory", default='./checkpoints/export_path_trt/1/')
 args = parser.parse_args()
 
+
+
 if __name__ == '__main__':
-    model = ModelConfiguration(args=args)
-    model.convert_to_trt()
+    convert_to_trt(image_size=args.image_size,
+     saved_model_path=args.input_saved_model_dir, output_model_path=args.output_saved_model_dir)
     
