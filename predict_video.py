@@ -91,23 +91,26 @@ if __name__ == '__main__':
             img = tf.expand_dims(img, axis=0)
 
             output = model.predict(img)
-            output = tf.argmax(output, axis=-1)
-            output = output[0]
+            
+            semantic_output = output[0, :, :, :args.num_classes]
+            confidence_output = output[0, :, :, args.num_classes:]
+
+            semantic_output = tf.argmax(semantic_output, axis=-1)
 
             resize_shape = frame.shape
-            output = tf.expand_dims(output, axis=-1)
-            output = tf.image.resize(output, (resize_shape[0], resize_shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            semantic_output = tf.expand_dims(semantic_output, axis=-1)
+            semantic_output = tf.image.resize(semantic_output, (resize_shape[0], resize_shape[1]),
+                                              method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             
-
-            r = output[:, :, 0]
-            g = output[:, :, 0]
-            b = output[:, :, 0]
+            r = semantic_output[:, :, 0]
+            g = semantic_output[:, :, 0]
+            b = semantic_output[:, :, 0]
 
             draw_r = frame[:, :, 0]
             draw_g = frame[:, :, 1]
             draw_b = frame[:, :, 2]
             
-            for j in range(1,args.num_classes):
+            for j in range(1, args.num_classes):
                 draw_r = tf.where(r==j, color_map[j-1][0], draw_r)
                 draw_g = tf.where(g==j, color_map[j-1][1], draw_g)
                 draw_b = tf.where(b==j, color_map[j-1][2], draw_b)
