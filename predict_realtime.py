@@ -1,102 +1,53 @@
-import tensorflow as tf
-import numpy as np
 import cv2
-import os
-from model_configuration import ModelConfiguration
-import glob
-import matplotlib.pyplot as plt
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
+import argparse
+import tensorflow as tf
+from utils.predict_utils import get_color_map
+import numpy as np
+from models.model_builder import ModelBuilder
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--batch_size",     type=int,
+                    help="Evaluation batch size", default=1)
+parser.add_argument("--num_classes",     type=int,
+                    help="Model num classes", default=2)
+parser.add_argument("--image_size",     type=tuple,
+                    help="Model image size (input resolution)", default=(320, 240))
+parser.add_argument("--video_dir",    type=str,
+                    help="Dataset directory", default='/home/park/0708_capture/videos')
+parser.add_argument("--video_result_dir", type=str,
+                    help="Test result save directory", default='/home/park/0708_capture/videos/results/')
+parser.add_argument("--checkpoint_dir", type=str,
+                    help="Setting the model storage directory", default='./checkpoints/')
+parser.add_argument("--weight_name", type=str,
+                    help="Saved model weights directory", default='/0719/_0719_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_best_iou.h5')
+
+args = parser.parse_args()
 
 
-if demo:
-    filenames = os.listdir('./demo_images')
-    filenames.sort()
-    test_set = tf.data.Dataset.list_files('./demo_images/' + '*', shuffle=False)
-    test_set = test_set.map(demo_prepare)
-    test_set = test_set.batch(1)
-    test_steps = len(filenames) // 1
-    
+if __name__ == '__main__':
+    model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
+    model.load_weights(args.checkpoint_dir + args.weight_name)
+    model.summary()
 
-video_path = '/home/park/0708_capture/videos'
-video_list = os.path.join(video_path, '*.mp4')
+    color_map = get_color_map(num_classes=args.num_classes)
 
-save_video_path = video_path + '/result/'
-os.makedirs(save_video_path, exist_ok=True)
-    
-video_list = glob.glob(video_list)
+    # Camera
+    frame_width = 480
+    frame_height = 640
+    capture = cv2.VideoCapture(0)
+    capture.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
+    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
-color_map = [
-    (128, 64,128),
-    (244, 35,232),
-]
-
-model_config = ModelConfiguration(args=None)
-model = model_config.configuration_model(image_size=(640, 480), num_classes=3)
-
-weight_dir = '/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/0713'
-weight_name = '_0713_0713_640_480-b16-e100-adam-lr_0.002-ce_loss-EFFV2S-effnet-new_aug-multi_best_iou.h5'
-weightPath = os.path.join(weight_dir, weight_name)
-model.load_weights(weightPath)
-
-# 11 12 20
-
-video_idx = 0
-
-for video_file in video_list:
-    video_idx += 1
-    if os.path.isfile(video_file):	# 해당 파일이 있는지 확인
-        # 영상 객체(파일) 가져오기
-        cap = cv2.VideoCapture(video_file)
-    else:
-        raise('cannot find file : {0}'.format(video_file))
-
-    # 카메라 FPS
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    # 영상의 넓이(가로) 프레임
-    frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    # 영상의 높이(세로) 프레임
-    frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
-    frame_size = (frameWidth, frameHeight)
-    print('frame_size={}'.format(frame_size))
-
-    # fourcc = cv2.VideoWriter_fourcc(*'MPEG')
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out_video = cv2.VideoWriter(save_video_path+ str(video_idx)+ '.mp4', fourcc, fps, frame_size)
-
-    frame_idx = 0
-    while True:
-        retval, frame = cap.read()
-        
-        frame_idx+=1
-
-        if not(retval):
-            break
-        print(frame_idx)
-        original_frame_shape = frame.shape
-        frame_shape = frame.shape
-        
-        width = frame_shape[1]
-        height = frame_shape[0]
-
-        crop_width_size = int(width * 0.8)
-        crop_height_size = int(crop_width_size * 1.6)
-
-        center_x = width // 2
-        center_y = height // 2
-
-        frame = frame[center_y-(crop_height_size//2):crop_height_size, center_x - (crop_width_size//2):crop_width_size]
-        
-        # plt.imshow(frame)
-        # plt.show()
+    while cv2.waitKey(33) < 0:
+        ret, frame = capture.read()
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        img = tf.image.resize(frame, size=(640, 480),
+        img = tf.image.resize(frame, size=args.image_size,
                 method=tf.image.ResizeMethod.BILINEAR)
         img = tf.cast(img, tf.float32)
         img /= 255.
-        # img = preprocess_input(img, mode='tf')
+        
         img = tf.expand_dims(img, axis=0)
 
         output = model.predict(img)
@@ -106,7 +57,6 @@ for video_file in video_list:
         resize_shape = frame.shape
         output = tf.expand_dims(output, axis=-1)
         output = tf.image.resize(output, (resize_shape[0], resize_shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        
 
         r = output[:, :, 0]
         g = output[:, :, 0]
@@ -116,9 +66,7 @@ for video_file in video_list:
         draw_g = frame[:, :, 1]
         draw_b = frame[:, :, 2]
         
-
-        for j in range(1,3):
-            
+        for j in range(1,args.num_classes):
             draw_r = tf.where(r==j, color_map[j-1][0], draw_r)
             draw_g = tf.where(g==j, color_map[j-1][1], draw_g)
             draw_b = tf.where(b==j, color_map[j-1][2], draw_b)
@@ -130,14 +78,12 @@ for video_file in video_list:
         convert_rgb = np.concatenate([draw_r, draw_g, draw_b], axis=-1).astype(np.uint8)
         
         convert_rgb = cv2.cvtColor(convert_rgb, cv2.COLOR_RGB2BGR)
-        convert_rgb = tf.image.resize(convert_rgb, (original_frame_shape[0], original_frame_shape[1]), method=tf.image.ResizeMethod.BILINEAR)
+        convert_rgb = tf.image.resize(convert_rgb, (frame_height, frame_width),
+                                        method=tf.image.ResizeMethod.BILINEAR)
         convert_rgb = convert_rgb.numpy().astype(np.uint8)
-        out_video.write(convert_rgb)
-            
-        
-    out_video.release()
 
-    if cap.isOpened():	# 영상 파일(카메라)이 정상적으로 열렸는지(초기화되었는지) 여부
-        cap.release()	# 영상 파일(카메라) 사용을 종료
-        
 
+        cv2.imshow("VideoFrame", convert_rgb)
+
+    capture.release()
+    cv2.destroyAllWindows()
