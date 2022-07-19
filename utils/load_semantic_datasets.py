@@ -1,8 +1,6 @@
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import tensorflow_datasets as tfds
 import tensorflow as tf
-import tensorflow_addons as tfa
-import numpy as np
 
 AUTO = tf.data.experimental.AUTOTUNE
 
@@ -11,11 +9,10 @@ class SemanticGenerator:
                  dataset_name: str = 'full_semantic'):
         """
         Args:
-            data_dir: Dataset relative path ( default : './datasets/' )
-            image_size: Model input image resolution 
-            batch_size: Batch size
-            mode: Dataset mode to use [train, validation, all]
-            data_type: Tensorflow dataset name (e.g: 'full_semantic')
+            data_dir     (str)   : Dataset relative path ( default : './datasets/' )
+            image_size   (tuple) : Model input image resolution 
+            batch_size   (int)   : Batch size
+            dataset_name (str)   : Tensorflow dataset name (e.g: 'full_semantic')
         """
         # Configuration
         self.data_dir = data_dir
@@ -33,7 +30,7 @@ class SemanticGenerator:
                                data_dir=self.data_dir, split='train[:10%]')
 
         number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
-        print("검증 데이터 개수:", number_valid)
+        print("Nuber of validation dataset = {0}".format(number_valid))
         return valid_data, number_valid
 
 
@@ -42,17 +39,8 @@ class SemanticGenerator:
                                data_dir=self.data_dir, split='train[10%:]')
 
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-        print("학습 데이터 개수", number_train)
+        print("Nuber of train dataset = {0}".format(number_train))
         return train_data, number_train
-
-
-    def _load_all_datasets(self):
-        data = tfds.load(self.dataset_name,
-                         data_dir=self.data_dir, split='train')
-
-        number_all = data.reduce(0, lambda x, _: x + 1).numpy()
-        print("전체 데이터 개수", number_all)
-        return data, number_all
 
 
     def load_test(self, sample):
@@ -169,5 +157,5 @@ class SemanticGenerator:
     def get_testData(self, valid_data):
         valid_data = valid_data.map(self.load_test)
         valid_data = valid_data.batch(self.batch_size).prefetch(AUTO)
-        
+
         return valid_data

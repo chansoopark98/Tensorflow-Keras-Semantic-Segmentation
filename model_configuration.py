@@ -13,8 +13,8 @@ class ModelConfiguration(SemanticGenerator):
     def __init__(self, args: object, mirrored_strategy: object = None):
         """
         Args:
-            args: Training options (argparse).
-            mirrored_strategy: tf.distribute.MirroredStrategy() with Session.
+            args (argparse): Training options (argparse).
+            mirrored_strategy (tf.distribute): tf.distribute.MirroredStrategy() with Session.
         """
         self.args = args
         self.mirrored_strategy = mirrored_strategy

@@ -17,13 +17,13 @@ class SemanticLoss(tf.keras.losses.Loss):
             The semantic loss is a sparse categorical loss,
             and the confidence loss is calculated as binary cross entropy.
               
-            gamma: Focal loss's gamma.
-            class_weight: Cross-entropy loss's class weight (logit * class_weight)
-            from_logits: logits=true : When softmax is not applied to the activation
-                    layer of the last layer of the model.
-            use_multi_gpu: To calculate the loss for each gpu when using distributed training.
-            global_batch_size : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
-            num_classes: Number of classes to classify (must be equal to number of last filters in the model)
+            gamma             (float): Focal loss's gamma.
+            class_weight      (Array): Cross-entropy loss's class weight (logit * class_weight)
+            from_logits       (bool) : When softmax is not applied to the activation
+                                        layer of the last layer of the model.
+            use_multi_gpu     (bool) : To calculate the loss for each gpu when using distributed training.
+            global_batch_size (int)  : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
+            num_classes       (int)  : Number of classes to classify (must be equal to number of last filters in the model)
         """
         super().__init__(**kwargs)
         self.gamma = gamma
