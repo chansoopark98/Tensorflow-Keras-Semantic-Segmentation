@@ -305,16 +305,7 @@ def ddrnet_23_slim(input_shape=[1024,2048,3], num_classes=1, planes=32, use_aux=
     # model_output = tf.concat([output, confidence], axis=-1, name='output')
     model_output = layers.Concatenate(name='output')([output, confidence])
 
-    model = models.Model(inputs=x_in, outputs=model_output)
-
-    # set weight initializers
-    for layer in model.layers:
-        if hasattr(layer, 'kernel_initializer'):
-            layer.kernel_initializer = tf.keras.initializers.he_normal()
-        if hasattr(layer, 'depthwise_initializer'):
-            layer.depthwise_initializer = tf.keras.initializers.he_normal()
-
-    return model
+    return x_in, model_output
 
 if __name__ == "__main__":
     """## Model Compilation"""

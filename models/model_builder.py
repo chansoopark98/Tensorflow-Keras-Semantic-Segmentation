@@ -1,54 +1,44 @@
 import tensorflow as tf
-from tensorflow.keras.layers import *
 import tensorflow.keras.models as models
-from .model_zoo.UNet import unet
-from .model_zoo.DeepLabV3plus import DeeplabV3_plus
 from .model_zoo.modify_DeepLabV3plus import deepLabV3Plus
 from .model_zoo.EfficientNetV2 import EfficientNetV2S
 from .model_zoo.DDRNet_23_slim import ddrnet_23_slim
-from .model_zoo.res_att_unet import R2AttUNet
-from .model_zoo.mobileNetV3 import MobileNetV3_Small
+from tensorflow.keras.layers import Conv2D, UpSampling2D, Concatenate
+from tensorflow.keras.initializers import VarianceScaling
 
 
-def classifier(x, num_classes=19, upper=4, name=None, activation=None):
-    x = tf.keras.layers.Conv2D(num_classes,
-                               kernel_size=1,
-                               strides=1,
-                               activation=activation,
-                               kernel_initializer=tf.keras.initializers.VarianceScaling(
-                                   scale=1.0, mode="fan_out", distribution="truncated_normal")
-                               )(x)
-    x = tf.keras.layers.UpSampling2D(size=(upper, upper),
-                                     interpolation='bilinear',
-                                     name=name)(x)
-    return x
-  
+class ModelBuilder():
+    def __init__(self, image_size: tuple = (640, 480), num_classes: int = 3):
+        """
+        Args:
+            image_size  (tuple) : Model input resolution ([H, W])
+            num_classes (int)   : Number of classes to classify 
+                                  (must be equal to number of last filters in the model)
+        """
+        self.image_size = image_size
+        self.num_classes = num_classes
+        self.kernel_initializer = VarianceScaling(scale=1.0, mode="fan_out",
+                                                  distribution="truncated_normal")
 
-def semantic_model(image_size, model='MobileNetV3S', num_classes=2):
-    """
-    Args:
-        image_size (tuple) : [B, H, W]
-        model (str) : Model name
-        num_classes (int) : number of classifer's
-    """
-    if model == 'MobileNetV3S':
-        base = MobileNetV3_Small(shape=(
-            image_size[0], image_size[1], 3), n_class=1000, alpha=1, include_top=False).build()
-        c5 = base.get_layer('add_5').output
-        c2 = base.get_layer('add').output  # 128x256 48
-        features = [c2, c5]
+    def classifier(self, x: tf.Tensor, num_classes: int = 19, upper: int = 4,
+                   name: str = None, activation: str = None) -> tf.Tensor:
 
-        model_input = base.input
-        model_output = deepLabV3Plus(features=features, activation='swish')
+        
 
-        semantic_output = classifier(
-            model_output, num_classes=num_classes, upper=4, name='output')
+        x = Conv2D(num_classes, kernel_size=1, strides=1, activation=activation,
+                   kernel_initializer=self.kernel_initializer)(x)
 
-        model = models.Model(inputs=[model_input], outputs=[semantic_output])
+        x = UpSampling2D(size=(upper, upper),
+                         interpolation='bilinear',
+                         name=name)(x)
+        return x
 
-    elif model== 'EFFV2S':
+    def build_model(self):
+        """
+        Build the model (you can build your custom model separately here)
+        """
         base = EfficientNetV2S(input_shape=(
-            image_size[0], image_size[1], 3), pretrained='imagenet')
+                self.image_size[0], self.image_size[1], 3), pretrained='imagenet')
         c5 = base.get_layer('add_34').output
         c2 = base.get_layer('add_4').output
 
@@ -57,21 +47,32 @@ def semantic_model(image_size, model='MobileNetV3S', num_classes=2):
         model_input = base.input
         deeplab_output = deepLabV3Plus(features=features, activation='swish')
 
-        semantic_output = classifier(
-            deeplab_output, num_classes=num_classes, upper=4, name='semantic_output')
+        semantic_output = self.classifier(
+            deeplab_output, num_classes=self.num_classes, upper=4, name='semantic_output')
 
-        confidence_output = classifier(
+        confidence_output = self.classifier(
             deeplab_output, num_classes=1, upper=4, activation='sigmoid', name='confidence_output')
 
         model_output = Concatenate(name='output')([semantic_output, confidence_output])
 
         model = models.Model(inputs=[model_input], outputs=[model_output])
 
-
-    elif model == 'ddrnet':
-        model = ddrnet_23_slim(input_shape=[image_size[0], image_size[1], 3], num_classes=num_classes, use_aux=False)
-
-
-    elif model == 'R2AttUNet':
-        model = R2AttUNet(image_size=[image_size[0], image_size[1], 3], num_classes=num_classes)
-    return model
+        
+        # set weight initializers
+        for layer in model.layers:
+            if hasattr(layer, 'kernel_initializer'):
+                layer.kernel_initializer = self.kernel_initializer
+            if hasattr(layer, 'depthwise_initializer'):
+                layer.depthwise_initializer = self.kernel_initializer
+        
+        
+        """
+        When using a custom model, please use it in the form of a functional model
+        (return is model input, model output) as shown below.
+        
+        # model_input, model_output = ddrnet_23_slim(input_shape=[
+        #                                            self.image_size[0], self.image_size[1], 3],
+        #                                            num_classes=self.num_classes, use_aux=False)
+        # model = models.Model(inputs=model_input, outputs=model_output)
+        """
+        return model
