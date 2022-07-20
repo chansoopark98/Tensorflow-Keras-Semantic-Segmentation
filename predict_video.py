@@ -22,7 +22,7 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0719/_0719_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_best_iou.h5')
+                    help="Saved model weights directory", default='/0719/_0719__0719_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_scale_crop_best_iou.h5')
 
 args = parser.parse_args()
 
