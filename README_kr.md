@@ -196,36 +196,54 @@ Custom data image labeling 작업은 **CVAT**(https://github.com/openvinotoolkit
 Labeling 작업이 완료되고 **CVAT**에서 dataset의 export format을 **Segmentation mask 1.1 format**으로 생성합니다.
 
 생성된 데이터셋의 **labelmap.txt**에서 각 클래스별 RGB값을 확인할 수 있습니다.
-* Semantic label
-    1. 데이터 생성 및 시멘틱 레이블링
+* 어떻게 사용하나요?
+    1. CVAT tool을 사용하여 semantic data(mask) 레이블링
     2. 데이터 증강
         * 이미지 시프트
         * 이미지 블러링
         * 이미지 회전
-        * 마스크 영역 이미지 변환
+        * 마스크 영역 이미지 변환 .. etc
 
+<br>
+첫번째, foreground가 없는 이미지의 경우 CVAT에서 자동으로 레이블을 생성하지 않습니다.
+아래와 같이 foreground object가 없을 때를 가정하여 zero label을 생성합니다.
+<br>
+<br>
+    cd data_augmentation
+    python make_blank_label.py
 
-## **Generate Binary mask label**
+<br>
+두번째, 
 
+    python augment_data.py
+    
+    아래의 옵션들의 경로를 지정하여 증강을 수행합니다.
 
-utils/generate_binary_mask.py를 실행하여 생성합니다.
+    --rgb_path RGB_PATH   raw image path
+    --mask_path MASK_PATH
+                            raw mask path
+    --obj_mask_path OBJ_MASK_PATH
+                            raw obj mask path
+    --label_map_path LABEL_MAP_PATH
+                            CVAT's labelmap.txt path
+    --bg_path BG_PATH     bg image path, Convert raw rgb image using mask area
+    --output_path OUTPUT_PATH
+                            Path to save the conversion result
 
-    cd utils
-    python generate_binary_mask.py --image_path='./datasets/dir_name/' --result_path='./datasets/dir_name/result/'
+<br>
 
-## **Generate Semantic label**
+### **Caution!**
+코드 하단의 __main__:에서 직접 증강할 옵션들을 선택할 수 있습니다. 이 부분을 수정하여 원하는 증강 방법에 맞게 변경해보세요.
 
-생성된 binary mask를 이용하여 semantic label을 생성합니다.
-
-    cd utils
-    python generate_semantic_label_contour.py 
-
+<br>
 
 ## **Convert TFDS dataset**
 
 생성된 Semantic label을 tf.data format으로 변환하기 위해 tensorflow datasets 라이브러리를 사용합니다.<br>
 
 증강이 적용된 RGB 이미지와 semantic label이 저장된 이미지를 다음과 같은 폴더로 이동시킵니다.
+
+<br>
 
 
     └── dataset 
@@ -264,11 +282,15 @@ utils/generate_binary_mask.py를 실행하여 생성합니다.
     cd -r home/$USER/tensorflow_datasets/
     cp full_semantic home/$USER/hole-detection/datasets/
 <br>
+
+### **Caution!**
+**augment_data.py**의 작업 결과물은 기본적으로 RGB, MASK, VIS_MASK 세 개의 경로로 구성됩니다.<br>
+**VIS_MASK**는 실제 사용될 레이블은 아니며, 시각적으로 확인하기위한 용도이니 아래 작업에서 사용하지 마세요. <br>
+<br>
+
 <hr/>
 
 # 4. Train
-
-Binary segmentation/ Semantic segmentation에 대한 학습 코드는 각 스크립트별로 구분되어 있습니다.
 
 학습하기전 tf.data의 메모리 할당 문제로 인해 TCMalloc을 사용하여 메모리 누수를 방지합니다.
 
@@ -277,82 +299,64 @@ Binary segmentation/ Semantic segmentation에 대한 학습 코드는 각 스크
 
     2번을 통해 설치된 TCMalloc의 경로를 저장합니다
 
-## Training binary segmentation
-
-    LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python binary_train.py
 
 ## Training semantic segmentation
 
-    LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python semantic_train.py
-
-    '-h' 를 통해 학습에 필요한 args를 설정할 수 있습니다.
-    python3 semantic_train.py -h
-    usage: semantic_train.py [-h] [--model_prefix MODEL_PREFIX] [--batch_size BATCH_SIZE] [--epoch EPOCH] [--lr LR] [--weight_decay WEIGHT_DECAY] [--optimizer OPTIMIZER] [--model_name MODEL_NAME]
-                            [--dataset_dir DATASET_DIR] [--checkpoint_dir CHECKPOINT_DIR] [--tensorboard_dir TENSORBOARD_DIR] [--use_weightDecay USE_WEIGHTDECAY] [--load_weight LOAD_WEIGHT]
-                            [--mixed_precision MIXED_PRECISION] [--distribution_mode DISTRIBUTION_MODE]
-
-<br>
-<hr>
-
-# 5. Predict
-Training 이후 모델의 추론 결과를 테스트해볼 수 있습니다.
-
-## Predict binary segmentation
-
-    python binary_predict.py --checkpoint_dir='./checkpoints/' --weight_name='weight.h5'
-
-## Predict semantic segmentation
-    python semantic_predict.py --checkpoint_dir='./checkpoints/' --weight_name='weight.h5'
-
-<br>
-<hr>
-
-# Inference real-time
-학습된 가중치를 이용하여 카메라를 이용하여 실제 추론을 테스트해볼 수 있습니다.
-
-### **1. Inference with PyRealSense Camera <br>**
-&nbsp; &nbsp; &nbsp; Intel RealSense Camera를 직접 사용하는 경우
-### **2. Inference with RealSense-ROS <br>**
-&nbsp; &nbsp; &nbsp; Intel RealSense Camera를 ROS(Robot Operating System)로 이미지 데이터를 subcribe하여 사용하는 경우
-
-<br>
-<br>
-
-## 1. Inference with PyRealSense Camera
-    1. 연결된 RealSense 카메라의 시리얼 넘버를 확인합니다.
-        terminal
-            (park) park@park:~$ rs-enumerate-devices 
-            Device info: 
-                Name                          : 	Intel RealSense L515
->                Serial Number                 : 	f0350818
-                Firmware Version              : 	01.05.08.01
-                Recommended Firmware Version  : 	01.05.08.01
-                Physical Port                 : 	4-3.1.1-48
-                Debug Op Code                 : 	15
-                Product Id                    : 	0B64
-                Camera Locked                 : 	YES
-                Usb Type Descriptor           : 	3.2
-                Product Line                  : 	L500
-                Asic Serial Number            : 	0003b661b825
-                Firmware Update Id            : 	0003b661b825
-
-    2. 
-        python semantic_realtime_full.py --checkpoint_dir='./checkpoints/' --weight_name='weight.h5', --serial_num='f0350818'
-
-## 2. Inference with RealSense-ROS
-ROS 연동 관련하여 사전 지식 및 세팅은 개별적으로 진행해야 합니다.
-테스트 환경은 ROS-melodic입니다.
-
-
-    ROS
-        1.roslaunch realsense2_camera rs_camera.launch
-        2.rqt
-        3.Check your camera id
-        4. Modify camera id values (camera_infos.json)
+**How to RUN?**
     
-    PYTHON
-        1. python3 inference_robot_full.py
+Single gpu
 
+    LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python train.py
+
+Mutli gpu
+
+    LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.3.0" python train.py --multi_gpu
+
+
+### **Caution!**
+본 레포지토리는 single-GPU, multi-GPU 환경에서의 학습 및 추론을 지원합니다. <br>
+Single-GPU 사용 시, GPU 번호를 설정하여 사용할 수 있습니다. <br>
+python train.py --help를 살펴보시고 학습에 필요한 설정값을 argument 인자값으로 추가해주세요. <br>
+
+<br>
+<hr>
+
+# 5. Eval
+Training 이후 모델의 정확도 평가 및 추론 속도를 계산합니다. <br>
+<br>
+계산 항목 : FLOPs, MIoU metric, Average inference time
+<br>
+
+    python eval.py --checkpoint_dir='./checkpoints/' --weight_name='weight.h5'
+
+<br>
+추론 결과를 확인하려는 경우 --visualize 인자를 추가해주세요.
+
+
+
+<hr>
+
+# 6. Predict
+Web-camera 또는 저장된 비디오를 실시간으로 추론할 수 있습니다. <br>
+<br>
+
+**비디오 추론의 경우**
+
+    python predict_video.py
+
+<br>
+
+**Web-cam 실시간 추론**
+
+    python predict_realtime.py
+
+
+<br>
+
+추론 결과를 확인하려는 경우 **--visualize** 인자를 추가해주세요.
+
+<br>
+<hr>
 
 # Reference
 <hr>
