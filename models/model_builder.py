@@ -17,7 +17,7 @@ class ModelBuilder():
         """
         self.image_size = image_size
         self.num_classes = num_classes
-        self.kernel_initializer = VarianceScaling(scale=1.0, mode="fan_out",
+        self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
                                                   distribution="truncated_normal")
 
     def classifier(self, x: tf.Tensor, num_classes: int = 19, upper: int = 4,

@@ -27,5 +27,6 @@ class MIoU(tf.keras.metrics.MeanIoU):
         y_pred = tf.math.argmax(y_pred, axis=-1)
         y_pred = tf.cast(y_pred, tf.int32)
 
+        
         return super().update_state(y_true, y_pred, sample_weight)
 

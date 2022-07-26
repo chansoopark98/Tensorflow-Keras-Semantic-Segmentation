@@ -10,7 +10,7 @@ def convert_to_trt(image_size: tuple,
 
     params = tf.experimental.tensorrt.ConversionParams(
                             precision_mode='FP16',
-                            maximum_cached_engines=16,)
+                            maximum_cached_engines=16)
     converter = tf.experimental.tensorrt.Converter(
         input_saved_model_dir=saved_model_path, conversion_params=params, use_dynamic_shape=False)
     converter.convert()

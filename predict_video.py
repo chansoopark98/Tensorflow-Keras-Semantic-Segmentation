@@ -1,10 +1,13 @@
+from matplotlib.pyplot import draw
 import tensorflow as tf
+from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import numpy as np
 import cv2
 import os
 from models.model_builder import ModelBuilder
 import glob
-from utils.predict_utils import get_color_map
+from utils.predict_utils import get_color_map, draw_transform
+from utils.draw_contours import find_and_draw_contours
 import argparse
 
 
@@ -18,11 +21,11 @@ parser.add_argument("--image_size",     type=tuple,
 parser.add_argument("--video_dir",    type=str,
                     help="Dataset directory", default='/home/park/0708_capture/videos')
 parser.add_argument("--video_result_dir", type=str,
-                    help="Test result save directory", default='/home/park/0708_capture/videos/results/')
+                    help="Test result save directory", default='/home/park/0704_capture/videos/results/')
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0719/_0719__0719_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_scale_crop_best_iou.h5')
+                    help="Saved model weights directory", default='/0722/_0722__0722_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_scale_train100%_best_iou.h5')
 
 args = parser.parse_args()
 
@@ -50,6 +53,7 @@ if __name__ == '__main__':
 
         # Get camera FPS
         fps = cap.get(cv2.CAP_PROP_FPS)
+        fps = 30
         # Frame width size
         frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         # Frame height size
@@ -79,7 +83,7 @@ if __name__ == '__main__':
             img = tf.image.resize(frame, size=args.image_size,
                     method=tf.image.ResizeMethod.BILINEAR)
             img = tf.cast(img, tf.float32)
-            img /= 255.
+            img = preprocess_input(x=img, mode='tf')
             
             img = tf.expand_dims(img, axis=0)
 
@@ -103,10 +107,10 @@ if __name__ == '__main__':
             draw_g = frame[:, :, 1]
             draw_b = frame[:, :, 2]
             
-            for j in range(1, args.num_classes):
-                draw_r = tf.where(r==j, color_map[j-1][0], draw_r)
-                draw_g = tf.where(g==j, color_map[j-1][1], draw_g)
-                draw_b = tf.where(b==j, color_map[j-1][2], draw_b)
+            # for j in range(1, args.num_classes):
+            #     draw_r = tf.where(r==j, color_map[j-1][0], draw_r)
+            #     draw_g = tf.where(g==j, color_map[j-1][1], draw_g)
+            #     draw_b = tf.where(b==j, color_map[j-1][2], draw_b)
 
             draw_r = np.expand_dims(draw_r, axis=-1)
             draw_g = np.expand_dims(draw_g, axis=-1)
@@ -117,7 +121,16 @@ if __name__ == '__main__':
             convert_rgb = cv2.cvtColor(convert_rgb, cv2.COLOR_RGB2BGR)
             convert_rgb = tf.image.resize(convert_rgb, (original_frame_shape[0], original_frame_shape[1]),
                                           method=tf.image.ResizeMethod.BILINEAR)
+            
+            # convert to numpy array
             convert_rgb = convert_rgb.numpy().astype(np.uint8)
+            semantic_output = semantic_output.numpy().astype(np.uint8) * 127
+            
+            # find and draw contours
+            convert_rgb = find_and_draw_contours(img=convert_rgb, original_mask=semantic_output)
+
+
+            # convert_rgb = convert_rgb.numpy().astype(np.uint8)
             video_writer.write(convert_rgb)
                 
         video_writer.release()

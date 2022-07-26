@@ -114,6 +114,7 @@ class ModelConfiguration(SemanticGenerator):
 
     def __configuration_metric(self):
         mIoU = MIoU(self.NUM_CLASSES)
+        
         self.metrics = [mIoU]
 
 

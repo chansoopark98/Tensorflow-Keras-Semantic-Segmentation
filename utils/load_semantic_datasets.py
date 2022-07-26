@@ -53,7 +53,7 @@ class SemanticGenerator:
         labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        img /= 255.
+        img = preprocess_input(img, mode='tf')
         labels = tf.where(labels >= 1., 1., labels)
         confidence = tf.cast(tf.where(labels >= 1., 1., 0.), dtype=tf.float32)
 
@@ -112,7 +112,7 @@ class SemanticGenerator:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
 
-        img /= 255.
+        img = preprocess_input(img, mode='tf')
         labels = tf.where(labels >= 1., 1., labels)
         confidence = tf.cast(tf.where(labels >= 1., 1., 0), dtype=tf.float32)
 
@@ -131,7 +131,7 @@ class SemanticGenerator:
         labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        img /= 255.
+        img = preprocess_input(img, mode='tf')
         labels = tf.where(labels >= 1., 1., labels)
         confidence = tf.cast(tf.where(labels >= 1., 1., 0.), dtype=tf.float32)
 
