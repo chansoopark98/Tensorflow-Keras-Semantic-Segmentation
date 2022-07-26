@@ -33,7 +33,7 @@ class ModelBuilder():
         return x
 
 
-    def build_model(self):
+    def build_model(self) -> tf.keras.models.Model:
         """
         Build the model (you can build your custom model separately here)
         """
