@@ -111,7 +111,6 @@ class ModelConfiguration(SemanticGenerator):
     def __configuration_model(self):
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
                                   num_classes=self.NUM_CLASSES).build_model()
-        self.model.summary()
 
 
     def __configuration_metric(self):
@@ -133,8 +132,6 @@ class ModelConfiguration(SemanticGenerator):
             loss=SemanticLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
                               global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES),
             metrics=self.metrics)
-
-        self.model.summary()
 
         self.model.fit(self.train_data,
                        validation_data=self.valid_data,

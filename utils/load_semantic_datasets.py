@@ -1,10 +1,81 @@
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import tensorflow_datasets as tfds
 import tensorflow as tf
+from typing import Union
+import os
 
 AUTO = tf.data.experimental.AUTOTUNE
 
-class SemanticGenerator:
+
+class DataLoadHandler:
+    def __init__(self, data_dir: str, dataset_name: str):
+        self.dataset_name = dataset_name
+        self.data_dir = data_dir
+        self.select_dataset()
+
+
+    def select_dataset(self):
+        try:
+            if self.dataset_name == 'cityscapes':
+                self.dataset_list = self.__load_cityscapes()
+                self.train_key = 'image_left'
+                self.label_key = 'segmentation_label'
+
+            elif self.dataset_name == 'full_semantic':
+                self.dataset_list = self.__load_custom_dataset()
+                self.train_key = 'rgb'
+                self.label_key = 'gt'
+            else:
+                raise Exception('Cannot find dataset_name! \n your dataset is {0}.'.format(
+                    self.dataset_name))
+
+            self.train_data, self.number_train, self.valid_data, self.number_valid = self.dataset_list
+        
+        except Exception as error:
+            print('Cannot select dataset. \n {0}'.format(error))
+
+
+    def __load_cityscapes(self):
+        
+        if os.path.isfile(self.data_dir + 'downloads/manual/leftImg8bit_trainvaltest.zip') == False:
+            raise Exception('Download the \'leftImg8bit_trainvaltest.zip\' and \'gtFine_trainvaltest.zip\'' +
+                            ' files from the Cityscape homepage and move the two compressed files to the' + 
+                            ' $your_data_dir/downloads/manual/ directory. \n' +
+                            'Check this page : https://www.tensorflow.org/datasets/catalog/cityscapes')
+
+        train_data = tfds.load('cityscapes/semantic_segmentation',
+                               data_dir=self.data_dir, split='train')
+        number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+            
+        valid_data = tfds.load('cityscapes/semantic_segmentation',
+                               data_dir=self.data_dir, split='validation')
+        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+
+        print("Nuber of train dataset = {0}".format(number_train))
+        print("Nuber of validation dataset = {0}".format(number_valid))
+
+        return (train_data, number_train, valid_data, number_valid)
+
+
+    def __load_custom_dataset(self):
+        train_data = tfds.load(self.dataset_name,
+                               data_dir=self.data_dir, split='train[10%:]')
+        number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
+        
+        valid_data = tfds.load(self.dataset_name,
+                               data_dir=self.data_dir, split='train[:10%]')
+        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
+
+        print("Nuber of train dataset = {0}".format(number_train))
+        print("Nuber of validation dataset = {0}".format(number_valid))
+        
+        return (train_data, number_train, valid_data, number_valid)
+
+
+
+    
+
+class SemanticGenerator(DataLoadHandler):
     def __init__(self, data_dir: str, image_size: tuple, batch_size: int,
                  dataset_name: str = 'full_semantic'):
         """
@@ -19,53 +90,48 @@ class SemanticGenerator:
         self.image_size = image_size
         self.batch_size = batch_size
         self.dataset_name = dataset_name
-        
-        # Get datasets
-        self.train_data, self.number_train = self._load_train_datasets()
-        self.valid_data, self.number_valid = self._load_valid_datasets()
+        super().__init__(data_dir=self.data_dir, dataset_name=self.dataset_name)
+        print(self.train_key, self.label_key)
 
 
-    def _load_train_datasets(self):
-        train_data = tfds.load(self.dataset_name,
-                               data_dir=self.data_dir, split='train[10%:]')
+    def load_test(self, sample: dict):
+        img = tf.cast(sample[self.train_key], dtype=tf.int32)
+        labels = tf.cast(sample[self.label_key], dtype=tf.int32)
 
-        number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
-        print("Nuber of train dataset = {0}".format(number_train))
-        return train_data, number_train
+        if self.dataset_name == 'cityscapes':
+            labels -= 1
 
-
-    def _load_valid_datasets(self):
-        valid_data = tfds.load(self.dataset_name,
-                               data_dir=self.data_dir, split='train[:10%]')
-
-        number_valid = valid_data.reduce(0, lambda x, _: x + 1).numpy()
-        print("Nuber of validation dataset = {0}".format(number_valid))
-        return valid_data, number_valid
-
-
-    def load_test(self, sample):
-        img = sample['rgb']
         original_img = img
-        labels = tf.cast(sample['gt'], tf.float32)
 
-        img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
-                              method=tf.image.ResizeMethod.BILINEAR)
-        labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
-                                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
+        # img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
+        #                       method=tf.image.ResizeMethod.BILINEAR)
+        # labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
+        #                          method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            
         img = preprocess_input(img, mode='tf')
-        labels = tf.where(labels >= 1., 1., labels)
-        confidence = tf.cast(tf.where(labels >= 1., 1., 0.), dtype=tf.float32)
 
-        gt = tf.concat([labels, confidence], axis=-1)
 
-        return (img, gt, original_img)
+        return (img, labels, original_img)
+
+
+    @tf.function    
+    def prepare_data(self, sample: dict) -> Union[tf.Tensor, tf.Tensor]:
+        img = sample[self.train_key]
+        labels = sample[self.label_key]
+
+        if self.dataset_name == 'cityscapes':
+            labels -= 1
+
+        # convert to data type
+        img = tf.cast(sample, dtype=tf.float32)
+        labels = tf.cast(sample, dtype=tf.int32)
+
+        return (img, labels)
 
 
     @tf.function
-    def preprocess(self, sample):
-        img = sample['rgb']
-        labels = tf.cast(sample['gt'], tf.float32)
+    def preprocess(self, sample: dict):
+        img, labels = self.prepare_data(sample)
 
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
                               method=tf.image.ResizeMethod.BILINEAR)
@@ -123,8 +189,7 @@ class SemanticGenerator:
 
     @tf.function
     def preprocess_valid(self, sample):
-        img = sample['rgb']
-        labels = tf.cast(sample['gt'], tf.float32)
+        img, labels = self.prepare_data(sample)
 
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
                               method=tf.image.ResizeMethod.BILINEAR)
