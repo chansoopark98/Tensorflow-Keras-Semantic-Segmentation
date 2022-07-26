@@ -386,8 +386,6 @@ class ImageAugmentationLoader():
 
             pixel_rgb = self.label_list[idx]['rgb']
             pixel_value = pixel_rgb[2] # BGR
-            print(pixel_value)
-            print(self.label_list[idx]['class_idx'])
             mask = np.where(mask==pixel_value, self.label_list[idx]['class_idx'], mask)
             
         visual_mask = mask * int(255 / len(self.label_list))
@@ -426,7 +424,8 @@ if __name__ == '__main__':
         rot_rgb, rot_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy())
         image_loader.save_images(rgb=rot_rgb, mask=rot_mask, prefix='idx_{0}_randomRot_'.format(idx))
 
-        trans_rgb, trans_mask = image_loader.image_random_translation(rgb=rgb.copy(), mask=mask.copy(), max_dx=300, max_dy=400)
+        trans_rgb, trans_mask = image_loader.image_random_translation(rgb=rgb.copy(), mask=mask.copy(), min_dx=50, min_dy=50,
+                                                                      max_dx=300, max_dy=400)
         image_loader.save_images(rgb=trans_rgb, mask=trans_mask, prefix='idx_{0}_randomTrans_'.format(idx))
         
 
