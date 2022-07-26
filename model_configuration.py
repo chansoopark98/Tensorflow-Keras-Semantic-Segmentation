@@ -64,6 +64,7 @@ class ModelConfiguration(SemanticGenerator):
 
 
     def __set_callbacks(self):
+        # Set training keras callbacks
         reduce_lr = ReduceLROnPlateau(
             monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
 
@@ -82,7 +83,8 @@ class ModelConfiguration(SemanticGenerator):
                                                                   end_learning_rate=self.INIT_LR * 0.01, power=0.9)
 
         lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay, verbose=1)
-
+        
+        # If you wanna need another callbacks, please add here.
         self.callback = [checkpoint_val_iou,
                          checkpoint_val_loss,  tensorboard, lr_scheduler]
 

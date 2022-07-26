@@ -20,6 +20,7 @@ class ModelBuilder():
         self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
                                                   distribution="truncated_normal")
 
+
     def classifier(self, x: tf.Tensor, num_classes: int = 19, upper: int = 4,
                    name: str = None, activation: str = None) -> tf.Tensor:
 
@@ -30,6 +31,7 @@ class ModelBuilder():
                          interpolation='bilinear',
                          name=name)(x)
         return x
+
 
     def build_model(self):
         """

@@ -11,9 +11,9 @@
 
 <br>
 
-### **Use library:** Tensorflow, Keras, OpenCV, ROS
+### **Use library:** Tensorflow, Keras, OpenCV
 ### **Options:** Distribute training, Custom Data
-### **Models:** DDRNet-23-Slim 
+### **Models:** DDRNet-23-Slim, Eff-DeepLabV3+, Eff-DeepLabV3+(light-weight), MobileNetV3-DeepLabV3+
 
 
 <br>
@@ -133,14 +133,6 @@
     </tr>
     <tr>
         <td>
-        ROS
-        </td>
-        <td>
-        Melodic
-        </td>
-    </tr>
-    <tr>
-        <td>
         TF version
         </td>
         <td>
@@ -176,7 +168,7 @@
         GPU
         </td>
         <td>
-        NVIDIA RTX3090 24GB
+        NVIDIA RTX3090 24GB * 2
         </td>
     </tr>
 </table>
@@ -199,20 +191,18 @@
 <br>
 
 ## **Custom dataset labeling process**
-* Binary mask label
-    1. 데이터 생성 및 마스크 레이블링
-    2. 데이터 증강
-        * 이미지 시프트
-        * 이미지 블러링
-        * 이미지 회전
-        * 이미지 배경 합성
+Custom data image labeling 작업은 **CVAT**(https://github.com/openvinotoolkit/cvat)이라는 툴을 사용하여 작업하였습니다.
+
+Labeling 작업이 완료되고 **CVAT**에서 dataset의 export format을 **Segmentation mask 1.1 format**으로 생성합니다.
+
+생성된 데이터셋의 **labelmap.txt**에서 각 클래스별 RGB값을 확인할 수 있습니다.
 * Semantic label
     1. 데이터 생성 및 시멘틱 레이블링
     2. 데이터 증강
         * 이미지 시프트
         * 이미지 블러링
         * 이미지 회전
-        * 이미지 배경 합성 (랜덤 이미지 크기 조정)
+        * 마스크 영역 이미지 변환
 
 
 ## **Generate Binary mask label**
