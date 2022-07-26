@@ -11,11 +11,11 @@ import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/mask/')
-parser.add_argument("--obj_mask_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/obj_mask/')
-parser.add_argument("--label_map_path",     type=str,   help="labelmap path", default='./data_augmentation/raw_data/labelmap.txt')
-parser.add_argument("--bg_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/bg/')
-parser.add_argument("--output_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/augment/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/mask/')
+parser.add_argument("--obj_mask_path",     type=str,   help="raw obj mask path", default='./data_augmentation/raw_data/obj_mask/')
+parser.add_argument("--label_map_path",     type=str,   help="CVAT's labelmap.txt path", default='./data_augmentation/raw_data/labelmap.txt')
+parser.add_argument("--bg_path",     type=str,   help="bg image path, Convert raw rgb image using mask area", default='./data_augmentation/raw_data/bg/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/augment/')
 
 args = parser.parse_args()
 
