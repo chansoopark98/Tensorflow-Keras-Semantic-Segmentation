@@ -7,6 +7,7 @@ import tensorflow as tf
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from utils.metrics import MIoU
+from utils.get_flops import get_flops
 
 tf.keras.backend.clear_session()
 
@@ -113,5 +114,6 @@ if __name__ == '__main__':
         avg_duration += duration
         batch_idx += 1
 
-    print(f"avg inference time : {(avg_duration / dataset_config.number_valid)}sec.")
+    print('Model FLOPs {0}'.format(get_flops(model=model, batch_size=1)))
+    print('avg inference time : {0}sec.'.format((avg_duration / dataset_config.number_valid)))
     print('Image size : {0},  MIoU : {1}'.format(args.image_size, metric_result))
