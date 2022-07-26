@@ -1,4 +1,3 @@
-from matplotlib.pyplot import draw
 import tensorflow as tf
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import numpy as np
