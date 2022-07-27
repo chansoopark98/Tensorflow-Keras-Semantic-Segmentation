@@ -88,7 +88,7 @@ class PrepareCityScapesLabel(object):
         for k in self.trainable_list:
             label_mask = tf.where(label==k, self.trainable_list[k], label_mask)
         
-        # label_mask -= 1
+        label_mask -= 1
 
         return label_mask
 

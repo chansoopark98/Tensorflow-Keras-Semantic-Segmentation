@@ -233,7 +233,7 @@ class SemanticGenerator(DataLoadHandler):
 
 
     def get_trainData(self, train_data):
-        train_data = train_data.shuffle(512)
+        train_data = train_data.shuffle(256)
         train_data = train_data.map(self.preprocess, num_parallel_calls=AUTO)
         train_data = train_data.map(self.augmentation, num_parallel_calls=AUTO)
         train_data = train_data.padded_batch(self.batch_size)

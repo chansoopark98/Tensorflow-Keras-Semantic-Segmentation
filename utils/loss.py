@@ -25,7 +25,7 @@ class SemanticLoss(tf.keras.losses.Loss):
             use_multi_gpu     (bool) : To calculate the loss for each gpu when using distributed training.
             global_batch_size (int)  : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
             num_classes       (int)  : Number of classes to classify (must be equal to number of last filters in the model)
-            dataset_type      (str)  : Train dataset type.
+            dataset_type      (str)  : Train dataset type. For Cityscapes, the process of excluding ignore labels is included.
         """
         super().__init__(**kwargs)
         self.gamma = gamma
@@ -45,20 +45,20 @@ class SemanticLoss(tf.keras.losses.Loss):
         return config
 
 
-    def call(self, y_true, y_pred):
-        y_true = tf.cast(y_true, dtype=tf.float32)
-        y_pred = tf.cast(y_pred, dtype=tf.float32)
-        
-        # TODO
-        # if self.dataset_name == 'cityscapes':
-        #     print('cityscapes dataset')
-        #     y_true = tf.squeeze(y_true, axis=3)
-        #     y_true = tf.reshape(y_true, [-1,])
-        #     # todo
-        #     y_pred = tf.reshape(y_pred, [-1, self.num_classes])
-        #     indices = tf.squeeze(tf.where(tf.less_equal(y_true, self.num_classes-1)), 1)
-        #     y_true = tf.cast(tf.gather(y_true, indices), tf.int32)
-        #     y_pred = tf.gather(y_pred, indices)
+    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor):
+        if self.dataset_name == 'cityscapes':
+            # ignore label indexing
+            y_true = tf.where(y_true==-1, 255, y_true)
+
+            y_true = tf.squeeze(y_true, axis=3)
+            y_true = tf.reshape(y_true, [-1,])
+            
+            y_pred = tf.reshape(y_pred, [-1, self.num_classes])
+            indices = tf.squeeze(tf.where(tf.less_equal(y_true, self.num_classes-1)), 1)
+
+            # gather by indices(valid labels)
+            y_true = tf.cast(tf.gather(y_true, indices), tf.int32)
+            y_pred = tf.gather(y_pred, indices)
 
         
         semantic_loss = self.sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
