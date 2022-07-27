@@ -12,7 +12,7 @@ args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
 DATASET_TYPE = args.dataset_type
 DATASET_NUMS = args.dataset_nums
-IMAGE_SIZE = (640, 480)
+IMAGE_SIZE = (512, 1024)
 
 if __name__ == "__main__":
     tf.config.run_functions_eagerly(True)
@@ -26,6 +26,7 @@ if __name__ == "__main__":
 
         img = img[0]
         original = original[0]
+        original = tf.cast(original * 255, dtype=tf.uint8)
         mask = mask[0]
 
         fig = plt.figure()

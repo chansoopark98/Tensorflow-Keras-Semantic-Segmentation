@@ -47,7 +47,7 @@ if __name__ == '__main__':
         img = tf.image.resize(frame, size=args.image_size,
                 method=tf.image.ResizeMethod.BILINEAR)
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(x=img, mode='tf')
+        img = preprocess_input(x=img, mode='torch')
         
         img = tf.expand_dims(img, axis=0)
 

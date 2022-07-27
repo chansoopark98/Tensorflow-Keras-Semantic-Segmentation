@@ -114,7 +114,7 @@ class SemanticGenerator(DataLoadHandler):
 
         labels = self.cityscapes_tools.encode_cityscape_label(label=labels)
 
-        img = preprocess_input(img, mode='tf')
+        img = preprocess_input(img, mode='torch')
 
         print(img.shape)
         print(labels.shape)
@@ -195,21 +195,18 @@ class SemanticGenerator(DataLoadHandler):
         Args:
             img       (tf.Tensor)  : tf.Tensor data (shape=H,W,3)
             labels    (tf.Tensor)  : tf.Tensor data (shape=H,W,1)
-        """     
-        
-        if tf.random.uniform([]) > 0.8:
-            img = tf.image.random_jpeg_quality(img, 30, 90)
-        if tf.random.uniform([]) > 0.8:
+        """
+        if tf.random.uniform([]) > 0.5:
             img = tf.image.random_saturation(img, 0.5, 1.5)
-        if tf.random.uniform([]) > 0.8:
+        if tf.random.uniform([]) > 0.5:
             img = tf.image.random_brightness(img, 32. / 255.)
-        if tf.random.uniform([]) > 0.8:
+        if tf.random.uniform([]) > 0.5:
             img = tf.image.random_contrast(img, 0.5, 1)
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
 
-        img = preprocess_input(img, mode='tf')
+        img = preprocess_input(img, mode='torch')
         # convert to integer label
         labels = tf.cast(labels, dtype=tf.int32)
 
@@ -230,7 +227,7 @@ class SemanticGenerator(DataLoadHandler):
         labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        img = preprocess_input(img, mode='tf')
+        img = preprocess_input(img, mode='torch')
 
         # convert to integer label
         labels = tf.cast(labels, dtype=tf.int32)
@@ -257,7 +254,6 @@ class SemanticGenerator(DataLoadHandler):
 
 
     def get_testData(self, valid_data):
-        print(type(valid_data))
         valid_data = valid_data.map(self.load_test)
         valid_data = valid_data.batch(self.batch_size).prefetch(AUTO)
 

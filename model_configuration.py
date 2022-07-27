@@ -3,7 +3,7 @@ from tensorflow.keras import mixed_precision
 from models.model_builder import ModelBuilder
 from utils.load_semantic_datasets import SemanticGenerator
 from utils.loss import SemanticLoss
-from utils.metrics import MIoU
+from utils.metrics import MIoU, CityMIoU
 import os
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -116,7 +116,10 @@ class ModelConfiguration(SemanticGenerator):
 
 
     def __configuration_metric(self):
-        mIoU = MIoU(self.NUM_CLASSES)
+        if self.DATASET_NAME == 'cityscapes':
+            mIoU = CityMIoU(self.NUM_CLASSES+1)
+        else:
+            mIoU = MIoU(self.NUM_CLASSES)
         
         self.metrics = [mIoU]
 
@@ -131,7 +134,7 @@ class ModelConfiguration(SemanticGenerator):
         self.model.compile(
             optimizer=self.optimizer,
             loss=SemanticLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES),
+                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES, dataset_name=self.DATASET_NAME),
             metrics=self.metrics)
 
         self.model.fit(self.train_data,
