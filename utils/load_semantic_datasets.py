@@ -115,9 +115,6 @@ class SemanticGenerator(DataLoadHandler):
         labels = self.cityscapes_tools.encode_cityscape_label(label=labels)
 
         img = preprocess_input(img, mode='torch')
-
-        print(img.shape)
-        print(labels.shape)
         
         return (img, labels, original_img)
 

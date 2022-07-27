@@ -117,7 +117,9 @@ class ModelConfiguration(SemanticGenerator):
 
     def __configuration_metric(self):
         if self.DATASET_NAME == 'cityscapes':
-            mIoU = CityMIoU(self.NUM_CLASSES+1)
+            # TODO
+            # mIoU = CityMIoU(self.NUM_CLASSES+1)
+            mIoU = MIoU(self.NUM_CLASSES)
         else:
             mIoU = MIoU(self.NUM_CLASSES)
         
