@@ -1,17 +1,29 @@
-<h1>Realtime segmentation with custom datasets</h1>
+<h1>End-to-End Semantic Segmentation</h1>
 
-> Binary/Semantic segmentation with Custom data
+> All about Tensorflow/Keras semantic segmentation
 
-이 저장소는 **Custom dataset을 사용한 segmentation**을 위해 데이터 레이블링부터 실시간 추론까지 구현하였습니다.
- &nbsp; **(Binary segmentation, Semantic segmentation)**
+
+## Tensorflow/Keras를 활용한 semantic segmentation repository
+
+### 지원하는 기능
+- 데이터 전처리
+- Train
+- Evaluate
+- Predict real-time
+- TensorRT 변환
+- Tensorflow docker serving
 
 <br>
 
-### **Keyword:** Salient Object Detection, Binary Segmentation, Semantic Segmentation, Deep learning, Lightweight, distribute training
+### **Use library:** 
+- Tensorflow
+- Tensorflow-datasets
+- Tensorflow-addons
+- Tensorflow-serving
+- Keras
+- OpenCV python
+- gRPC
 
-<br>
-
-### **Use library:** Tensorflow, Keras, OpenCV
 ### **Options:** Distribute training, Custom Data
 ### **Models:** DDRNet-23-Slim, Eff-DeepLabV3+, Eff-DeepLabV3+(light-weight), MobileNetV3-DeepLabV3+
 
@@ -19,15 +31,16 @@
 <br>
 <hr/>
 
-## Table of Contents
+# Table of Contents
 
- 1. [Models](#1-models)
- 2. [Preferences](#2-preferences)
- 3. [Preparing datasets](#3-preparing-datasets)
- 4. [Train](#4-train)
- 5. [Eval](#5-eval)
- 6. [Predict](#6-predict)
- 7. [Convert TF-TRT](#7-convert-tf-trt)
+ ## 1. [Models](#1-models)
+ ## 2. [Dependencies](#2-dependencies)
+ ## 3. [Preparing datasets](#3-preparing-datasets)
+ ## 4. [Train](#4-train)
+ ## 5. [Eval](#5-eval)
+ ## 6. [Predict](#6-predict)
+ ## 7. [Convert TF-TRT](#7-convert-tf-trt)
+ ## 8. [Tensorflow serving](#8-tensorflow-serving)
 
 <br>
 <hr/>
@@ -120,7 +133,9 @@
 <br>
 <hr/>
 
-# 2. Preferences
+# 2. Dependencies
+
+본 레포지토리의 종속성은 다음과 같습니다.
 
 <table border="0">
 <tr>
@@ -172,16 +187,17 @@
         7.2.2.3
         </td>
     </tr>
-    <tr>
+    </tr>
+        <tr>
         <td>
-        GPU
+        Docker
         </td>
         <td>
-        NVIDIA RTX3090 24GB * 2
+        Docker 20.10.17
         </td>
     </tr>
 </table>
-
+<br>
 <hr/>
 
 학습 및 평가를 위해 **Anaconda(miniconda)** 가상환경에서 패키지를 다운로드 합니다.
@@ -468,10 +484,51 @@ Graph model이 없는 경우 **7.3.1** 절차를 따르고, 있는 경우에는 
 
     <br>
 
-
-
-
 <hr>
+
+# 8. Tensorflow serving
+
+사전 학습된 graph model (.pb) 또는 TensorRT 엔진으로 빌드된 모델을 서비스하는 기능을 제공합니다. <br>
+
+Tensorflow serving은 도커 가상 환경내에서 추론 서비스를 제공하는 도구입니다.
+
+작업에 앞서 현재 운영체제 version에 맞는 도커를 설치합니다. (https://docs.docker.com/engine/install/ubuntu/) <br>
+
+
+    # Ubuntu 18.04 docker install
+
+    # 1. Preset
+    sudo apt update
+    sudo apt install apt-transport-https ca-certificates curl software-properties-common
+
+    # 2. Add docker repository keys
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+
+    # 3. Install
+    sudo apt update
+    sudo apt install docker-ce
+
+도커 설치와 모델 파일이 준비되어있다면 바로 실행 가능합니다. 실행에 앞서 Serving server를 설정 옵션을 살펴봅니다. 
+
+    docker run 
+	--runtime=nvidia # 도커에서 nvidia-gpu를 사용하기 위한 설정
+	-t # tty 사용
+	-p 8500:8500 # 도커 환경에서 open할 포트주소
+	--rm # 도커 컨테이너가 사용되지 않을 경우 자동으로 삭제
+	-v "model_path:/models/test_model2" # {1}:{2} -> {1}은 .pb파일이 있는 경로입니다.
+                             {2}는 도커에서 해당 모델이 배포될 경로 (test_model2 이름을 활용하여 request 요청)
+	-e MODEL_NAME=test_model2 # gRPC, REST API에 호출될 모델 이름
+	-e NVIDIA_VISIBLE_DEVICES="0" # 사용할 gpu 번호
+	-e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 # TensorRT 엔진 빌드를 위해 cuda-11.1 환경 변수 지정 (TensorRT 엔진 7.2.2.3)
+	-e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu # TensorRT 버전 설정 및 해당 버전에 맞는 tensorflow-gpu 버전 설치
+	--port=8500 # Serving 시 사용할 포트번호 (도커 포트 설정과 동일하게 해줘야 함)
+
+
+명령어 끝에 **--help** 인자로 추가 정보를 확인할 수 있습니다. <br>
+
+Tensorflow-serving 서버에 접근하여 추론 요청을 하는 예제는 **tf_serving_sample.py** 를 참고해주세요. <br>
+
 
 # Reference
 <hr>

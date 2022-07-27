@@ -20,7 +20,7 @@ class ModelConfiguration(SemanticGenerator):
         self.mirrored_strategy = mirrored_strategy
         self.__set_args()
         super().__init__(data_dir=self.DATASET_DIR, image_size=self.IMAGE_SIZE,
-                         batch_size=self.BATCH_SIZE, dataset_name='cityscapes')
+                         batch_size=self.BATCH_SIZE, dataset_name=self.DATASET_NAME)
                         
 
 
@@ -50,6 +50,7 @@ class ModelConfiguration(SemanticGenerator):
         self.INIT_LR = self.args.lr
         self.SAVE_MODEL_NAME = self.args.model_name + '_' + self.args.model_prefix
         self.DATASET_DIR = self.args.dataset_dir
+        self.DATASET_NAME = self.args.dataset_name
         self.CHECKPOINT_DIR = self.args.checkpoint_dir
         self.TENSORBOARD_DIR = self.args.tensorboard_dir
         self.IMAGE_SIZE = self.args.image_size

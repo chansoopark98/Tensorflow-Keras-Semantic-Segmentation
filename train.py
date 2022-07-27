@@ -18,7 +18,7 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='test_cityscapes')
+                    default='city_Test_512_1024')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=8)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
@@ -30,7 +30,7 @@ parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
 parser.add_argument("--num_classes",      type=int,    help="Set number of classes to classification(BG+FG)",
                     default=20)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
-                    default=(320, 240))
+                    default=(512, 1024))
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
 parser.add_argument("--use_weightDecay",  type=bool,   help="Whether to use weightDecay",
@@ -40,9 +40,11 @@ parser.add_argument("--mixed_precision",  type=bool,   help="Whether to use mixe
 parser.add_argument("--model_name",       type=str,    help="Set the model name to save",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
 
-# Set directory path (Dataset, Chekcpoints, Tensorboard)
+# Set directory path (Dataset,  Dataset_type, Chekcpoints, Tensorboard)
 parser.add_argument("--dataset_dir",      type=str,    help="Set the dataset download directory",
                     default='./datasets/')
+parser.add_argument("--dataset_name",      type=str,    help="Set the dataset type (cityscapes, custom etc..)",
+                    default='cityscapes')
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard storage path",

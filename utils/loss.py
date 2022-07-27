@@ -124,23 +124,22 @@ class SemanticLoss(tf.keras.losses.Loss):
             probs = y_pred
             logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
 
-        
-
         xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=y_true,
             logits=logits)
 
         y_true_rank = y_true.shape.rank
         probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
+
         if not scalar_gamma:
             gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
         focal_modulation = (1 - probs) ** gamma
 
         loss = focal_modulation * xent_loss
 
-        if use_multi_gpu:
-            loss = tf.reduce_sum(loss) * (1. / global_batch_size)
-            loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)
+        # if use_multi_gpu:
+        #     loss = tf.reduce_sum(loss) * (1. / global_batch_size)
+        #     loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)
 
         if class_weight is not None:
             class_weight = tf.gather(class_weight, y_true, axis=0,

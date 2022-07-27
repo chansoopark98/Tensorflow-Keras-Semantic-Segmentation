@@ -6,3 +6,4 @@ opencv-python=4.5.5.64
 open3d==0.15.2
 matplotlib==3.5.2
 imageio==2.19.3
+aiogrpc==1.8
