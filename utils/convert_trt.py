@@ -3,13 +3,13 @@ import tensorflow as tf
 import os
 
 
-def convert_to_trt(image_size: tuple,
-                   saved_model_path: str, output_model_path: str):
+def convert_to_trt(image_size: tuple, saved_model_path: str,
+                   output_model_path: str, fp_mode: str = 'FP16'):
 
     os.makedirs(output_model_path, exist_ok=True)
 
     params = tf.experimental.tensorrt.ConversionParams(
-                            precision_mode='FP16',
+                            precision_mode=fp_mode,
                             maximum_cached_engines=16)
     converter = tf.experimental.tensorrt.Converter(
         input_saved_model_dir=saved_model_path, conversion_params=params, use_dynamic_shape=False)

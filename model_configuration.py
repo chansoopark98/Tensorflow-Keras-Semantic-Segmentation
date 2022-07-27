@@ -127,7 +127,6 @@ class ModelConfiguration(SemanticGenerator):
         self.__configuration_model()
         self.__configuration_metric()
 
-
         self.model.compile(
             optimizer=self.optimizer,
             loss=SemanticLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,

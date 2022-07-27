@@ -21,12 +21,13 @@
 
 ## Table of Contents
 
- 1. [Models](#Models)
- 2. [Preferences](#Preferences)
- 3. [Preparing datasets](#Preparing-datasets)
- 4. [Train](#Train)
- 5. [Eval](#Eval)
- 6. [Predict](#Predict)
+ 1. [Models](#1-models)
+ 2. [Preferences](#2-preferences)
+ 3. [Preparing datasets](#3-preparing-datasets)
+ 4. [Train](#4-train)
+ 5. [Eval](#5-eval)
+ 6. [Predict](#6-predict)
+ 7. [Convert TF-TRT](#7-convert-tf-trt)
 
 <br>
 <hr/>
@@ -161,6 +162,14 @@
         </td>
         <td>
         cuDNN v8.1.0 , for CUDA 11.1
+        </td>
+    </tr>
+        <tr>
+        <td>
+        TensorRT version
+        </td>
+        <td>
+        7.2.2.3
         </td>
     </tr>
     <tr>
@@ -357,6 +366,111 @@ Web-camera 또는 저장된 비디오를 실시간으로 추론할 수 있습니
 추론 결과를 확인하려는 경우 **--visualize** 인자를 추가해주세요.
 
 <br>
+<hr>
+
+# 7. Convert TF-TRT
+고속 추론이 가능하도록 TF-TRT 변환 기능을 제공합니다.
+변환에 앞서 tensorRT를 설치합니다.
+
+
+## 7.1 Install CUDA, CuDNN, TensorRT files
+
+<br>
+
+현재 작성된 코드 기준으로 사용된 CUDA 및 CuDNN 그리고 TensorRT version은 다음과 같습니다. <br>
+클릭 시 설치 링크로 이동합니다. <br>
+CUDA 및 CuDNN이 사전에 설치가 완료된 경우 생략합니다.
+
+<br>
+
+### CUDA : **[CUDA 11.1](https://www.tensorflow.org/datasets/catalog/overview)**
+### CuDNN : **[CuDNN 8.1.1](https://developer.nvidia.com/compute/machine-learning/cudnn/secure/8.1.1.33/11.2_20210301/cudnn-11.2-linux-x64-v8.1.1.33.tgz)**
+### TensorRT : **[TensorRT 7.2.2.3](https://developer.nvidia.com/compute/machine-learning/tensorrt/secure/7.2.2/tars/tensorrt-7.2.2.3.ubuntu-18.04.x86_64-gnu.cuda-11.1.cudnn8.0.tar.gz)**
+
+<br>
+
+## 7.2 Install TensorRT
+<br>
+
+가상 환경을 활성화합니다. (Anaconda와 같이 가상환경을 사용하지 않은 경우 생략합니다)
+    
+    conda activate ${env_name}
+
+<br>
+
+TensorRT를 설치한 디렉토리로 이동하여 압축을 해제하고 pip를 업그레이드 합니다.
+
+    tar -xvzf TensorRT-7.2.2.3.Ubuntu-18.04.x86_64-gnu.cuda-11.1.cudnn8.0.tar.gz
+    pip3 install --upgrade pip
+
+편집기를 이용하여 배시 쉘에 접근하여 환경 변수를 추가합니다.
+
+    sudo gedit ~/.bashrc
+    export PATH="/usr/local/cuda-11.1/bin:$PATH"
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/park/TensorRT-7.2.2.3/onnx_graphsurgeon
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda-11.1/lib64:/usr/local/cuda/extras/CUPTI/lib64:/home/park/TensorRT-7.2.2.3/lib"
+
+TensorRT 파이썬 패키지를 설치합니다.
+
+    cd python
+    python3 -m pip install tensorrt-7.2.2.3-cp38-none-linux_x86_64.whl
+
+    cd ../uff/
+    python3 -m pip install uff-0.6.9-py2.py3-none-any.whl
+
+    cd ../graphsurgeon
+    python3 -m pip install graphsurgeon-0.4.5-py2.py3-none-any.whl
+
+    cd ../onnx_graphsurgeon
+    python3 -m pip install onnx_graphsurgeon-0.2.6-py2.py3-none-any.whl
+
+terminal을 열어서 설치가 잘 되었는지 확인합니다.
+
+![test_python](https://user-images.githubusercontent.com/60956651/181165197-6a95119e-ea12-492b-9587-a0c5badc73be.png)
+
+<br>
+
+## 7.3 Convert to TF-TensorRT
+
+TF-TRT 변환 작업 전 사전 학습된 graph model **(.pb)**이 필요합니다. <br>
+Graph model이 없는 경우 **7.3.1** 절차를 따르고, 있는 경우에는 **7.3.2**로 넘어가세요.
+
+
+- ### 7.3.1 Graph model이 없는 경우
+
+    본 레포지토리에서 **train.py**를 통해 학습된 가중치가 있는 경우 graph model로 변환하는 기능을 제공합니다.
+
+    **train.py**에서 **--saved_model** argument로 그래프 저장 모드를 활성화합니다. 그리고 학습된 모델의 가중치가 저장된 경로를 추가해줍니다.
+
+        python train.py --saved_model --saved_model_path='your_model_weights.h5'
+
+    변환된 graph model의 기본 저장 경로는 **'./checkpoints/export_path/1'** 입니다.
+
+    ![saved_model_path](https://user-images.githubusercontent.com/60956651/181168185-376880d3-b9b8-4ea7-8c76-be8b498e34b1.png)
+
+    <br>
+
+- ### 7.3.2 Converting
+
+    **(.pb)** 파일이 존재하는 경우 아래의 스크립트를 실행하여 변환 작업을 수행합니다.
+
+        python convert_to_tensorRT.py ...(argparse options)
+
+    TensorRT 엔진을 통해 모델을 변환합니다. 고정된 입력 크기를 바탕으로 엔진을 빌드하니 스크립트 실행 전 **--help** 인자를 확인해주세요.
+
+    <br>
+    
+    아래와 같은 옵션을 제공합니다. <br>
+
+    **모델 입력 해상도** (--image_size), **.pb 파일 디렉토리 경로** (input_saved_model_dir) <br>
+    
+    **TensorRT 변환 모델 저장 경로** (output_saved_model_dir), **변환 부동소수점 모드 설정** (floating_mode)
+
+    <br>
+
+
+
+
 <hr>
 
 # Reference
