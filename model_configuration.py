@@ -21,10 +21,12 @@ class ModelConfiguration(SemanticGenerator):
         self.__set_args()
         super().__init__(data_dir=self.DATASET_DIR, image_size=self.IMAGE_SIZE,
                          batch_size=self.BATCH_SIZE, dataset_name=self.DATASET_NAME)
-                        
 
 
     def configuration_dataset(self):
+        """
+            Configure the dataset. Train and validation dataset is inherited from the parent class and used.
+        """
         # Wrapping tf.data generator
         self.train_data = self.get_trainData(train_data=self.train_data)
         self.valid_data = self.get_validData(valid_data=self.valid_data)
@@ -40,6 +42,9 @@ class ModelConfiguration(SemanticGenerator):
 
 
     def __set_args(self):
+        """
+            Configure the options received from argparse.
+        """
         # Set training variables from argparse's arguments 
         self.MODEL_PREFIX = self.args.model_prefix
         self.WEIGHT_DECAY = self.args.weight_decay
@@ -66,15 +71,21 @@ class ModelConfiguration(SemanticGenerator):
 
 
     def __set_callbacks(self):
+        """
+            Set the keras callback of model.fit.
+
+            For some metric callbacks, the name of the custom metric may be different and may not be valid,
+            so you must specify the name of the custom metric.
+        """
         # Set training keras callbacks
         reduce_lr = ReduceLROnPlateau(
             monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
-
+        
         checkpoint_val_loss = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name + '/_' + self.SAVE_MODEL_NAME + '_best_loss.h5',
                                               monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
-
+        
         checkpoint_val_iou = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name + '/_' + self.SAVE_MODEL_NAME + '_best_iou.h5',
-                                             monitor='val_m_io_u', save_best_only=True, save_weights_only=True,
+                                             monitor=self.miou_name, save_best_only=True, save_weights_only=True,
                                              verbose=1, mode='max')
 
         tensorboard = tf.keras.callbacks.TensorBoard(
@@ -92,6 +103,9 @@ class ModelConfiguration(SemanticGenerator):
 
 
     def __set_optimizer(self):
+        """
+            Configure the optimizer for backpropagation calculations.
+        """
         if self.OPTIMIZER_TYPE == 'sgd':
             self.optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=self.INIT_LR)
         elif self.OPTIMIZER_TYPE == 'adam':
@@ -111,32 +125,46 @@ class ModelConfiguration(SemanticGenerator):
 
     
     def __configuration_model(self):
+        """
+            Build a deep learning model.
+        """
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
                                   num_classes=self.NUM_CLASSES).build_model()
 
 
     def __configuration_metric(self):
+        """
+            Configure metrics for use in training and evaluation.
+        """
         if self.DATASET_NAME == 'cityscapes':
-            # TODO
             mIoU = CityMIoU(self.NUM_CLASSES+1)
-            # mIoU = MIoU(self.NUM_CLASSES)
+            self.miou_name = 'city_m_io_u'
+            
         else:
             mIoU = MIoU(self.NUM_CLASSES)
+            self.miou_name = 'm_io_u'
         
+        # You can add here custom metrics.
         self.metrics = [mIoU]
 
 
     def train(self):
+        """
+            Compile all configuration settings required for training.
+            If the custom metric name is different in the __set_callbacks function,
+            the update may not be possible, so please check the name.
+        """
         self.configuration_dataset()
-        self.__set_callbacks()
         self.__set_optimizer()
         self.__configuration_model()
         self.__configuration_metric()
+        self.__set_callbacks()
 
         self.model.compile(
             optimizer=self.optimizer,
             loss=SemanticLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES, dataset_name=self.DATASET_NAME),
+                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
+                              dataset_name=self.DATASET_NAME),
             metrics=self.metrics)
 
         self.model.fit(self.train_data,
@@ -148,6 +176,9 @@ class ModelConfiguration(SemanticGenerator):
 
 
     def saved_model(self):
+        """
+            Convert it to a graph model (.pb) using the learned weights.
+        """
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
                                   num_classes=self.NUM_CLASSES).build_model()
         self.model.load_weights(self.args.saved_model_path)
