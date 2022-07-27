@@ -136,7 +136,7 @@
         TF version
         </td>
         <td>
-        2.6.2
+        2.9.1
         </td>
     </tr>
     <tr>
@@ -144,7 +144,7 @@
         Python version
         </td>
         <td>
-        3.8.12
+        3.8.13
         </td>
     </tr>
     <tr>
