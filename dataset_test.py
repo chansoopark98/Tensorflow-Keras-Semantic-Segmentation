@@ -15,7 +15,7 @@ DATASET_NUMS = args.dataset_nums
 IMAGE_SIZE = (640, 480)
 
 if __name__ == "__main__":
-
+    tf.config.run_functions_eagerly(True)
     train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, batch_size=1, dataset_name='cityscapes')
     train_data = train_dataset_config.get_testData(train_dataset_config.train_data)
 
@@ -28,8 +28,6 @@ if __name__ == "__main__":
         original = original[0]
         mask = mask[0]
 
-        # mask = tf.cast(mask, tf.int8)
-
         fig = plt.figure()
         ax0 = fig.add_subplot(rows, cols, 1)
         ax0.imshow(img)
@@ -41,13 +39,6 @@ if __name__ == "__main__":
         ax0.set_title('mask')
         ax0.axis("off")
 
-        # mask = tf.expand_dims(mask, axis=-1)
-        # mask = tf.concat([mask, mask, mask], axis=-1)
-        # resize_shape = original.shape # h, w, c
-        # mask = tf.image.resize(mask, (resize_shape[0], resize_shape[1]), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        # mask = tf.cast(mask, dtype=tf.uint8)
-        # original = tf.where(mask>=1, mask*127, original)
-        
         ax0 = fig.add_subplot(rows, cols, 3)
         ax0.imshow(original)
         ax0.set_title('original')

@@ -20,9 +20,6 @@ class MIoU(tf.keras.metrics.MeanIoU):
     def update_state(self, y_true, y_pred, sample_weight=None):
         # y_true = tf.squeeze(y_true, axis=-1)
         # y_true (B, H, W, CLASSES)
-
-        y_true = y_true[:, :, :, 0]
-        y_pred = y_pred[:, :, :, :2]
         
         y_pred = tf.math.argmax(y_pred, axis=-1)
         y_pred = tf.cast(y_pred, tf.int32)

@@ -33,6 +33,7 @@ class SemanticLoss(tf.keras.losses.Loss):
         self.global_batch_size = global_batch_size
         self.num_classes = num_classes
 
+
     def get_config(self):
         config = super().get_config()
         config.update(gamma=self.gamma, class_weight=self.class_weight,
@@ -40,27 +41,19 @@ class SemanticLoss(tf.keras.losses.Loss):
                       global_batch_size=self.global_batch_size, num_classes=self.num_classes)
         return config
 
+
     def call(self, y_true, y_pred):
         y_true = tf.cast(y_true, dtype=tf.float32)
         y_pred = tf.cast(y_pred, dtype=tf.float32)
 
-        semantic_y_true = y_true[:, :, :, 0]
-        semantic_y_pred = y_pred[:, :, :, :self.num_classes]
-
-        confidence_y_true = y_true[:, :, :, 1]
-        confidence_y_pred = y_pred[:, :, :, self.num_classes:][:, :, :, 0]
-
-        conf_loss = self.confidence_loss(y_true=confidence_y_true, y_pred=confidence_y_pred,
-                                   global_batch_size=self.global_batch_size, use_multi_gpu=self.use_multi_gpu)
-
-        semantic_loss = self.sparse_categorical_focal_loss(y_true=semantic_y_true, y_pred=semantic_y_pred,
+        semantic_loss = self.sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
                                              class_weight=self.class_weight,
                                              gamma=self.gamma,
                                              from_logits=self.from_logits,
                                              use_multi_gpu=self.use_multi_gpu,
                                              global_batch_size=self.global_batch_size)
 
-        return conf_loss + semantic_loss
+        return semantic_loss
 
 
     def confidence_loss(self, y_true, y_pred,

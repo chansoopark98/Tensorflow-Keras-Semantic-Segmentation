@@ -18,7 +18,7 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='_0722_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_scale_train100%')
+                    default='test_cityscapes')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=8)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
@@ -28,7 +28,7 @@ parser.add_argument("--lr",               type=float,  help="Initial learning ra
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.0005)
 parser.add_argument("--num_classes",      type=int,    help="Set number of classes to classification(BG+FG)",
-                    default=2)
+                    default=20)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
                     default=(320, 240))
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",

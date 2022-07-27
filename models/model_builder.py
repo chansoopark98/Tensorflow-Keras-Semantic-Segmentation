@@ -48,14 +48,9 @@ class ModelBuilder():
         deeplab_output = deepLabV3Plus(features=features, activation='swish')
 
         semantic_output = self.classifier(
-            deeplab_output, num_classes=self.num_classes, upper=4, name='semantic_output')
+            deeplab_output, num_classes=self.num_classes, upper=4, name='output')
 
-        confidence_output = self.classifier(
-            deeplab_output, num_classes=1, upper=4, activation='sigmoid', name='confidence_output')
-
-        model_output = Concatenate(name='output')([semantic_output, confidence_output])
-
-        model = models.Model(inputs=[model_input], outputs=[model_output])
+        model = models.Model(inputs=[model_input], outputs=[semantic_output])
         
         # set weight initializers
         for layer in model.layers:

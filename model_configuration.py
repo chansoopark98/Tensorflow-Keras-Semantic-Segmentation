@@ -20,7 +20,8 @@ class ModelConfiguration(SemanticGenerator):
         self.mirrored_strategy = mirrored_strategy
         self.__set_args()
         super().__init__(data_dir=self.DATASET_DIR, image_size=self.IMAGE_SIZE,
-                         batch_size=self.BATCH_SIZE, dataset_name='full_semantic')
+                         batch_size=self.BATCH_SIZE, dataset_name='cityscapes')
+                        
 
 
     def configuration_dataset(self):

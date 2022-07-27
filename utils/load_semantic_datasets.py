@@ -1,6 +1,7 @@
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import tensorflow_datasets as tfds
 import tensorflow as tf
+from utils.predict_utils import PrepareCityScapesLabel
 from typing import Union
 import os
 
@@ -9,17 +10,27 @@ AUTO = tf.data.experimental.AUTOTUNE
 
 class DataLoadHandler:
     def __init__(self, data_dir: str, dataset_name: str):
+        """
+        This class performs pre-process work for each dataset and load tfds.
+        Args:
+            data_dir     (str)   : Dataset relative path ( default : './datasets/' )
+            dataset_name (str)   : Tensorflow dataset name (e.g: 'citiscapes')
+        
+        """
         self.dataset_name = dataset_name
         self.data_dir = data_dir
-        self.select_dataset()
+        self.__select_dataset()
 
 
-    def select_dataset(self):
+    def __select_dataset(self):
         try:
             if self.dataset_name == 'cityscapes':
                 self.dataset_list = self.__load_cityscapes()
                 self.train_key = 'image_left'
                 self.label_key = 'segmentation_label'
+
+                # configuration cityscapes label tools
+                self.cityscapes_tools = PrepareCityScapesLabel()
 
             elif self.dataset_name == 'full_semantic':
                 self.dataset_list = self.__load_custom_dataset()
@@ -72,18 +83,15 @@ class DataLoadHandler:
         return (train_data, number_train, valid_data, number_valid)
 
 
-
-    
-
 class SemanticGenerator(DataLoadHandler):
     def __init__(self, data_dir: str, image_size: tuple, batch_size: int,
-                 dataset_name: str = 'full_semantic'):
+                 dataset_name: str = 'cityscapes'):
         """
         Args:
             data_dir     (str)   : Dataset relative path ( default : './datasets/' )
             image_size   (tuple) : Model input image resolution 
             batch_size   (int)   : Batch size
-            dataset_name (str)   : Tensorflow dataset name (e.g: 'full_semantic')
+            dataset_name (str)   : Tensorflow dataset name (e.g: 'cityscapes')
         """
         # Configuration
         self.data_dir = data_dir
@@ -91,46 +99,58 @@ class SemanticGenerator(DataLoadHandler):
         self.batch_size = batch_size
         self.dataset_name = dataset_name
         super().__init__(data_dir=self.data_dir, dataset_name=self.dataset_name)
-        print(self.train_key, self.label_key)
 
 
     def load_test(self, sample: dict):
-        img = tf.cast(sample[self.train_key], dtype=tf.int32)
+        """
+        Load functions for data set validation and testing tasks
+        Args:
+            sample       (dict)  : Dataset loaded through tfds.load().
+        """
+        img = tf.cast(sample[self.train_key], tf.float32)
         labels = tf.cast(sample[self.label_key], dtype=tf.int32)
-
-        if self.dataset_name == 'cityscapes':
-            labels -= 1
 
         original_img = img
 
-        # img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
-        #                       method=tf.image.ResizeMethod.BILINEAR)
-        # labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
-        #                          method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-            
+        labels = self.cityscapes_tools.encode_cityscape_label(label=labels)
+
         img = preprocess_input(img, mode='tf')
-
-
+        
         return (img, labels, original_img)
 
 
     @tf.function    
     def prepare_data(self, sample: dict) -> Union[tf.Tensor, tf.Tensor]:
+        """
+        Load RGB images and segmentation labels from the dataset.
+        Options: 
+            (1)   For cityscapes, convert 35 classes to 19 foreground classes
+                  and 1 background class (total: 20).
+        Args:
+            sample    (dict)  : Dataset loaded through tfds.load().
+        """
         img = sample[self.train_key]
         labels = sample[self.label_key]
-
+        
         if self.dataset_name == 'cityscapes':
-            labels -= 1
+            # encode cityscapes data
+            labels = self.cityscapes_tools.encode_cityscape_label(label=labels)
 
         # convert to data type
-        img = tf.cast(sample, dtype=tf.float32)
-        labels = tf.cast(sample, dtype=tf.int32)
-
+        img = tf.cast(img, dtype=tf.float32)
+        labels = tf.cast(labels, dtype=tf.float32)
+        
         return (img, labels)
 
 
     @tf.function
-    def preprocess(self, sample: dict):
+    def preprocess(self, sample: dict) -> Union[tf.Tensor, tf.Tensor]:
+        """
+        Dataset mapping function to apply to the train dataset.
+        Various methods can be applied here, such as image resizing, random cropping, etc.
+        Args:
+            sample    (dict)  : Dataset loaded through tfds.load().
+        """
         img, labels = self.prepare_data(sample)
 
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
@@ -165,7 +185,15 @@ class SemanticGenerator(DataLoadHandler):
         
 
     @tf.function
-    def augmentation(self, img, labels):           
+    def augmentation(self, img: tf.Tensor, labels: tf.Tensor) -> Union[tf.Tensor, tf.Tensor]: 
+        """
+        This is a data augmentation function to be applied to the train dataset.
+        You can add a factor or augmentation method to be applied to each batch.     
+        Args:
+            img       (tf.Tensor)  : tf.Tensor data (shape=H,W,3)
+            labels    (tf.Tensor)  : tf.Tensor data (shape=H,W,1)
+        """     
+        
         if tf.random.uniform([]) > 0.8:
             img = tf.image.random_jpeg_quality(img, 30, 90)
         if tf.random.uniform([]) > 0.8:
@@ -179,16 +207,19 @@ class SemanticGenerator(DataLoadHandler):
             labels = tf.image.flip_left_right(labels)
 
         img = preprocess_input(img, mode='tf')
-        labels = tf.where(labels >= 1., 1., labels)
-        confidence = tf.cast(tf.where(labels >= 1., 1., 0), dtype=tf.float32)
+        # convert to integer label
+        labels = tf.cast(labels, dtype=tf.int32)
 
-        gt = tf.concat([labels, confidence], axis=-1)
-
-        return (img, gt)
+        return (img, labels)
 
 
     @tf.function
-    def preprocess_valid(self, sample):
+    def preprocess_valid(self, sample: dict) -> Union[tf.Tensor, tf.Tensor]:
+        """
+        This is a data processing mapping function to be used in the validation step during training.
+        Args:
+            sample    (dict)  : Dataset loaded through tfds.load().
+        """     
         img, labels = self.prepare_data(sample)
 
         img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
@@ -197,12 +228,11 @@ class SemanticGenerator(DataLoadHandler):
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         img = preprocess_input(img, mode='tf')
-        labels = tf.where(labels >= 1., 1., labels)
-        confidence = tf.cast(tf.where(labels >= 1., 1., 0.), dtype=tf.float32)
 
-        gt = tf.concat([labels, confidence], axis=-1)
+        # convert to integer label
+        labels = tf.cast(labels, dtype=tf.int32)
 
-        return (img, gt)
+        return (img, labels)
 
 
     def get_trainData(self, train_data):
@@ -224,6 +254,7 @@ class SemanticGenerator(DataLoadHandler):
 
 
     def get_testData(self, valid_data):
+        print(type(valid_data))
         valid_data = valid_data.map(self.load_test)
         valid_data = valid_data.batch(self.batch_size).prefetch(AUTO)
 
