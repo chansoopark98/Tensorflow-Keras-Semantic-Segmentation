@@ -3,9 +3,13 @@
 > All about Tensorflow/Keras semantic segmentation
 
 
-## Tensorflow/Keras based semantic segmentation repository  [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Realtime-Segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
+## Tensorflow/Keras based semantic segmentation repository  
 
 <br>
+
+ [![Github All Releases](https://img.shields.io/github/downloads/chansoopark98/Tensorflow-Keras-Realtime-Segmentation/total.svg)]() 
+
+ [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Realtime-Segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
 
 
 
