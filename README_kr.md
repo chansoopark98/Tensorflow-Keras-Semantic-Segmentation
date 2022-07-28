@@ -505,7 +505,7 @@ terminal을 열어서 설치가 잘 되었는지 확인합니다.
 
 ## 7.3 Convert to TF-TensorRT
 
-TF-TRT 변환 작업 전 사전 학습된 graph model **(.pb)**이 필요합니다. <br>
+TF-TRT 변환 작업 전 사전 학습된 **graph model (.pb)** 이 필요합니다. <br>
 Graph model이 없는 경우 **7.3.1** 절차를 따르고, 있는 경우에는 **7.3.2**로 넘어가세요.
 
 
@@ -587,8 +587,10 @@ Tensorflow serving은 도커 가상 환경내에서 추론 서비스를 제공�
 Tensorflow-serving 서버에 접근하여 추론 요청을 하는 예제는 **tf_serving_sample.py** 를 참고해주세요. <br>
 
 
-# Reference
+# References
 <hr>
 
 1. [DDRNet : https://github.com/ydhongHIT/DDRNet](https://github.com/ydhongHIT/DDRNet)
-2. [CSNEt-seg https://github.com/chansoopark98/CSNet-seg](https://github.com/chansoopark98/CSNet-seg)
+2. [CSNet-seg : https://github.com/chansoopark98/CSNet-seg](https://github.com/chansoopark98/CSNet-seg)
+3. [A study on lightweight networks for efficient object detection based on deep learning](https://doi.org/10.14400/JDC.2021.19.5.307)
+4. [Efficient shot detector](https://www.mdpi.com/2076-3417/11/18/8692)
