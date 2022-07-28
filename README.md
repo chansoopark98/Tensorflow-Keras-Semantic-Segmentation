@@ -106,23 +106,67 @@
 
 # 1. Models
 
+These are the currently supported models and loss functions. <br>
+Regular additional updates will be made. <br>
+
+<strong><h3> *Latest update : 2022/07/28*</h3></strong>
+
+ 
+ <br>
+
 <table border="0">
 <tr>
     <tr>
         <td>
-        Model name
+        <h3><strong>Model name</strong></h3>
         </td>
         <td>
-        Params(Million)
+        <h3><strong>Params</strong></h3>
         </td>
         <td>
-        Resolution(HxW)
+        <h3><strong>Resolution(HxW)</strong></h3>
         </td>
         <td>
-        Inference time(ms)
+        <h3><strong>Inference time(ms)</strong></h3>
+        </td>
+        <td>
+        <h3><strong>Pretrained weights</strong></h3>
         </td>
     </tr>
     <tr>
+        <td>
+        Lightweight EFF-DLV3+
+        </td>
+        <td>
+        20m
+        </td>
+        <td>
+        1024x2048
+        </td>
+        <td>
+        30
+        </td>
+        <td>
+        TODO
+        </td>
+    </tr>
+        <tr>
+        <td>
+        DeepLabV3+
+        </td>
+        <td>
+        48m
+        </td>
+        <td>
+        1024x2048
+        </td>
+        <td>
+        TODO
+        </td>
+        <td>
+        TODO
+        </td>
+    </tr>
         <td>
         DDRNet-23-slim
         </td>
@@ -135,59 +179,80 @@
         <td>
         20ms
         </td>
+        <td>
+        TODO
+        </td>
     </tr>
 </tr>
 </table>
 
+
+
 ## Loss
-1. **CrossEntropy** <br>
 
-    ![image](https://user-images.githubusercontent.com/60956651/163329997-a0b8d85d-c98a-401b-abba-0d65b4a8e303.png)
+<table border="0">
+<tr>
+    <tr>
+        <td>
+            <h3><strong>Loss</strong></h3>
+        </td>
+        <td>
+            <h3><strong>Implementation</strong></h3>
+        </td>
+    </tr>
+    <!-- CROSS ENTROPY -->
+    <tr>
+        <td>
+            Cross entropy loss
+        </td>
+        <td>
+            OK
+        </td>
+    </tr>
+    <!-- FOCAL CROSS ENTROPY LOSS -->
+    <tr>
+        <td>
+            Focal cross entropy loss
+        </td>
+        <td>
+            OK
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Binary cross entropy loss
+        </td>
+        <td>
+            OK
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Focal binary cross entropy loss
+        </td>
+        <td>
+            OK
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Jaccard loss
+        </td>
+        <td>
+            TODO
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Dice loss
+        </td>
+        <td>
+            TODO
+        </td>
+    </tr>
+</tr>
+</table>
 
-<br>
-
-2. **FocalLoss** <br>
-
-    
-    <img src="https://user-images.githubusercontent.com/60956651/163326665-a4a55c98-b2b7-4822-a6e5-2379e6023b8a.png"  width="500" height="370">
-
-    <br>
-
-    ### $FL (pt) = -αt(1-  pt)γ log  log(pt)$
-
-    <br>
-
-    When an example is misclassified and pt is small, the modulating factor is near 1 and the loss is unaffected. <br><br>
-    As pt→  1, the factor goes to 0 and the loss for well-classified examples is down weighed. <br><br>
-    The focusing parameter
-    γ smoothly adjusts the rate at which easy examples are down-weighted. <br><br>
-    As is increased, the effect of modulating factor is likewise increased. (After a lot of experiments and trials, researchers have found γ = 2 to work best)
-
-    <br>
-
-3. **BinaryCrossEntropy**
-    <br>
-
-    ### $BCE(x)=−1N∑i=1Nyilog(h(xi;θ))+(1−yi)log(1−h(xi;θ))$
-
-    <br>
-
-4. **BinaryFocalLoss**
-    <br>
-
-    ### $L(y,p^)=−αy(1−p^ )γlog(p^)−(1−y)p^γlog(1−p^)$
-    
-    where
-
-    y∈{0,1} is a binary class label, <br>
-
-    p^∈[0,1] is an estimate of the probability of the positive class, <br>
-
-    γ is the focusing parameter that specifies how much higher-confidence correct predictions contribute to the overall loss (the higher the γ, the higher the rate at which easy-to-classify examples are down-weighted). <br><br>
-
-    α is a hyperparameter that governs the trade-off between precision and recall by weighting errors for the positive class up or down (α=1 is the default, which is the same as no weighting),
-
-    <br>
     
 <br>
 <hr/>
