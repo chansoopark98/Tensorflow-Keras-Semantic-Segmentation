@@ -4,6 +4,42 @@
 
 
 ## Tensorflow/Keras를 활용한 semantic segmentation repository
+<br>
+
+<center>
+<img src="https://img.shields.io/github/issues/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+<img src="https://img.shields.io/github/forks/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+<img src="https://img.shields.io/github/stars/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+<img src="https://img.shields.io/github/license/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+
+[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Realtime-Segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
+
+
+
+<br>
+
+<img alt="Python" src ="https://img.shields.io/badge/Python-3776AB.svg?&style=for-the-badge&logo=Python&logoColor=white"/>
+<img src ="https://img.shields.io/badge/Tensorflow-FF6F00.svg?&style=for-the-badge&logo=Tensorflow&logoColor=white"/>
+<img src ="https://img.shields.io/badge/Keras-D00000.svg?&style=for-the-badge&logo=Keras&logoColor=white"/>
+<img src ="https://img.shields.io/badge/OpenCV-5C3EE8.svg?&style=for-the-badge&logo=OpenCV&logoColor=white"/>
+<img src ="https://img.shields.io/badge/Numpy-013243.svg?&style=for-the-badge&logo=Numpy&logoColor=white"/>
+
+<br>
+
+</center>
+
+![main_image_1](https://user-images.githubusercontent.com/60956651/181407216-63498ca5-7668-4188-853b-c48506534b9e.png)
+
+<center>Cityscapes 이미지 분할 결과 (with ignore index)</center>
+
+<br>
+
+![166](https://user-images.githubusercontent.com/60956651/181407706-1d2ba5cd-fe9f-419f-aa03-e44e6e77a40e.png)
+
+<center>Cityscapes 이미지 분할 결과 (without ignore index)</center>
+
+<br>
+
 
 ### 지원하는 기능
 - 데이터 전처리
@@ -33,14 +69,14 @@
 
 # Table of Contents
 
- ## 1. [Models](#1-models)
- ## 2. [Dependencies](#2-dependencies)
- ## 3. [Preparing datasets](#3-preparing-datasets)
- ## 4. [Train](#4-train)
- ## 5. [Eval](#5-eval)
- ## 6. [Predict](#6-predict)
- ## 7. [Convert TF-TRT](#7-convert-tf-trt)
- ## 8. [Tensorflow serving](#8-tensorflow-serving)
+ ## 1. [Models](#1-models-1)
+ ## 2. [Dependencies](#2-dependencies-1)
+ ## 3. [Preparing datasets](#3-preparing-datasets-1)
+ ## 4. [Train](#4-train-1)
+ ## 5. [Eval](#5-eval-1)
+ ## 6. [Predict](#6-predict-1)
+ ## 7. [Convert TF-TRT](#7-convert-tf-trt-1)
+ ## 8. [Tensorflow serving](#8-tensorflow-serving-1)
 
 <br>
 <hr/>
@@ -233,7 +269,9 @@ Labeling 작업이 완료되고 **CVAT**에서 dataset의 export format을 **Seg
 첫번째, foreground가 없는 이미지의 경우 CVAT에서 자동으로 레이블을 생성하지 않습니다.
 아래와 같이 foreground object가 없을 때를 가정하여 zero label을 생성합니다.
 <br>
+
 <br>
+
     cd data_augmentation
     python make_blank_label.py
 
