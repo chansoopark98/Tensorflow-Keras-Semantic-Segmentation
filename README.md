@@ -18,13 +18,19 @@
 
 <br>
 
+
 <p align="center">
  <img alt="Python" src ="https://img.shields.io/badge/Python-3776AB.svg?&style=for-the-badge&logo=Python&logoColor=white"/>
  <img src ="https://img.shields.io/badge/Tensorflow-FF6F00.svg?&style=for-the-badge&logo=Tensorflow&logoColor=white"/>
  <img src ="https://img.shields.io/badge/Keras-D00000.svg?&style=for-the-badge&logo=Keras&logoColor=white"/>
  <img src ="https://img.shields.io/badge/OpenCV-5C3EE8.svg?&style=for-the-badge&logo=OpenCV&logoColor=white"/>
  <img src ="https://img.shields.io/badge/Numpy-013243.svg?&style=for-the-badge&logo=Numpy&logoColor=white"/>
+ <br>
+ <br>
 </p>
+
+- ## 한국어 [README.md](https://github.com/chansoopark98/Tensorflow-Keras-Realtime-Segmentation/blob/main/README_kr.md) 지원
+
 
 <br>
 
