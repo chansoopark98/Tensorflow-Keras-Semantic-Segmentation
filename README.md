@@ -373,7 +373,7 @@ Finally, build the dataset.
 
 ### **Caution!**
 
-The work output of **augment_data.py** basically consists of three paths: RGB, MASK, and VIS_MASK.<br>
+The work output of **[augment_data.py](https://github.com/chansoopark98/Tensorflow-Keras-Realtime-Segmentation/blob/main/data_augmentation/augment_data.py)** basically consists of three paths: RGB, MASK, and VIS_MASK.<br>
 
 **VIS_MASK** is not a label to be actually used, it is for visual confirmation, so do not use it in the work below. <br>
 
@@ -410,7 +410,7 @@ Because of memory allocation issues in tf.data before training, use TCMalloc to 
 ## **Caution!**
 This repository supports training and inference in single-GPU and multi-GPU environments. <br>
 When using Single-GPU, you can set the GPU number and use it. <br>
-Take a look at python train.py --help and add the setting value required for training as an argument value. <br>
+Take a look at **[train.py](https://github.com/chansoopark98/Tensorflow-Keras-Realtime-Segmentation/blob/main/train.py)** --help and add the setting value required for training as an argument value. <br>
 
 <br>
 <hr>
@@ -522,9 +522,9 @@ If you do not have a graph model, follow the procedure **7.3.1**, if you do, ski
 
 - ### 7.3.1 If there is no graph model
 
-    In this repository, if there are weights trained through **train.py**, it provides a function to convert it to a graph model.
+    In this repository, if there are weights trained through **[train.py](https://github.com/chansoopark98/Tensorflow-Keras-Realtime-Segmentation/blob/main/train.py)**, it provides a function to convert it to a graph model.
 
-    Enable graph saving mode with **--saved_model** argument in **train.py**. And it adds the path where the weights of the trained model are stored.
+    Enable graph saving mode with **--saved_model** argument in **[train.py](https://github.com/chansoopark98/Tensorflow-Keras-Realtime-Segmentation/blob/main/train.py)**. And it adds the path where the weights of the trained model are stored.
 
         python train.py --saved_model --saved_model_path='your_model_weights.h5'
 
@@ -596,7 +596,7 @@ If you have Docker installation and model file ready, you can run it right away.
 
 Additional information can be found with the **--help** argument at the end of the command. <br>
 
-Please refer to **tf_serving_sample.py** for an example of accessing the Tensorflow-serving server and making an inference request. <br>
+Please refer to **[tf_serving_sample.py](https://github.com/chansoopark98/Tensorflow-Keras-Realtime-Segmentation/blob/main/tf_serving_sample.py)** for an example of accessing the Tensorflow-serving server and making an inference request. <br>
 
 
 # References
