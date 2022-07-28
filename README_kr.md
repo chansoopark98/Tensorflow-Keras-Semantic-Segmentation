@@ -6,13 +6,14 @@
 ## Tensorflow/Keras를 활용한 semantic segmentation repository
 <br>
 
-<center>
-<img src="https://img.shields.io/github/issues/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
-<img src="https://img.shields.io/github/forks/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
-<img src="https://img.shields.io/github/stars/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
-<img src="https://img.shields.io/github/license/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+<p align="center">
 
 [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Realtime-Segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
+    <img src="https://img.shields.io/github/issues/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+    <img src="https://img.shields.io/github/forks/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+    <img src="https://img.shields.io/github/stars/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+    <img src="https://img.shields.io/github/license/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+</p>
 
 
 
@@ -26,17 +27,17 @@
 
 <br>
 
-</center>
+
 
 ![main_image_1](https://user-images.githubusercontent.com/60956651/181407216-63498ca5-7668-4188-853b-c48506534b9e.png)
 
-<center>Cityscapes 이미지 분할 결과 (with ignore index)</center>
+Cityscapes 이미지 분할 결과 (with ignore index)
 
 <br>
 
 ![166](https://user-images.githubusercontent.com/60956651/181407706-1d2ba5cd-fe9f-419f-aa03-e44e6e77a40e.png)
 
-<center>Cityscapes 이미지 분할 결과 (without ignore index)</center>
+Cityscapes 이미지 분할 결과 (without ignore index)
 
 <br>
 
