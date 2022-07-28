@@ -6,14 +6,18 @@
 ## Tensorflow/Keras를 활용한 semantic segmentation repository
 <br>
 
-<p align="center">
 
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Realtime-Segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
-    <img src="https://img.shields.io/github/issues/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
-    <img src="https://img.shields.io/github/forks/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
-    <img src="https://img.shields.io/github/stars/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
-    <img src="https://img.shields.io/github/license/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
-</p>
+
+<center>
+
+[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Realtime-Segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)<center>
+
+
+<center><img src="https://img.shields.io/github/issues/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+<img src="https://img.shields.io/github/forks/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+<img src="https://img.shields.io/github/stars/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
+<img src="https://img.shields.io/github/license/chansoopark98/Tensorflow-Keras-Realtime-Segmentation"></center>
+
 
 
 
