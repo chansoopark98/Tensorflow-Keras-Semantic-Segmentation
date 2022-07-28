@@ -3,15 +3,17 @@
 > All about Tensorflow/Keras semantic segmentation
 
 
-## Tensorflow/Keras를 활용한 semantic segmentation repository
+## Tensorflow/Keras를 활용한 semantic segmentation repository  [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Realtime-Segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
+
 <br>
 
 
 
-<p align="center">
 
- [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fchansoopark98%2FTensorflow-Keras-Realtime-Segmentation&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23C41010&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
-</p>
+
+
+
+
 
 <p align="center">
  <img src="https://img.shields.io/github/issues/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
@@ -20,30 +22,40 @@
  <img src="https://img.shields.io/github/license/chansoopark98/Tensorflow-Keras-Realtime-Segmentation">
  </p>
 
+<br>
 
-
+<p align="center">
+ <img alt="Python" src ="https://img.shields.io/badge/Python-3776AB.svg?&style=for-the-badge&logo=Python&logoColor=white"/>
+ <img src ="https://img.shields.io/badge/Tensorflow-FF6F00.svg?&style=for-the-badge&logo=Tensorflow&logoColor=white"/>
+ <img src ="https://img.shields.io/badge/Keras-D00000.svg?&style=for-the-badge&logo=Keras&logoColor=white"/>
+ <img src ="https://img.shields.io/badge/OpenCV-5C3EE8.svg?&style=for-the-badge&logo=OpenCV&logoColor=white"/>
+ <img src ="https://img.shields.io/badge/Numpy-013243.svg?&style=for-the-badge&logo=Numpy&logoColor=white"/>
+</p>
 
 <br>
 
-<img alt="Python" src ="https://img.shields.io/badge/Python-3776AB.svg?&style=for-the-badge&logo=Python&logoColor=white"/>
-<img src ="https://img.shields.io/badge/Tensorflow-FF6F00.svg?&style=for-the-badge&logo=Tensorflow&logoColor=white"/>
-<img src ="https://img.shields.io/badge/Keras-D00000.svg?&style=for-the-badge&logo=Keras&logoColor=white"/>
-<img src ="https://img.shields.io/badge/OpenCV-5C3EE8.svg?&style=for-the-badge&logo=OpenCV&logoColor=white"/>
-<img src ="https://img.shields.io/badge/Numpy-013243.svg?&style=for-the-badge&logo=Numpy&logoColor=white"/>
+
+<p align="center">
+
+ ![main_image_1](https://user-images.githubusercontent.com/60956651/181407216-63498ca5-7668-4188-853b-c48506534b9e.png)
+
+</p>
+
+<div align=center>
+    Cityscapes 이미지 분할 결과 (with ignore index)
+</div>
 
 <br>
 
-
-
-![main_image_1](https://user-images.githubusercontent.com/60956651/181407216-63498ca5-7668-4188-853b-c48506534b9e.png)
-
-Cityscapes 이미지 분할 결과 (with ignore index)
-
-<br>
+<p align="center">
 
 ![166](https://user-images.githubusercontent.com/60956651/181407706-1d2ba5cd-fe9f-419f-aa03-e44e6e77a40e.png)
 
-Cityscapes 이미지 분할 결과 (without ignore index)
+</p>
+
+<div align=center>
+    Cityscapes 이미지 분할 결과 (without ignore index)
+</div>
 
 <br>
 
