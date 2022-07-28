@@ -43,5 +43,19 @@ class CityMIoU(tf.keras.metrics.MeanIoU):
         y_true *= indices
         zeros_y_pred *= indices
 
+        return super().update_state(y_true, zeros_y_pred, sample_weight)
+
+
+class CityEvalMIoU(tf.keras.metrics.MeanIoU):
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        y_true = tf.squeeze(y_true, axis=-1)
+        y_pred += 1
+
+        zeros_y_pred = tf.zeros(tf.shape(y_pred), tf.int64)
+        zeros_y_pred += y_pred
+        indices = tf.cast(tf.where(tf.equal(y_true, 0), 0, 1), tf.int64)
+
+        y_true *= indices
+        zeros_y_pred *= indices
 
         return super().update_state(y_true, zeros_y_pred, sample_weight)

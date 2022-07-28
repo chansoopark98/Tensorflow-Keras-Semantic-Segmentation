@@ -112,9 +112,10 @@ class SemanticGenerator(DataLoadHandler):
 
         original_img = img
 
-        labels = self.cityscapes_tools.encode_cityscape_label(label=labels)
+        labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
 
         img = preprocess_input(img, mode='torch')
+        labels = tf.cast(labels, dtype=tf.int64)
         
         return (img, labels, original_img)
 

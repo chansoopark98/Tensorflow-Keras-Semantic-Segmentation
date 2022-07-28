@@ -65,6 +65,7 @@ class PrepareCityScapesLabel(object):
         ]
 
         self.trainable_list = self.__convert_to_19(label_list=self.cityscapes_label)
+        self.trainabel_color_map = self.encode_cityscape_color(label_list=self.cityscapes_label)
 
 
     def __convert_to_19(self, label_list: list) -> dict:
@@ -83,14 +84,26 @@ class PrepareCityScapesLabel(object):
         return trainable_list
 
 
-    def encode_cityscape_label(self, label: tf.Tensor) -> tf.Tensor:
+    def encode_cityscape_label(self, label: tf.Tensor, mode: str = 'train') -> tf.Tensor:
         label_mask = tf.zeros_like(label, dtype=tf.int32)
         for k in self.trainable_list:
             label_mask = tf.where(label==k, self.trainable_list[k], label_mask)
         
-        label_mask -= 1
+        if mode == 'train':
+            label_mask -= 1
 
         return label_mask
+
+    def encode_cityscape_color(self, label_list: list) -> list:
+        encode_color_map = []
+
+        for label in label_list:
+            if label.trainId != 255 and label.trainId != -1:
+                encode_color_map.append(label.color)
+        
+        return encode_color_map
+            
+
 
 
 color_map = [

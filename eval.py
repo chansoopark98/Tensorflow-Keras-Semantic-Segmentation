@@ -6,7 +6,7 @@ import os
 import tensorflow as tf
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from utils.metrics import MIoU
+from utils.metrics import CityEvalMIoU, MIoU
 from utils.get_flops import get_flops
 
 tf.keras.backend.clear_session()
@@ -15,15 +15,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",      type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
-                    help="Model num classes", default=2)
+                    help="Model num classes", default=19)
 parser.add_argument("--image_size",      type=tuple,
-                    help="Model image size (input resolution H,W)", default=(320, 240))
+                    help="Model image size (input resolution H,W)", default=(1024, 2048))
 parser.add_argument("--dataset_dir",     type=str,
                     help="Dataset directory", default='./datasets/')
+parser.add_argument("--dataset_name",     type=str,
+                    help="Dataset directory", default='cityscapes')
 parser.add_argument("--checkpoint_dir",  type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_path",     type=str,
-                    help="Saved model weights directory", default='your_model_weights.h5')
+                    help="Saved model weights directory", default='0727/_0727_city_Test_512_1024_best_iou.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
@@ -38,9 +40,8 @@ if __name__ == '__main__':
     
     # Configuration test(valid) datasets
     dataset_config = SemanticGenerator(data_dir=args.dataset_dir, image_size=args.image_size,
-    batch_size=args.batch_size, dataset_name='full_semantic')
+                                       batch_size=args.batch_size, dataset_name=args.dataset_name)
     dataset = dataset_config.get_testData(valid_data=dataset_config.valid_data)
-
     test_steps = dataset_config.number_valid // args.batch_size
 
     # Model build and load pre-trained weights
@@ -49,67 +50,57 @@ if __name__ == '__main__':
     model.summary()
 
     # Model warm up
-    model.predict(tf.zeros((1, args.image_size[0], args.image_size[1], 3)))
+    _ = model.predict(tf.zeros((1, args.image_size[0], args.image_size[1], 3)))
 
-    # Set evaluate metrics
-    miou = MIoU(args.num_classes)
+    # Set evaluate metrics and Color maps
+    if args.dataset_name == 'cityscapes':
+        miou = CityEvalMIoU(args.num_classes+1)
+        color_map = dataset_config.cityscapes_tools.trainabel_color_map
+    else:
+        miou = MIoU(args.num_classes)
     
     # Set plot config
-    rows = 2
+    rows = 1
     cols = 2
     batch_idx = 0
     avg_duration = 0
+    batch_index = 0
 
     # Predict
     for x, gt, original_img in tqdm(dataset, total=test_steps):
         # Check inference time
         start = time.process_time()
-        pred = model.predict(x)
+        pred = model.predict_on_batch(x)
         duration = (time.process_time() - start)
 
-        # Calculate metrics
-        miou.update_state(gt, pred)
-        metric_result = miou.result().numpy()
+        # Argmax prediction
+        pred = tf.argmax(pred, axis=-1)
+        
+        for i in range(args.batch_size):
+            # Calculate metrics
+            miou.update_state(gt[i], pred[i])
+            metric_result = miou.result().numpy()
 
 
         if args.visualize:
             for i in range(args.batch_size):
-                semantic_pred = pred[i, :, :, :args.num_classes]
-                confidence_pred = pred[i, :, :, args.num_classes:]
-                
-                original_mask = gt[i, :, :, 0]
+                r = pred[i]
+                g = pred[i]
+                b = pred[i]
 
-                semantic_pred = tf.argmax(semantic_pred, axis=-1)
+                for j in range(19):
+                    r = tf.where(tf.equal(r, j), color_map[j][0], r)
+                    g = tf.where(tf.equal(g, j), color_map[j][1], g)
+                    b = tf.where(tf.equal(b, j), color_map[j][2], b)
 
-                original_img = original_img[i]
+                r = tf.expand_dims(r, axis=-1)
+                g = tf.expand_dims(g, axis=-1)
+                b = tf.expand_dims(b, axis=-1)
 
-                fig = plt.figure()
-                ax0 = fig.add_subplot(rows, cols, 1)
-                ax0.imshow(original_img)
-                ax0.set_title('original_img')
-                ax0.axis("off")
+                rgb_img = tf.concat([r, g, b], axis=-1)
 
-                ax0 = fig.add_subplot(rows, cols, 2)
-                ax0.imshow(original_mask)
-                ax0.set_title('original_mask')
-                ax0.axis("off")
-
-                
-                ax0 = fig.add_subplot(rows, cols, 3)
-                ax0.imshow(semantic_pred)
-                ax0.set_title('semantic')
-                ax0.axis("off")
-
-
-                ax0 = fig.add_subplot(rows, cols, 4)
-                ax0.imshow(confidence_pred)
-                ax0.set_title('confidence')
-                ax0.axis("off")
-                # plt.show()
-
-                save_name = 'idx_{0}_batch_{1}'.format(batch_idx, i) + '.png'
-                plt.savefig(args.result_dir + save_name, dpi=300)
-                plt.close()
+                tf.keras.preprocessing.image.save_img(args.result_dir + str(batch_index)+'.png', rgb_img)
+                batch_index += 1
 
         avg_duration += duration
         batch_idx += 1
