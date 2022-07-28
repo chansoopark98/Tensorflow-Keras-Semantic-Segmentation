@@ -5,7 +5,6 @@ import time
 import os
 import tensorflow as tf
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 from utils.metrics import CityEvalMIoU, MIoU
 from utils.get_flops import get_flops
 
@@ -74,7 +73,7 @@ if __name__ == '__main__':
         duration = (time.process_time() - start)
 
         # Argmax prediction
-        pred = tf.argmax(pred, axis=-1)
+        pred = tf.argmax(pred, axis=-1, output_type=tf.int32)
         
         for i in range(args.batch_size):
             # Calculate metrics
@@ -88,7 +87,7 @@ if __name__ == '__main__':
                 g = pred[i]
                 b = pred[i]
 
-                for j in range(19):
+                for j in range(args.num_classes):
                     r = tf.where(tf.equal(r, j), color_map[j][0], r)
                     g = tf.where(tf.equal(g, j), color_map[j][1], g)
                     b = tf.where(tf.equal(b, j), color_map[j][2], b)
