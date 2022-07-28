@@ -292,7 +292,7 @@ Assuming there is no foreground object as shown below, a zero label is created.
 
 <br>
 
-두번째, 
+Second, 
 
     python augment_data.py
     
@@ -428,13 +428,13 @@ If you want to check the inference result, add the --visualize argument.
 Web-camera or stored video can be inferred in real time. <br>
 <br>
 
-**비디오 추론의 경우**
+**When video realtime inference**
 
     python predict_video.py
 
 <br>
 
-**Web-cam 실시간 추론**
+**Web-cam realtime inference**
 
     python predict_realtime.py
 
