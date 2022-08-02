@@ -112,7 +112,9 @@ class SemanticGenerator(DataLoadHandler):
 
         original_img = img
 
-        labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
+        if self.dataset_name == 'cityscapes':
+            labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
+
 
         img = preprocess_input(img, mode='torch')
         labels = tf.cast(labels, dtype=tf.int32)
@@ -131,12 +133,12 @@ class SemanticGenerator(DataLoadHandler):
             sample    (dict)  : Dataset loaded through tfds.load().
         """
         img = sample[self.train_key]
-        labels = sample[self.label_key]
+        labels = tf.cast(sample[self.label_key], dtype=tf.int32)
         
         if self.dataset_name == 'cityscapes':
             # encode cityscapes data
             labels = self.cityscapes_tools.encode_cityscape_label(label=labels)
-
+        
         # convert to data type
         img = tf.cast(img, dtype=tf.float32)
         labels = tf.cast(labels, dtype=tf.float32)

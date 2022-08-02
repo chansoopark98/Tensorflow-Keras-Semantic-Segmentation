@@ -1,7 +1,8 @@
+from jinja2 import ModuleLoader
 import tensorflow as tf
 import tensorflow.keras.models as models
 from .model_zoo.modify_DeepLabV3plus import deepLabV3Plus
-from .model_zoo.EfficientNetV2 import EfficientNetV2S
+from .model_zoo.EfficientNetV2 import EfficientNetV2B0, EfficientNetV2S
 from .model_zoo.DDRNet_23_slim import ddrnet_23_slim
 from tensorflow.keras.layers import Conv2D, UpSampling2D, Concatenate
 from tensorflow.keras.initializers import VarianceScaling
@@ -20,7 +21,6 @@ class ModelBuilder():
         self.kernel_initializer = VarianceScaling(scale=2.0, mode="fan_out",
                                                   distribution="truncated_normal")
 
-
     def classifier(self, x: tf.Tensor, num_classes: int = 19, upper: int = 4,
                    name: str = None, activation: str = None) -> tf.Tensor:
 
@@ -37,15 +37,26 @@ class ModelBuilder():
         """
         Build the model (you can build your custom model separately here)
         """
-        base = EfficientNetV2S(input_shape=(
+        # base = EfficientNetV2S(input_shape=(
+        #         self.image_size[0], self.image_size[1], 3), pretrained='imagenet')
+        # c5 = base.get_layer('add_34').output
+        # c2 = base.get_layer('add_4').output
+
+        base = EfficientNetV2B0(input_shape=(
                 self.image_size[0], self.image_size[1], 3), pretrained='imagenet')
-        c5 = base.get_layer('add_34').output
-        c2 = base.get_layer('add_4').output
+        c2 = base.get_layer('add').output
+        c5 = base.get_layer('add_14').output
+        
+
+        # add_1 -> OS8
+        # add_7 -> OS16
+        # add_14 -> OS32
+
 
         features = [c2, c5]
 
         model_input = base.input
-        deeplab_output = deepLabV3Plus(features=features, activation='swish')
+        deeplab_output = deepLabV3Plus(features=features, activation='relu6')
 
         semantic_output = self.classifier(
             deeplab_output, num_classes=self.num_classes, upper=4, name='output')
@@ -71,3 +82,6 @@ class ModelBuilder():
         
         # model.su
         return model
+
+if __name__ == '__main__':
+    ModelBuilder(image_size=(224, 224), num_classes=3).build_model()

@@ -16,7 +16,7 @@ IMAGE_SIZE = (512, 1024)
 
 if __name__ == "__main__":
     tf.config.run_functions_eagerly(True)
-    train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, batch_size=1, dataset_name='cityscapes')
+    train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, batch_size=1, dataset_name='full_semantic')
     train_data = train_dataset_config.get_testData(train_dataset_config.train_data)
 
     rows = 1

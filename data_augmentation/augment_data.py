@@ -7,6 +7,8 @@ import argparse
 import natsort
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import tensorflow_addons as tfa
+import math
 import random
 
 parser = argparse.ArgumentParser()
@@ -247,14 +249,14 @@ class ImageAugmentationLoader():
         """
         rot = random.randint(rot_min, rot_max)
         reverse = random.randint(1, 2)
-
+        
+        
         if reverse == 2:
             rot *= -1
+        radian = rot * math.pi / 180.0 
 
-        h, w = rgb.shape[:2]
-        rot_mat = cv2.getRotationMatrix2D((w/2, h/2), rot, 1)
-        rgb = cv2.warpAffine(rgb, rot_mat, (w, h))
-        mask = cv2.warpAffine(mask, rot_mat, (w, h))
+        rgb = tfa.image.rotate(images=rgb, angles=radian).numpy()
+        mask = tfa.image.rotate(images=mask, angles=radian).numpy()
         
         return rgb, mask
 
@@ -268,7 +270,7 @@ class ImageAugmentationLoader():
                 mask     (np.ndarray) : (H,W,1) Image.
                 aspect_ratio  (float)        : Image Aspect Ratio. Code is written vertically.
         """
-        widht_scale = tf.random.uniform([], 0.6, 0.95)
+        widht_scale = tf.random.uniform([], 0.7, 0.95)
         
         new_w = rgb.shape[1] * widht_scale
         new_h = new_w * aspect_ratio
@@ -382,6 +384,9 @@ class ImageAugmentationLoader():
                 mask    (np.ndarray) : (H,W,1) Image.
                 prefix  (str)        : The name of the image to be saved.
         """
+        random_prefix_idx = random.randint(0, 10000)
+        prefix = str(random_prefix_idx) + '_' + prefix
+
         for idx in range(len(self.label_list)):
 
             pixel_rgb = self.label_list[idx]['rgb']
@@ -399,6 +404,7 @@ if __name__ == '__main__':
     """
     Image augmentation can be selected according to the option using the internal function of ImageAugmentationLoader.
     """
+    from tqdm import tqdm
 
     image_loader = ImageAugmentationLoader(args=args)
     rgb_list = image_loader.get_rgb_list()
@@ -407,7 +413,8 @@ if __name__ == '__main__':
     bg_list = image_loader.get_bg_list()
 
 
-    for idx in range(len(rgb_list)):
+    # for idx in range(len(rgb_list)):
+    for idx in tqdm(range(len(rgb_list)), total=len(rgb_list)):
         original_rgb = cv2.imread(rgb_list[idx])
         original_mask = cv2.imread(mask_list[idx])
         original_obj_mask = cv2.imread(obj_mask_list[idx])
@@ -435,22 +442,23 @@ if __name__ == '__main__':
         image_loader.save_images(rgb=color_aug_rgb, mask=mask.copy(), prefix='idx_{0}_colorAug_'.format(idx))
 
 
-        # 3. Image Random Color augmentation Crop (2)
-        for crop_idx in range(2):
-            color_aug_rgb = rgb.copy()
-            # if tf.random.uniform([]) > 0.5:
-                # color_aug_rgb = image_loader.image_histogram_equalization(rgb=color_aug_rgb)
+        # 3. Image Random warpAffine
+        for aff_idx in range(5):
+            warp_rgb = rgb.copy()
+            warp_mask = mask.copy()
             if tf.random.uniform([]) > 0.5:
-                color_aug_rgb = image_loader.image_random_bluring(rgb=color_aug_rgb)
+                warp_rgb, warp_mask = image_loader.image_random_rotation(rgb=warp_rgb, mask=warp_mask)
             if tf.random.uniform([]) > 0.5:
-                color_aug_rgb = image_loader.image_random_brightness(rgb=color_aug_rgb)
+                warp_rgb, warp_mask = image_loader.image_random_crop(rgb=warp_rgb, mask=warp_mask, aspect_ratio=1.33)
+            if tf.random.uniform([]) > 0.5:
+                warp_rgb, warp_mask = image_loader.image_random_translation(rgb=warp_rgb, mask=warp_mask, min_dx=50, min_dy=50,
+                                                                      max_dx=300, max_dy=400)
 
-            crop_rgb, crop_mask = image_loader.image_random_crop(rgb=color_aug_rgb, mask=mask.copy(), aspect_ratio=1.33)
-            image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_colorAugCrop_{1}_'.format(idx, crop_idx))
+            image_loader.save_images(rgb=warp_rgb, mask=warp_mask, prefix='idx_{0}_RanWarpAffine{1}_'.format(idx, aff_idx))
             
 
         # 4. Random rotation + crop (2)1
-        for rot_crop_idx in range(2):
+        for rot_crop_idx in range(3):
             rot_rgb, rot_mask = image_loader.image_random_rotation(rgb=rgb.copy(), mask=mask.copy())
             crop_rgb, crop_mask = image_loader.image_random_crop(rgb=rot_rgb, mask=rot_mask, aspect_ratio=1.33)
             image_loader.save_images(rgb=crop_rgb, mask=crop_mask, prefix='idx_{0}_RanRotCrop_{1}_'.format(idx, rot_crop_idx))

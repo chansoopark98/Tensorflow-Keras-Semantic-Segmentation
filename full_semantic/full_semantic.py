@@ -76,14 +76,14 @@ class FullSemantic(tfds.core.GeneratorBasedBuilder):
 
     # shuffle list same orders
 
-    img_files = np.array(img_files)
-    mask_files = np.array(mask_files)
+    # img_files = np.array(img_files)
+    # mask_files = np.array(mask_files)
 
-    indices = np.arange(img_files.shape[0])
-    np.random.shuffle(indices)
+    # indices = np.arange(img_files.shape[0])
+    # np.random.shuffle(indices)
 
-    img_files = list(img_files[indices])
-    mask_files = list(mask_files[indices])
+    # img_files = list(img_files[indices])
+    # mask_files = list(mask_files[indices])
     
     for i in range(len(img_files)):
       yield i, {

@@ -137,10 +137,12 @@ class ModelConfiguration(SemanticGenerator):
             Configure metrics for use in training and evaluation.
         """
         if self.DATASET_NAME == 'cityscapes':
+            print('cityscapes dataset miou')
             mIoU = CityMIoU(self.NUM_CLASSES+1)
             self.miou_name = 'city_m_io_u'
             
         else:
+            print('custom dataset miou')
             mIoU = MIoU(self.NUM_CLASSES)
             self.miou_name = 'm_io_u'
         
@@ -166,7 +168,7 @@ class ModelConfiguration(SemanticGenerator):
                               global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
                               dataset_name=self.DATASET_NAME),
             metrics=self.metrics)
-
+        self.model.summary()
         self.model.fit(self.train_data,
                        validation_data=self.valid_data,
                        steps_per_epoch=self.steps_per_epoch,
