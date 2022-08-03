@@ -20,7 +20,7 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
                     default='Test_os_32')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
-                    default=8)
+                    default=16)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
                     default=100)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",

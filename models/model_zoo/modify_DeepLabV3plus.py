@@ -11,7 +11,7 @@ BN = BatchNormalization
 CONV_KERNEL_INITIALIZER = tf.keras.initializers.VarianceScaling(scale=1.0, mode="fan_out", distribution="truncated_normal")
 atrous_rates= (6, 12, 18)
 
-def deepLabV3Plus(features, activation='swish'):
+def deepLabV3Plus(features, base_channel=256, activation='swish'):
     skip1, x = features # c1 48 / c2 64
 
     # Image Feature branch
@@ -19,7 +19,7 @@ def deepLabV3Plus(features, activation='swish'):
     b4_shape = tf.keras.backend.int_shape(b4)
     # from (b_size, channels)->(b_size, 1, 1, channels)
     b4 = Reshape((1, 1, b4_shape[1]))(b4)
-    b4 = Conv2D(256, (1, 1), padding='same',
+    b4 = Conv2D(base_channel, (1, 1), padding='same',
                 kernel_regularizer=DECAY,
                 use_bias=False, name='image_pooling')(b4)
     b4 = BatchNormalization(name='image_pooling_BN', epsilon=EPSILON)(b4)
@@ -33,26 +33,26 @@ def deepLabV3Plus(features, activation='swish'):
 
     # b4 = UpSampling2D(size=(32, 64), interpolation="bilinear")(b4)
     # simple 1x1
-    b0 = Conv2D(256, (1, 1), padding='same',
+    b0 = Conv2D(base_channel, (1, 1), padding='same',
                 kernel_regularizer=DECAY,
                 use_bias=False, name='aspp0')(x)
     # b0 = BatchNormalization(name='aspp0_BN', epsilon=EPSILON)(b0)
     b0 = BN(name='aspp0_BN', epsilon=EPSILON)(b0)
     b0 = Activation(activation, name='aspp0_activation')(b0)
 
-    b1 = SepConv_BN(x, 256, 'aspp1',
+    b1 = SepConv_BN(x, base_channel, 'aspp1',
                     rate=atrous_rates[0], depth_activation=True, epsilon=EPSILON)
     # rate = 12 (24)
-    b2 = SepConv_BN(x, 256, 'aspp2',
+    b2 = SepConv_BN(x, base_channel, 'aspp2',
                     rate=atrous_rates[1], depth_activation=True, epsilon=EPSILON)
     # rate = 18 (36)
-    b3 = SepConv_BN(x, 256, 'aspp3',
+    b3 = SepConv_BN(x, base_channel, 'aspp3',
                     rate=atrous_rates[2], depth_activation=True, epsilon=EPSILON)
 
     # concatenate ASPP branches & project
     x = Concatenate()([b4, b0, b1, b2, b3])
 
-    x = Conv2D(256, (1, 1), padding='same',
+    x = Conv2D(base_channel, (1, 1), padding='same',
                kernel_regularizer=DECAY,
                use_bias=False, name='concat_projection')(x)
     # x = BatchNormalization(name='concat_projection_BN', epsilon=EPSILON)(x)
@@ -65,7 +65,7 @@ def deepLabV3Plus(features, activation='swish'):
     # x = tf.keras.layers.experimental.preprocessing.Resizing(
     #         *size_before[1:3], interpolation="bilinear"
     #     )(x)
-    x = UpSampling2D((8, 8), interpolation="bilinear")(x)
+    x = UpSampling2D((4, 4), interpolation="bilinear")(x)
 
     dec_skip1 = Conv2D(48, (1, 1), padding='same',
                        kernel_regularizer=DECAY,
@@ -74,9 +74,9 @@ def deepLabV3Plus(features, activation='swish'):
         name='feature_projection0_BN', epsilon=EPSILON)(dec_skip1)
     dec_skip1 = Activation(activation)(dec_skip1)
     x = Concatenate()([x, dec_skip1])
-    x = SepConv_BN(x, 256, 'decoder_conv0',
+    x = SepConv_BN(x, base_channel, 'decoder_conv0',
                    depth_activation=True, epsilon=EPSILON)
-    x = SepConv_BN(x, 256, 'decoder_conv1',
+    x = SepConv_BN(x, base_channel, 'decoder_conv1',
                    depth_activation=True, epsilon=EPSILON)
 
 

@@ -36,7 +36,7 @@ BLOCK_CONFIGS = {
         "expands": [1, 4, 4, 4, 6, 6],
         "out_channels": [16, 32, 48, 96, 112, 192],
         "depthes": [1, 2, 2, 3, 5, 8],
-        "strides": [1, 2, 2, 2, 1, 2],
+        "strides": [1, 2, 2, 1, 1, 2], #"strides": [1, 2, 2, 2, 1, 2], 
         "use_ses": [0, 0, 0, 1, 1, 1],
         "rescale_mode": "torch",
     },

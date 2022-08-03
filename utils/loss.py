@@ -68,6 +68,10 @@ class SemanticLoss(tf.keras.losses.Loss):
                                              use_multi_gpu=self.use_multi_gpu,
                                              global_batch_size=self.global_batch_size)
 
+        # semantic_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        #     labels=y_true,
+        #     logits=y_pred)                                             
+
         return semantic_loss
 
 

@@ -7,6 +7,7 @@ import tensorflow as tf
 from tqdm import tqdm
 from utils.metrics import CityEvalMIoU, MIoU
 from utils.get_flops import get_flops
+from utils.predict_utils import color_map
 
 tf.keras.backend.clear_session()
 
@@ -14,17 +15,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",      type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
-                    help="Model num classes", default=19)
+                    help="Model num classes", default=3)
 parser.add_argument("--image_size",      type=tuple,
-                    help="Model image size (input resolution H,W)", default=(1024, 2048))
+                    help="Model image size (input resolution H,W)", default=(224, 224))
 parser.add_argument("--dataset_dir",     type=str,
                     help="Dataset directory", default='./datasets/')
 parser.add_argument("--dataset_name",     type=str,
-                    help="Dataset directory", default='cityscapes')
+                    help="Dataset directory", default='full_semantic')
 parser.add_argument("--checkpoint_dir",  type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_path",     type=str,
-                    help="Saved model weights directory", default='0727/_0727_city_Test_512_1024_best_iou.h5')
+                    help="Saved model weights directory", default='0802/_0802_Test_os_32_best_iou.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     else:
         miou = MIoU(args.num_classes)
     
-    # Set plot config
+    # Set plot configs
     rows = 1
     cols = 2
     batch_idx = 0
@@ -73,8 +74,10 @@ if __name__ == '__main__':
         duration = (time.process_time() - start)
 
         # Argmax prediction
-        pred = tf.argmax(pred, axis=-1, output_type=tf.int32)
+        pred = tf.math.argmax(pred, axis=-1, output_type=tf.int32)
+
         
+
         for i in range(args.batch_size):
             # Calculate metrics
             miou.update_state(gt[i], pred[i])

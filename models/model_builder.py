@@ -52,11 +52,11 @@ class ModelBuilder():
         # add_7 -> OS16
         # add_14 -> OS32
 
-
+        base.summary()
         features = [c2, c5]
 
         model_input = base.input
-        deeplab_output = deepLabV3Plus(features=features, activation='relu6')
+        deeplab_output = deepLabV3Plus(features=features, base_channel=192, activation='swish')
 
         semantic_output = self.classifier(
             deeplab_output, num_classes=self.num_classes, upper=4, name='output')

@@ -10,9 +10,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
-                    help="Model num classes", default=2)
+                    help="Model num classes", default=3)
 parser.add_argument("--image_size",     type=tuple,
-                    help="Model image size (input resolution)", default=(320, 240))
+                    help="Model image size (input resolution)", default=(224, 224))
 parser.add_argument("--video_dir",    type=str,
                     help="Dataset directory", default='/home/park/0708_capture/videos')
 parser.add_argument("--video_result_dir", type=str,
@@ -20,7 +20,7 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0719/_0719_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_best_iou.h5')
+                    help="Saved model weights directory", default='/0802/_0802_Test_os_32_best_iou.h5')
 
 args = parser.parse_args()
 
@@ -52,10 +52,10 @@ if __name__ == '__main__':
         img = tf.expand_dims(img, axis=0)
 
         output = model.predict(img)
-        semantic_output = output[0, :, :, :args.num_classes]
-        confidence_output = output[0, :, :, args.num_classes:]
 
-        semantic_output = tf.argmax(semantic_output, axis=-1)
+        semantic_output = tf.math.argmax(output, axis=-1)
+        
+        
 
         resize_shape = frame.shape
         semantic_output = tf.expand_dims(semantic_output, axis=-1)
@@ -85,7 +85,6 @@ if __name__ == '__main__':
         convert_rgb = tf.image.resize(convert_rgb, (frame_height, frame_width),
                                         method=tf.image.ResizeMethod.BILINEAR)
         convert_rgb = convert_rgb.numpy().astype(np.uint8)
-
 
         cv2.imshow("VideoFrame", convert_rgb)
 

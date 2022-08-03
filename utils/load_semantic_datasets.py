@@ -109,8 +109,13 @@ class SemanticGenerator(DataLoadHandler):
         """
         img = tf.cast(sample[self.train_key], tf.float32)
         labels = tf.cast(sample[self.label_key], dtype=tf.int32)
-
+        
         original_img = img
+
+        img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
+                              method=tf.image.ResizeMethod.BILINEAR)
+        labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
+                                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         if self.dataset_name == 'cityscapes':
             labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
