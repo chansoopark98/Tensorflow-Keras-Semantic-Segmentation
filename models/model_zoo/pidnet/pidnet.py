@@ -134,7 +134,7 @@ def PIDNet(input_shape=[1024, 2048, 3], m=2, n=3, num_classes=19, planes=64, ppm
         x = tf.image.resize(spp, size=(height_output, width_output), method='bilinear')
         dfm = Bag(x_, x, x_d, planes * 4)  # dfm
 
-    x_ = segmentation_head(dfm, head_planes, num_classes)  # final_layer
+    x_ = segmentation_head(dfm, head_planes, num_classes, 8)  # final_layer
 
     # Prediction Head
     if augment:

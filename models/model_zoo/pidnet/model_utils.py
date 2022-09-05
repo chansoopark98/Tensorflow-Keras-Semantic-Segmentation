@@ -2,6 +2,7 @@ import tensorflow as tf
 import tensorflow.keras.layers as layers
 
 bn_mom = 0.1
+# pytorch bn_mom = 0.1 -> tensorflow bn_mom = 0.9
 
 
 """
@@ -9,6 +10,7 @@ Segmentation head
 3*3 -> 1*1 -> rescale
 """
 def segmentation_head(x_in, interplanes, outplanes, scale_factor=None):
+    print(scale_factor)
     x = layers.BatchNormalization(momentum=bn_mom)(x_in)
     x = layers.Activation("relu")(x)
     x = layers.Conv2D(interplanes, kernel_size=(3, 3), use_bias=False, padding="same")(x)

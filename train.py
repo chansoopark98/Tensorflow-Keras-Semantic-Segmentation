@@ -18,7 +18,7 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='Test_os_32')
+                    default='PID_FIRST_TEST_E100_B16_SINGLE_NO-AUGMENT_640-480')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=16)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
@@ -28,15 +28,15 @@ parser.add_argument("--lr",               type=float,  help="Initial learning ra
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.0005)
 parser.add_argument("--num_classes",      type=int,    help="Set number of classes to classification(BG+FG)",
-                    default=3)
+                    default=4)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
-                    default=(224, 224))
+                    default=(640, 480))
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
                     default='adam')
 parser.add_argument("--use_weightDecay",  type=bool,   help="Whether to use weightDecay",
                     default=False)
 parser.add_argument("--mixed_precision",  type=bool,   help="Whether to use mixed_precision",
-                    default=True)
+                    default=False)
 parser.add_argument("--model_name",       type=str,    help="Set the model name to save",
                     default=str(time.strftime('%m%d', time.localtime(time.time()))))
 
@@ -52,7 +52,7 @@ parser.add_argument("--tensorboard_dir",  type=str,    help="Set tensorboard sto
 
 # Set Distribute training (When use Single gpu)
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
-                    default=0)
+                    default=1)
 
 # Set Distribute training (When use Multi gpu)
 parser.add_argument("--multi_gpu",  help="Set up distributed learning mode", action='store_true')
