@@ -19,11 +19,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights", type=str,     help="Saved model weights directory",
-                    default='/0802/_0802_Test_os_32_best_iou.h5')
+                    default='/0905/_0905_PID_FIRST_TEST_E100_B16_SINGLE_NO-AUGMENT_640-480_best_iou.h5')
 parser.add_argument("--num_classes",          type=int,    help="Set num classes for model and post-processing",
-                    default=3)  
+                    default=4)  
 parser.add_argument("--image_size",          type=tuple,    help="Set image size for priors and post-processing",
-                    default=(320, 240))
+                    default=(640, 480))
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
                     default=0)
 parser.add_argument("--frozen_dir",   type=str,    help="Path to save frozen graph transformation result",
@@ -40,8 +40,11 @@ if __name__ == '__main__':
     with tf.device(gpu_number):
 
     
-        model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
-
+        # model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
+        from models.model_zoo.PIDNet import PIDNet
+        
+        model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
+                       planes=32, ppm_planes=96, head_planes=128, augment=False).build()
         model.load_weights(args.checkpoint_dir + args.model_weights, by_name=True)
 
         

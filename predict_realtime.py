@@ -10,9 +10,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",     type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
-                    help="Model num classes", default=3)
+                    help="Model num classes", default=4)
 parser.add_argument("--image_size",     type=tuple,
-                    help="Model image size (input resolution)", default=(224, 224))
+                    help="Model image size (input resolution)", default=(640, 480))
 parser.add_argument("--video_dir",    type=str,
                     help="Dataset directory", default='/home/park/0708_capture/videos')
 parser.add_argument("--video_result_dir", type=str,
@@ -20,13 +20,19 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0802/_0802_Test_os_32_best_iou.h5')
+                    help="Saved model weights directory", default='/0905/_0905_PID_FIRST_TEST_E100_B16_SINGLE_NO-AUGMENT_640-480_best_iou.h5')
 
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
+    # model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
+    from models.model_zoo.PIDNet import PIDNet
+
+    model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
+                planes=32, ppm_planes=96, head_planes=128, augment=False).build()
+    # model.load_weights(args.checkpoint_dir + args.model_weights, by_name=True)
+
     model.load_weights(args.checkpoint_dir + args.weight_name)
     model.summary()
 
@@ -41,7 +47,7 @@ if __name__ == '__main__':
 
     while cv2.waitKey(33) < 0:
         ret, frame = capture.read()
-
+        
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         img = tf.image.resize(frame, size=args.image_size,
@@ -57,36 +63,38 @@ if __name__ == '__main__':
         
         
 
-        resize_shape = frame.shape
-        semantic_output = tf.expand_dims(semantic_output, axis=-1)
-        semantic_output = tf.image.resize(semantic_output, (resize_shape[0], resize_shape[1]),
-                                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        # resize_shape = frame.shape
+        # semantic_output = tf.expand_dims(semantic_output, axis=-1)
+        # semantic_output = tf.image.resize(semantic_output, (resize_shape[0], resize_shape[1]),
+        #                                     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         
-        r = semantic_output[:, :, 0]
-        g = semantic_output[:, :, 0]
-        b = semantic_output[:, :, 0]
+        # r = semantic_output[:, :, 0]
+        # g = semantic_output[:, :, 0]
+        # b = semantic_output[:, :, 0]
 
-        draw_r = frame[:, :, 0]
-        draw_g = frame[:, :, 1]
-        draw_b = frame[:, :, 2]
+        # draw_r = frame[:, :, 0]
+        # draw_g = frame[:, :, 1]
+        # draw_b = frame[:, :, 2]
         
-        for j in range(1,args.num_classes):
-            draw_r = tf.where(r==j, color_map[j-1][0], draw_r)
-            draw_g = tf.where(g==j, color_map[j-1][1], draw_g)
-            draw_b = tf.where(b==j, color_map[j-1][2], draw_b)
+        # for j in range(1,args.num_classes):
+        #     draw_r = tf.where(r==j, color_map[j-1][0], draw_r)
+        #     draw_g = tf.where(g==j, color_map[j-1][1], draw_g)
+        #     draw_b = tf.where(b==j, color_map[j-1][2], draw_b)
 
-        draw_r = np.expand_dims(draw_r, axis=-1)
-        draw_g = np.expand_dims(draw_g, axis=-1)
-        draw_b = np.expand_dims(draw_b, axis=-1)
+        # draw_r = np.expand_dims(draw_r, axis=-1)
+        # draw_g = np.expand_dims(draw_g, axis=-1)
+        # draw_b = np.expand_dims(draw_b, axis=-1)
 
-        convert_rgb = np.concatenate([draw_r, draw_g, draw_b], axis=-1).astype(np.uint8)
+        # convert_rgb = np.concatenate([draw_r, draw_g, draw_b], axis=-1).astype(np.uint8)
         
-        convert_rgb = cv2.cvtColor(convert_rgb, cv2.COLOR_RGB2BGR)
-        convert_rgb = tf.image.resize(convert_rgb, (frame_height, frame_width),
-                                        method=tf.image.ResizeMethod.BILINEAR)
-        convert_rgb = convert_rgb.numpy().astype(np.uint8)
+        # convert_rgb = cv2.cvtColor(convert_rgb, cv2.COLOR_RGB2BGR)
+        # convert_rgb = tf.image.resize(convert_rgb, (frame_height, frame_width),
+        #                                 method=tf.image.ResizeMethod.BILINEAR)
+        # convert_rgb = convert_rgb.numpy().astype(np.uint8)
 
-        cv2.imshow("VideoFrame", convert_rgb)
+        
+        output = semantic_output[0].numpy().astype(np.uint8) * 50
+        cv2.imshow("VideoFrame", output)
 
     capture.release()
     cv2.destroyAllWindows()
