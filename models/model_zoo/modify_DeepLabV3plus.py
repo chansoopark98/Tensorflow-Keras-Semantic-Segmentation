@@ -62,10 +62,10 @@ def deepLabV3Plus(features, base_channel=256, activation='swish'):
     x = Dropout(0.1)(x)
 
     size_before = tf.keras.backend.int_shape(skip1)
-    # x = tf.keras.layers.experimental.preprocessing.Resizing(
-    #         *size_before[1:3], interpolation="bilinear"
-    #     )(x)
-    x = UpSampling2D((4, 4), interpolation="bilinear")(x)
+    x = tf.keras.layers.experimental.preprocessing.Resizing(
+            *size_before[1:3], interpolation="bilinear"
+        )(x)
+    # x = UpSampling2D((4, 4), interpolation="bilinear")(x)
 
     dec_skip1 = Conv2D(48, (1, 1), padding='same',
                        kernel_regularizer=DECAY,

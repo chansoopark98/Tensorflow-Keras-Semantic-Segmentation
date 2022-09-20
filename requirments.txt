@@ -1,9 +1,7 @@
-tensorflow==2.9.1
-tensorflow-serving-api==2.9.0
-tensorflow-datasets==4.6.0
-tensorflow-addons==0.17.1
-opencv-python=4.5.5.64
-open3d==0.15.2
+tensorflow==2.10.0
+tensorflow-serving-api
+tensorflow-datasets
+tensorflow-addons
+opencv-python==4.5.5.64
 matplotlib==3.5.2
-imageio==2.19.3
 aiogrpc==1.8

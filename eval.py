@@ -15,17 +15,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size",      type=int,
                     help="Evaluation batch size", default=1)
 parser.add_argument("--num_classes",     type=int,
-                    help="Model num classes", default=3)
+                    help="Model num classes", default=2)
 parser.add_argument("--image_size",      type=tuple,
-                    help="Model image size (input resolution H,W)", default=(224, 224))
+                    help="Model image size (input resolution H,W)", default=(640, 360))
 parser.add_argument("--dataset_dir",     type=str,
                     help="Dataset directory", default='./datasets/')
 parser.add_argument("--dataset_name",     type=str,
-                    help="Dataset directory", default='full_semantic')
+                    help="Dataset directory", default='human_segmentation')
 parser.add_argument("--checkpoint_dir",  type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_path",     type=str,
-                    help="Saved model weights directory", default='0802/_0802_Test_os_32_best_iou.h5')
+                    help="Saved model weights directory", default='0919/_0919_test_human_seg_640x360_pidnet_best_iou.h5')
 
 # Prediction results visualize options
 parser.add_argument("--visualize",  help="Whether to image and save inference results", action='store_true')
@@ -45,7 +45,11 @@ if __name__ == '__main__':
     test_steps = dataset_config.number_valid // args.batch_size
 
     # Model build and load pre-trained weights
-    model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
+    # model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
+    from models.model_zoo.PIDNet import PIDNet
+    
+    model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
+                       planes=32, ppm_planes=96, head_planes=128, augment=False).build()
     model.load_weights(args.checkpoint_dir + args.weight_path)
     model.summary()
 
@@ -70,17 +74,17 @@ if __name__ == '__main__':
     for x, gt, original_img in tqdm(dataset, total=test_steps):
         # Check inference time
         start = time.process_time()
-        pred = model.predict_on_batch(x)
+        prediction = model.predict_on_batch(x)
         duration = (time.process_time() - start)
 
         # Argmax prediction
-        pred = tf.math.argmax(pred, axis=-1, output_type=tf.int32)
+        pred = tf.math.argmax(prediction, axis=-1, output_type=tf.int32)
 
         
 
         for i in range(args.batch_size):
             # Calculate metrics
-            miou.update_state(gt[i], pred[i])
+            miou.update_state(gt[i], prediction[i])
             metric_result = miou.result().numpy()
 
 

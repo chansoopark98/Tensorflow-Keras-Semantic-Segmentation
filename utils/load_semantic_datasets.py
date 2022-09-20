@@ -36,6 +36,11 @@ class DataLoadHandler:
                 self.dataset_list = self.__load_custom_dataset()
                 self.train_key = 'rgb'
                 self.label_key = 'gt'
+
+            elif self.dataset_name == 'human_segmentation':
+                self.dataset_list = self.__load_custom_dataset()
+                self.train_key = 'rgb'
+                self.label_key = 'gt'
             else:
                 raise Exception('Cannot find dataset_name! \n your dataset is {0}.'.format(
                     self.dataset_name))

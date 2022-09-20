@@ -139,7 +139,7 @@ class PIDNet(object):
             seghead_d = segmentation_head(temp_d, self.planes, 1)
             model_output = [seghead_p, x_, seghead_d]
         else:
-            model_output = x_
+            model_output = tf.cast(x_, tf.float32)
 
         model = models.Model(inputs=x_in, outputs=model_output)
 

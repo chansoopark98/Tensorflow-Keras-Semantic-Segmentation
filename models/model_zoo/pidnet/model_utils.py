@@ -10,14 +10,14 @@ Segmentation head
 3*3 -> 1*1 -> rescale
 """
 def segmentation_head(x_in, interplanes, outplanes, scale_factor=None):
-    print(scale_factor)
+    
     x = layers.BatchNormalization(momentum=bn_mom)(x_in)
     x = layers.Activation("relu")(x)
     x = layers.Conv2D(interplanes, kernel_size=(3, 3), use_bias=False, padding="same")(x)
 
     x = layers.BatchNormalization(momentum=bn_mom)(x)
     x = layers.Activation("relu")(x)
-    x = layers.Conv2D(outplanes, kernel_size=(1, 1), use_bias=range, padding="valid")(x)  # bias difference
+    x = layers.Conv2D(outplanes, kernel_size=(1, 1), use_bias=range, padding="valid", dtype=tf.float32)(x)  # bias difference
 
     if scale_factor is not None:
         input_shape = tf.keras.backend.int_shape(x)
@@ -145,6 +145,7 @@ def PAPPM(x_in, branch_planes, outplanes):
 
 # Pixel-attention-guided fusion module
 def PagFM(x_in, y_in, in_planes, mid_planes, after_relu=False, with_planes=False):
+
     x_shape = tf.keras.backend.int_shape(x_in)
     if after_relu:
         x_in = layers.Activation("relu")(x_in)

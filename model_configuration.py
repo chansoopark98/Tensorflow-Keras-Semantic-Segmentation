@@ -120,7 +120,10 @@ class ModelConfiguration(SemanticGenerator):
             
         if self.MIXED_PRECISION:
             # Wrapping optimizer when use distribute training (multi-gpu training)
-            mixed_precision.set_global_policy('mixed_float16')
+            # mixed_precision.set_global_policy('mixed_float16')
+
+            policy = mixed_precision.Policy('mixed_float16')
+            
             self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer)
 
     
