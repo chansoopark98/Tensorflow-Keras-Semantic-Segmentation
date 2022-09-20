@@ -12,9 +12,9 @@ import math
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/human_segmentation_dataset2/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/human_segmentation_dataset2/mask/')
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/human_segmentation_dataset2/augment/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/human_merge/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/human_merge/mask/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/human_merge/select/')
 
 args = parser.parse_args()
 
@@ -93,13 +93,13 @@ if __name__ == '__main__':
         draw_contours = []
 
         rgb_shape = original_rgb.shape[:2]
-        print(rgb_shape)
+        
         hw_area = rgb_shape[0] * rgb_shape[1]
-        print(hw_area)
+        
 
         for i in range(len(contours)):
             area = cv2.contourArea(contours[i])
-            print(area)
+            
             if area <= (hw_area * 0.001):
                 draw_contours.append(contours[i])
 

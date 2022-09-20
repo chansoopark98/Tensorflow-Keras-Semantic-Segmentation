@@ -61,7 +61,7 @@ class HumanSegmentation(tfds.core.GeneratorBasedBuilder):
     }
 
   def _generate_examples(self, img_path, mask_path):
-    img = os.path.join(img_path, '*.png')
+    img = os.path.join(img_path, '*.jpg')
     mask = os.path.join(mask_path, '*.png')
     
     img_files = glob.glob(img)

@@ -12,7 +12,7 @@ args = parser.parse_args()
 DATASET_DIR = args.dataset_dir
 DATASET_TYPE = args.dataset_type
 DATASET_NUMS = args.dataset_nums
-IMAGE_SIZE = (1280, 720)
+IMAGE_SIZE = (640, 360)
 
 if __name__ == "__main__":
     tf.config.run_functions_eagerly(True)
@@ -25,14 +25,19 @@ if __name__ == "__main__":
     for img, mask, original in train_data.take(DATASET_NUMS):
 
         img = img[0]
-        original = original[0]
-        original = tf.cast(original * 255, dtype=tf.uint8)
         mask = mask[0]
+        original = original[0]
+
+        print(original.shape)
+        print(mask.shape)
+        masking_image = tf.cast(original * tf.cast(mask, dtype=tf.float32), dtype=tf.uint8)
+        
+        original = tf.cast(original, dtype=tf.uint8)
 
         fig = plt.figure()
         ax0 = fig.add_subplot(rows, cols, 1)
-        ax0.imshow(img)
-        ax0.set_title('img')
+        ax0.imshow(original)
+        ax0.set_title('original img')
         ax0.axis("off")
 
         ax0 = fig.add_subplot(rows, cols, 2)
@@ -41,8 +46,8 @@ if __name__ == "__main__":
         ax0.axis("off")
 
         ax0 = fig.add_subplot(rows, cols, 3)
-        ax0.imshow(original)
-        ax0.set_title('original')
+        ax0.imshow(masking_image)
+        ax0.set_title('masking image')
         ax0.axis("off")
         plt.show()
         plt.close()

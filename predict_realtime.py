@@ -22,7 +22,7 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0919/_0919_test_human_seg_640x360_pidnet_best_loss.h5')
+                    help="Saved model weights directory", default='/0920/_0920_second_human_seg_640x360_pidnet_best_loss.h5')
 
 args = parser.parse_args()
 
@@ -47,14 +47,16 @@ if __name__ == '__main__':
     capture.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
     capture.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 
-    while cv2.waitKey(33) < 0:
+    while cv2.waitKey(1) < 0:
         ret, frame = capture.read()
         
         start_t = timeit.default_timer()
+        
+        frame = frame[0:640, 120:120+360]
+        print(frame.shape)
+        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        img = tf.image.resize(frame, size=args.image_size,
+        img = tf.image.resize(img, size=args.image_size,
                 method=tf.image.ResizeMethod.BILINEAR)
         img = tf.cast(img, tf.float32)
         img = preprocess_input(x=img, mode='torch')
@@ -64,9 +66,9 @@ if __name__ == '__main__':
         output = model.predict(img)
 
         semantic_output = tf.math.argmax(output, axis=-1)
+        semantic_output = tf.expand_dims(semantic_output, axis=-1)
+        semantic_output = tf.image.resize(semantic_output, (640, 360)).numpy().astype(np.uint8)
         
-        
-
         # resize_shape = frame.shape
         # semantic_output = tf.expand_dims(semantic_output, axis=-1)
         # semantic_output = tf.image.resize(semantic_output, (resize_shape[0], resize_shape[1]),
@@ -97,16 +99,20 @@ if __name__ == '__main__':
         # convert_rgb = convert_rgb.numpy().astype(np.uint8)
 
         
-        output = semantic_output[0].numpy().astype(np.uint8) * 50
-
+        # output = semantic_output[0].numpy().astype(np.uint8) * 50
+        
         terminate_t = timeit.default_timer()
         
         FPS = int(1./(terminate_t - start_t ))
 
-        cv2.putText(output, str(FPS),(50, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.2,
-                        (200, 50, 0), 3, cv2.LINE_AA)
-        cv2.imshow("VideoFrame", output)
+        semantic_output = semantic_output[0]
 
-        print(FPS)    
+        
+        frame *= semantic_output
+
+        cv2.putText(frame, str(FPS),(50, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.2,
+                        (200, 50, 0), 3, cv2.LINE_AA)
+        cv2.imshow("VideoFrame", frame)
+
     capture.release()
     cv2.destroyAllWindows()

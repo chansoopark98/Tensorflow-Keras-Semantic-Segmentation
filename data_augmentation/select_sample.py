@@ -12,9 +12,9 @@ import math
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/human_segmentation_dataset3/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/human_segmentation_dataset3/mask/')
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/human_segmentation_dataset3/select/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/human_merge/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/human_merge/mask/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/human_merge/select/')
 
 args = parser.parse_args()
 

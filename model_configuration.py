@@ -131,10 +131,15 @@ class ModelConfiguration(SemanticGenerator):
         """
             Build a deep learning model.
         """
-        from models.model_zoo.PIDNet import PIDNet
+        # from models.model_zoo.PIDNet import PIDNet
+        # self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
+        #                planes=32, ppm_planes=96, head_planes=128, augment=False).build()
+
+        from models.model_zoo.pidnet.pidnet import PIDNet
         
         self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
-                       planes=32, ppm_planes=96, head_planes=128, augment=False).build()
+                       planes=32, ppm_planes=96, head_planes=128, augment=False)
+        self.model.build((None, *self.IMAGE_SIZE, 3))
         # self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
         #                           num_classes=self.NUM_CLASSES).build_model()
 
