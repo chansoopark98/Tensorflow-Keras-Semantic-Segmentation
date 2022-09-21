@@ -12,9 +12,9 @@ import math
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/human_merge/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/human_merge/mask/')
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/human_merge/select/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/choose/merge/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/choose/merge/gt/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/choose/merge/select/')
 
 args = parser.parse_args()
 
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         for i in range(len(contours)):
             area = cv2.contourArea(contours[i])
             
-            if area <= (hw_area * 0.001):
+            if area <= (hw_area * 0.003):
                 draw_contours.append(contours[i])
 
 
@@ -109,7 +109,15 @@ if __name__ == '__main__':
 
 
         original_mask += zero_maks
-        original_mask = np.where(original_mask>=1, 1, 0).astype(np.uint8)
+        original_mask = np.where(original_mask>=1, 255, 0).astype(np.uint8)
         original_mask = np.expand_dims(original_mask, axis=-1)
 
-        image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_dataset2_{0}'.format(idx))
+        test_mask = np.concatenate([original_mask, original_mask, original_mask], axis=-1)
+
+        if idx >= 10000:
+            concat_img = cv2.hconcat([original_rgb, test_mask]) # original_rgb * (original_mask/255)
+            cv2.imshow('test', concat_img)
+            cv2.waitKey(0)
+
+
+        # image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='merge_dataset_{0}'.format(idx))

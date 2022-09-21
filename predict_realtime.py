@@ -22,7 +22,7 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0920/_0920_second_human_seg_640x360_pidnet_new-model-test-focal1.5_best_iou.h5')
+                    help="Saved model weights directory", default='/0921/_0921_second_human_seg_640x360_pidnet_new-model-test-ce_best_iou.h5')
 
 args = parser.parse_args()
 
@@ -57,8 +57,8 @@ if __name__ == '__main__':
         
         start_t = timeit.default_timer()
         
-        frame = frame[0:640, 120:120+360]
-        print(frame.shape)
+        # frame = frame[0:640, 120:120+360]
+        # print(frame.shape)
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         img = tf.image.resize(img, size=args.image_size,
@@ -113,6 +113,7 @@ if __name__ == '__main__':
         semantic_output = semantic_output[0]
 
         
+        semantic_output = tf.image.resize(semantic_output, (720, 1280), tf.image.ResizeMethod.NEAREST_NEIGHBOR).numpy()
         frame *= semantic_output
 
         cv2.putText(frame, str(FPS),(50, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.2,

@@ -108,6 +108,7 @@ class ModelConfiguration(SemanticGenerator):
         """
         if self.OPTIMIZER_TYPE == 'sgd':
             self.optimizer = tf.keras.optimizers.SGD(momentum=0.9, learning_rate=self.INIT_LR)
+            self.optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=self.INIT_LR, momentum=0.9)
         elif self.OPTIMIZER_TYPE == 'adam':
             self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.INIT_LR)
         elif self.OPTIMIZER_TYPE == 'radam':

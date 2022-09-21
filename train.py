@@ -19,13 +19,13 @@ parser.add_argument("--saved_model_path", type=str,   help="Saved model weight p
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='second_human_seg_640x360_pidnet_new-model-test-focal1.5')
+                    default='0921_lr0.01_sgd_640-360-bs16-ep200-ce')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=16)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",
-                    default=100)
+                    default=200)
 parser.add_argument("--lr",               type=float,  help="Initial learning rate",
-                    default=0.001)
+                    default=0.01)
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.0005)
 parser.add_argument("--num_classes",      type=int,    help="Set number of classes to classification(BG+FG)",
@@ -33,7 +33,7 @@ parser.add_argument("--num_classes",      type=int,    help="Set number of class
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
                     default=(640, 360))
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
-                    default='adam')
+                    default='sgd')
 parser.add_argument("--use_weightDecay",  type=bool,   help="Whether to use weightDecay",
                     default=False)
 parser.add_argument("--mixed_precision",  type=bool,   help="Whether to use mixed_precision",

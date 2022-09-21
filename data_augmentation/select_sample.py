@@ -12,9 +12,9 @@ import math
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/human_merge/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/human_merge/mask/')
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/human_merge/select/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/celebahq/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/celebahq/mask/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/celebahq/select/')
 
 args = parser.parse_args()
 
@@ -84,8 +84,10 @@ if __name__ == '__main__':
     for idx in tqdm(range(len(rgb_list)), total=len(rgb_list)):
         rgb_name = rgb_list[idx]
         
+        print(rgb_name)
         mask_name = rgb_name.split('/')[5].split('.')[0] + '.png'
-
+        mask_name = mask_name.replace('rgb', 'mask')
+        print(mask_name)
         original_rgb = cv2.imread(rgb_list[idx])
 
         
@@ -135,7 +137,7 @@ if __name__ == '__main__':
 
         if key == 113:
             print('바로 저장')
-            image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_dataset3_{0}_'.format(idx))
+            image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_1{0}_'.format(idx))
         
         elif key == 49:
             try:
@@ -147,7 +149,7 @@ if __name__ == '__main__':
             cropped_rgb = original_rgb[y:y+h, x:x+w]
             cropped_mask = original_mask[y:y+h, x:x+w]
             
-            image_loader.save_images(rgb=cropped_rgb, mask=cropped_mask, prefix='human_dataset3_{0}_crop_'.format(idx))
+            image_loader.save_images(rgb=cropped_rgb, mask=cropped_mask, prefix='human_segmentation_dataset_1{0}_crop_'.format(idx))
 
         else:
             print('key 입력 오류')

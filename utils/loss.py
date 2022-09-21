@@ -61,17 +61,18 @@ class SemanticLoss(tf.keras.losses.Loss):
             y_pred = tf.gather(y_pred, indices)
 
         
-        semantic_loss = self.sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
-                                             class_weight=self.class_weight,
-                                             gamma=self.gamma,
-                                             from_logits=self.from_logits,
-                                             use_multi_gpu=self.use_multi_gpu,
-                                             global_batch_size=self.global_batch_size)
+        # semantic_loss = self.sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
+        #                                      class_weight=self.class_weight,
+        #                                      gamma=self.gamma,
+        #                                      from_logits=self.from_logits,
+        #                                      use_multi_gpu=self.use_multi_gpu,
+        #                                      global_batch_size=self.global_batch_size)
 
         # semantic_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         #     labels=y_true,
         #     logits=y_pred)                                             
 
+        semantic_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(y_true=y_true, y_pred=y_pred)
         return semantic_loss
 
 

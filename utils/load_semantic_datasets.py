@@ -130,8 +130,12 @@ class SemanticGenerator(DataLoadHandler):
             labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
 
 
-        img = preprocess_input(img, mode='torch')
+        # img = preprocess_input(img, mode='torch')
+        img /= 255
+
+        labels = tf.where(labels>=1, 1, 0)
         labels = tf.cast(labels, dtype=tf.int32)
+        
         
         return (img, labels, original_img)
 
@@ -169,11 +173,16 @@ class SemanticGenerator(DataLoadHandler):
             sample    (dict)  : Dataset loaded through tfds.load().
         """
         img, labels = self.prepare_data(sample)
+        
+        if tf.random.uniform([]) > 0.5:
+            img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
+                                method=tf.image.ResizeMethod.BILINEAR)
+            labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
+                                    method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
-                              method=tf.image.ResizeMethod.BILINEAR)
-        labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
-                                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        else:
+            img = tf.image.resize_with_crop_or_pad(img, self.image_size[0], self.image_size[1])
+            labels = tf.image.resize_with_crop_or_pad(labels, self.image_size[0], self.image_size[1])
 
         # if tf.random.uniform([]) > 0.5:
         #     scale = tf.random.uniform([], 0.8, 1.2)
@@ -220,9 +229,13 @@ class SemanticGenerator(DataLoadHandler):
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
 
-        img = preprocess_input(img, mode='torch')
+        # img = preprocess_input(img, mode='torch')
+        img /= 255.
+
         # convert to integer label
+        labels = tf.where(labels>=1, 1, 0)
         labels = tf.cast(labels, dtype=tf.int32)
+        
 
         return (img, labels)
 
@@ -241,9 +254,11 @@ class SemanticGenerator(DataLoadHandler):
         labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        img = preprocess_input(img, mode='torch')
+        # img = preprocess_input(img, mode='torch')
+        img /= 255.
 
         # convert to integer label
+        labels = tf.where(labels>=1, 1, 0)
         labels = tf.cast(labels, dtype=tf.int32)
 
         return (img, labels)

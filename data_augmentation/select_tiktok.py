@@ -10,7 +10,7 @@ from tqdm import tqdm
 RAW_PATH = './data_augmentation/raw_data/TikTok_dataset/'
 SAVE_RGB_PATH = RAW_PATH + 'rgb/'
 SAVE_MASK_PATH = RAW_PATH + 'mask/'
-SELECT_STEP = 10
+SELECT_STEP = 5
 
 os.makedirs(SAVE_RGB_PATH, exist_ok=True)
 os.makedirs(SAVE_MASK_PATH, exist_ok=True)
@@ -35,8 +35,8 @@ for samples in tqdm(raw_list, total=len(raw_list)):
         image = cv2.imread(rgb_list[idx])
         mask = cv2.imread(mask_list[idx])
 
-        cv2.imwrite(SAVE_RGB_PATH + '{0}_idx_{1}.jpg'.format(sample_dir_idx, idx), image)
-        cv2.imwrite(SAVE_MASK_PATH + '{0}_idx_{1}.png'.format(sample_dir_idx, idx), mask)
+        cv2.imwrite(SAVE_RGB_PATH + 'human_segmentation_dataset_3_tiktok_{0}_idx_{1}.jpg'.format(sample_dir_idx, idx), image)
+        cv2.imwrite(SAVE_MASK_PATH + 'human_segmentation_dataset_3_tiktok_{0}_idx_{1}.png'.format(sample_dir_idx, idx), mask)
 
 
     
