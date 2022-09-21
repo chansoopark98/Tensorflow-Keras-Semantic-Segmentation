@@ -177,7 +177,7 @@ class ModelConfiguration(SemanticGenerator):
 
         self.model.compile(
             optimizer=self.optimizer,
-            loss=SemanticLoss(gamma=2, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+            loss=SemanticLoss(gamma=1.5, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
                               global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
                               dataset_name=self.DATASET_NAME),
             metrics=self.metrics)
