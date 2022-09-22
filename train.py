@@ -29,7 +29,7 @@ parser.add_argument("--lr",               type=float,  help="Initial learning ra
 parser.add_argument("--weight_decay",     type=float,  help="Set Weight Decay",
                     default=0.0005)
 parser.add_argument("--num_classes",      type=int,    help="Set number of classes to classification(BG+FG)",
-                    default=2)
+                    default=1)
 parser.add_argument("--image_size",       type=tuple,  help="Set model input size",
                     default=(640, 360))
 parser.add_argument("--optimizer",        type=str,    help="Set optimizer",
@@ -62,6 +62,9 @@ args = parser.parse_args()
                 
 
 if __name__ == '__main__':
+
+    # tf.config.run_functions_eagerly(True)
+    
     if args.saved_model:
         model = ModelConfiguration(args=args)
         model.saved_model()

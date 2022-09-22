@@ -12,9 +12,10 @@ import math
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/choose/merge/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/choose/merge/gt/')
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/choose/merge/select/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./raw_data/choose/human_segmentation_dataset_5_dance/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./raw_data/choose/human_segmentation_dataset_5_dance/mask/')
+parser.add_argument("--test",     type=str, default=False)
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./raw_data/choose/human_segmentation_dataset_5_dance/select/')
 
 args = parser.parse_args()
 
@@ -32,13 +33,13 @@ class ImageAugmentationLoader():
         self.OUTPUT_PATH = args.output_path
 
         self.OUT_RGB_PATH = self.OUTPUT_PATH + 'rgb/'
-        self.OUT_MASK_PATH = self.OUTPUT_PATH + 'mask/'
+        self.OUT_MASK_PATH = self.OUTPUT_PATH + 'gt/'
         
         os.makedirs(self.OUT_RGB_PATH, exist_ok=True)
         os.makedirs(self.OUT_MASK_PATH, exist_ok=True)
         
 
-        self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.jpg'))
+        self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.png'))
         self.rgb_list = natsort.natsorted(self.rgb_list,reverse=True)
 
         self.mask_list = glob.glob(os.path.join(self.MASK_PATH+'*.png'))
@@ -80,44 +81,41 @@ if __name__ == '__main__':
 
     # for idx in range(len(rgb_list)):
     for idx in tqdm(range(len(rgb_list)), total=len(rgb_list)):
+        
         original_rgb = cv2.imread(rgb_list[idx])
         original_mask = cv2.imread(mask_list[idx])
 
         original_mask = cv2.cvtColor(original_mask, cv2.COLOR_BGR2GRAY)
         original_mask = np.where(original_mask >= 1, 1, 0).astype(np.uint8)
 
-
         contours, _ = cv2.findContours(
                 original_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
-        draw_contours = []
 
-        rgb_shape = original_rgb.shape[:2]
-        
-        hw_area = rgb_shape[0] * rgb_shape[1]
-        
-
-        for i in range(len(contours)):
-            area = cv2.contourArea(contours[i])
-            
-            if area <= (hw_area * 0.003):
-                draw_contours.append(contours[i])
+        contour_list = []
+        len_contour = len(contours)
+        for i in range(len_contour):
+            drawing = np.zeros_like(original_mask, np.uint8)  # create a black image
+            img_contour = cv2.drawContours(drawing, contours, i, (255, 255, 255), -1)
+            contour_list.append(img_contour)
+        original_mask = sum(contour_list)
 
 
-        zero_maks = np.zeros(original_mask.shape, np.uint8)
-        zero_maks = cv2.drawContours(zero_maks, draw_contours, -1, 1, thickness=-1)
+        # zero_maks = np.zeros(original_mask.shape, np.uint8)
+        # zero_maks = cv2.drawContours(zero_maks, draw_contours, -1, 1, thickness=-1)
 
 
-        original_mask += zero_maks
+        # original_mask += zero_maks
         original_mask = np.where(original_mask>=1, 255, 0).astype(np.uint8)
         original_mask = np.expand_dims(original_mask, axis=-1)
-
-        test_mask = np.concatenate([original_mask, original_mask, original_mask], axis=-1)
-
-        if idx >= 10000:
-            concat_img = cv2.hconcat([original_rgb, test_mask]) # original_rgb * (original_mask/255)
+        
+        
+        if args.test:
+            test_mask = np.concatenate([original_mask, original_mask, original_mask], axis=-1)
+            masked_image = original_rgb * (test_mask / 255)
+            masked_image = masked_image.astype(np.uint8)
+            concat_img = cv2.hconcat([original_rgb, test_mask, masked_image]) # original_rgb * (original_mask/255)
             cv2.imshow('test', concat_img)
             cv2.waitKey(0)
 
-
-        # image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='merge_dataset_{0}'.format(idx))
+        image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_5_dance_{0}'.format(idx))

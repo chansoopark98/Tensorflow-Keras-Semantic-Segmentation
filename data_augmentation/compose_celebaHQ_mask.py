@@ -12,9 +12,9 @@ import math
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/celebahq/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/celebahq/mask/')
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/celebahq/select/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./raw_data/choose/celebahq/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./raw_data/choose/celebahq/mask/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./raw_data/choose/celebahq/select/')
 
 args = parser.parse_args()
 
@@ -51,11 +51,12 @@ class ImageAugmentationLoader():
         rgb_shape = rgb_image.shape[:2]
         zero_maks = np.zeros(rgb_shape, np.uint8)
 
+        
         for mask_path in mask_list:
             
             mask = cv2.imread(mask_path)
             # mask = tf.image.resize(mask, rgb_shape, tf.image.ResizeMethod.NEAREST_NEIGHBOR).numpy()
-            mask = cv2.resize(mask, rgb_shape)
+            mask = cv2.resize(mask, rgb_shape, interpolation=cv2.INTER_NEAREST)
             mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
             mask = np.where(mask >= 1, 1, 0).astype(np.uint8)
             zero_maks += mask
@@ -94,13 +95,17 @@ if __name__ == '__main__':
 
         original_mask = image_loader.merge_masks(mask_list=sample_masks, rgb_image=original_rgb)
 
+
         contours, _ = cv2.findContours(
                 original_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        
-        zero_maks = np.zeros(original_mask.shape, np.uint8)
-        zero_maks = cv2.drawContours(zero_maks, contours, 0, 1, thickness=-1)
 
-        original_mask += zero_maks
+        contour_list = []
+        len_contour = len(contours)
+        for i in range(len_contour):
+            drawing = np.zeros_like(original_mask, np.uint8)  # create a black image
+            img_contour = cv2.drawContours(drawing, contours, i, (255, 255, 255), -1)
+            contour_list.append(img_contour)
+        original_mask = sum(contour_list)
         
         original_mask = np.where(original_mask>=1, 255, 0).astype(np.uint8)
         image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_celeba_{0}_'.format(idx))
