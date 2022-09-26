@@ -101,6 +101,7 @@ if __name__ == '__main__':
 
         contour_list = []
         len_contour = len(contours)
+        
         for i in range(len_contour):
             drawing = np.zeros_like(original_mask, np.uint8)  # create a black image
             img_contour = cv2.drawContours(drawing, contours, i, (255, 255, 255), -1)
@@ -108,4 +109,26 @@ if __name__ == '__main__':
         original_mask = sum(contour_list)
         
         original_mask = np.where(original_mask>=1, 255, 0).astype(np.uint8)
-        image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_celeba_{0}_'.format(idx))
+
+        
+
+        # test_mask = np.concatenate([original_mask, original_mask, original_mask], axis=-1)
+        # norm_mask = test_mask / 255
+        # norm_mask = norm_mask.astype(np.uint8)
+
+        # concat_img = cv2.hconcat([original_rgb, test_mask, original_rgb * norm_mask])
+        # cv2.imshow('test', concat_img)
+        # key = cv2.waitKey(0)
+        
+        
+
+        # if key == 113:
+        #     print('바로 저장')
+        #     image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_celeba_{0}_'.format(idx))
+
+        # else:
+        #     print('key 입력 오류')
+        #     continue
+
+        if len_contour >= 1:
+            image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_celeba_{0}_'.format(idx))

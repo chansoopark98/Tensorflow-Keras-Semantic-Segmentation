@@ -2,6 +2,7 @@ from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import tensorflow_datasets as tfds
 import tensorflow as tf
 from utils.predict_utils import PrepareCityScapesLabel
+import tensorflow_addons as tfa
 from typing import Union
 import os
 
@@ -103,6 +104,7 @@ class SemanticGenerator(DataLoadHandler):
         self.image_size = image_size
         self.batch_size = batch_size
         self.dataset_name = dataset_name
+        self.pi = 3.14
         super().__init__(data_dir=self.data_dir, dataset_name=self.dataset_name)
 
 
@@ -117,18 +119,20 @@ class SemanticGenerator(DataLoadHandler):
         
         original_img = img
 
-        img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
-                              method=tf.image.ResizeMethod.BILINEAR)
+        # img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
+        #                       method=tf.image.ResizeMethod.BILINEAR)
 
-        labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
-                                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        # labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
+        #                          method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        original_img = tf.image.resize(original_img, size=(self.image_size[0], self.image_size[1]),
-                              method=tf.image.ResizeMethod.BILINEAR)
+        # original_img = tf.image.resize(original_img, size=(self.image_size[0], self.image_size[1]),
+        #                       method=tf.image.ResizeMethod.BILINEAR)
 
         if self.dataset_name == 'cityscapes':
             labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
 
+
+        
 
         # img = preprocess_input(img, mode='torch')
         img /= 255
@@ -136,6 +140,9 @@ class SemanticGenerator(DataLoadHandler):
         labels = tf.where(labels>=1, 1, 0)
         labels = tf.cast(labels, dtype=tf.int32)
         
+        # img = tfa.image.rotate(img, 1.59, interpolation='bilinear')
+        # labels = tfa.image.rotate(labels, 1.59, interpolation='nearest')
+        # original_img = tfa.image.rotate(original_img, 1.59)
         
         return (img, labels, original_img)
 
@@ -173,7 +180,7 @@ class SemanticGenerator(DataLoadHandler):
             sample    (dict)  : Dataset loaded through tfds.load().
         """
         img, labels = self.prepare_data(sample)
-        
+    
         if tf.random.uniform([]) > 0.5:
             img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
                                 method=tf.image.ResizeMethod.BILINEAR)
@@ -181,31 +188,23 @@ class SemanticGenerator(DataLoadHandler):
                                     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         else:
-            img = tf.image.resize_with_crop_or_pad(img, self.image_size[0], self.image_size[1])
-            labels = tf.image.resize_with_crop_or_pad(labels, self.image_size[0], self.image_size[1])
+            scale = tf.random.uniform([], 1.05, 1.3)
 
-        # if tf.random.uniform([]) > 0.5:
-        #     scale = tf.random.uniform([], 0.8, 1.2)
+            new_h = self.image_size[0] * scale
+            new_w = self.image_size[1] * scale
 
-        #     new_h = self.image_size[0] * scale
-        #     new_w = self.image_size[1] * scale
+            img = tf.image.resize(img, size=(new_h, new_w),
+                                method=tf.image.ResizeMethod.BILINEAR)
+            labels = tf.image.resize(labels, size=(new_h, new_w),
+                                    method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        #     img = tf.image.resize(img, size=(new_h, new_w),
-        #                         method=tf.image.ResizeMethod.BILINEAR)
-        #     labels = tf.image.resize(labels, size=(new_h, new_w),
-        #                             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            
+            concat_img = tf.concat([img, labels], axis=-1)
+            concat_img = tf.image.random_crop(
+                concat_img, (self.image_size[0], self.image_size[1], 4))
 
-        #     if scale >= 1.0:
-        #         concat_img = tf.concat([img, labels], axis=-1)
-        #         concat_img = tf.image.random_crop(
-        #             concat_img, (self.image_size[0], self.image_size[1], 4))
-
-        #         img = concat_img[:, :, :3]
-        #         labels = concat_img[:, :, 3:]
-
-        #     else:
-        #         img = tf.image.resize_with_crop_or_pad(img, self.image_size[0], self.image_size[1])
-        #         labels = tf.image.resize_with_crop_or_pad(labels, self.image_size[0], self.image_size[1])
+            img = concat_img[:, :, :3]
+            labels = concat_img[:, :, 3:]
 
         return (img, labels)
         
@@ -219,15 +218,28 @@ class SemanticGenerator(DataLoadHandler):
             img       (tf.Tensor)  : tf.Tensor data (shape=H,W,3)
             labels    (tf.Tensor)  : tf.Tensor data (shape=H,W,1)
         """
+        if tf.random.uniform([]) > 0.2:
+            # degrees -> radian
+            upper = 40 * (self.pi/180.0)
+            lower = 0.
+
+            rand_degree = tf.random.uniform([], minval=lower, maxval=upper)
+
+            img = tfa.image.rotate(img, rand_degree, interpolation='bilinear')
+            labels = tfa.image.rotate(labels, rand_degree, interpolation='nearest')
+
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_saturation(img, 0.5, 1.5)
+            img = tf.image.random_saturation(img, 0.9, 3)
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_brightness(img, 32. / 255.)
+            img = tf.image.random_brightness(img, 60)
         if tf.random.uniform([]) > 0.5:
-            img = tf.image.random_contrast(img, 0.5, 1)
+            img = tf.image.random_contrast(img, 0.5, 2)
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
+        if tf.random.uniform([]) > 0.3:
+            channels = tf.unstack (img, axis=-1)
+            img = tf.stack([channels[2], channels[1], channels[0]], axis=-1)
 
         # img = preprocess_input(img, mode='torch')
         img /= 255.
@@ -235,7 +247,6 @@ class SemanticGenerator(DataLoadHandler):
         # convert to integer label
         labels = tf.where(labels>=1, 1, 0)
         labels = tf.cast(labels, dtype=tf.int32)
-        
 
         return (img, labels)
 

@@ -1,5 +1,6 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import tensorflow_addons as tfa
 from utils.load_semantic_datasets import SemanticGenerator
 import argparse
 
@@ -25,6 +26,7 @@ if __name__ == "__main__":
     for img, mask, original in train_data.take(DATASET_NUMS):
 
         img = img[0]
+
         mask = mask[0]
         original = original[0]
 
@@ -36,7 +38,7 @@ if __name__ == "__main__":
 
         fig = plt.figure()
         ax0 = fig.add_subplot(rows, cols, 1)
-        ax0.imshow(original)
+        ax0.imshow(img)
         ax0.set_title('original img')
         ax0.axis("off")
 

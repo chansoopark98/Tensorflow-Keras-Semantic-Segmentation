@@ -22,7 +22,7 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0921/_0921_second_human_seg_640x360_pidnet_new-model-test-ce_best_iou.h5')
+                    help="Saved model weights directory", default='/0923/_0923_0923_lr0.005_adam_640-360-bs16-ep100-focal1.5-noceleba_best_iou.h5')
 
 args = parser.parse_args()
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         
         img = tf.expand_dims(img, axis=0)
 
-        output = model.predict(img)
+        output = model.predict_on_batch(img)
 
         semantic_output = tf.math.argmax(output, axis=-1)
         semantic_output = tf.expand_dims(semantic_output, axis=-1)

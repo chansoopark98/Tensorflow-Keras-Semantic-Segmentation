@@ -91,11 +91,13 @@ class ModelConfiguration(SemanticGenerator):
         tensorboard = tf.keras.callbacks.TensorBoard(
             log_dir=self.TENSORBOARD_DIR + 'semantic/' + self.MODEL_PREFIX, write_graph=True, write_images=True)
 
-        polyDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=self.INIT_LR,
-                                                                  decay_steps=self.EPOCHS,
-                                                                  end_learning_rate=self.INIT_LR * 0.01, power=0.9)
+        # lrDecay = tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=self.INIT_LR,
+        #                                                           decay_steps=self.EPOCHS,
+        #                                                           end_learning_rate=self.INIT_LR * 0.01, power=0.9)
+        
+        lrDecay = tf.keras.optimizers.schedules.CosineDecay(initial_learning_rate=self.INIT_LR, decay_steps=self.EPOCHS, alpha=self.INIT_LR * 0.001)
 
-        lr_scheduler = tf.keras.callbacks.LearningRateScheduler(polyDecay, verbose=1)
+        lr_scheduler = tf.keras.callbacks.LearningRateScheduler(lrDecay, verbose=1)
         
         # If you wanna need another callbacks, please add here.
         self.callback = [checkpoint_val_iou,
