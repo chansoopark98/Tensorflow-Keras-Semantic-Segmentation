@@ -171,4 +171,3 @@ class SemanticLoss(tf.keras.losses.Loss):
             loss = tf.reshape(loss, y_pred_shape[:-1])
 
         return loss
-

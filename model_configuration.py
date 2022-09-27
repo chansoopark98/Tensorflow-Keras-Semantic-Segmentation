@@ -1,5 +1,6 @@
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras import mixed_precision
+from models.model_zoo.pidnet.pidnet import PIDNet
 from models.model_builder import ModelBuilder
 from utils.load_semantic_datasets import SemanticGenerator
 from utils.loss import SemanticLoss
@@ -134,15 +135,17 @@ class ModelConfiguration(SemanticGenerator):
         """
             Build a deep learning model.
         """
-        # from models.model_zoo.PIDNet import PIDNet
-        # self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
-        #                planes=32, ppm_planes=96, head_planes=128, augment=False).build()
-
-        from models.model_zoo.pidnet.pidnet import PIDNet
-        
+        from models.model_zoo.PIDNet import PIDNet
         self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
-                       planes=32, ppm_planes=96, head_planes=128, augment=False)
-        self.model.build((None, *self.IMAGE_SIZE, 3))
+                       planes=32, ppm_planes=96, head_planes=128, augment=False, training=True).build()
+
+
+        
+        # self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
+        #                planes=32, ppm_planes=96, head_planes=128, augment=False)
+        # self.model.build((None, *self.IMAGE_SIZE, 3))
+
+
         # self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
         #                           num_classes=self.NUM_CLASSES).build_model()
 
@@ -184,7 +187,7 @@ class ModelConfiguration(SemanticGenerator):
                               global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
                               dataset_name=self.DATASET_NAME),
             metrics=self.metrics)
-        self.model.summary()
+        # self.model.summary()
         self.model.fit(self.train_data,
                        validation_data=self.valid_data,
                        steps_per_epoch=self.steps_per_epoch,
@@ -197,9 +200,21 @@ class ModelConfiguration(SemanticGenerator):
         """
             Convert it to a graph model (.pb) using the learned weights.
         """
-        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
-                                  num_classes=self.NUM_CLASSES).build_model()
+
+        # self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
+        #                planes=32, ppm_planes=96, head_planes=128, augment=False)
+        # self.model.build((None, *self.IMAGE_SIZE, 3))
+        # input_arr = tf.random.uniform((1, *self.IMAGE_SIZE, 3))
+        # outputs = self.model(input_arr)
+
+        from models.model_zoo.PIDNet import PIDNet
+        self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
+                       planes=32, ppm_planes=96, head_planes=128, augment=False, training=False).build()
+        
         self.model.load_weights(self.args.saved_model_path)
+
+
+
         export_path = os.path.join(self.CHECKPOINT_DIR, 'export_path', '1')
         
         os.makedirs(export_path, exist_ok=True)

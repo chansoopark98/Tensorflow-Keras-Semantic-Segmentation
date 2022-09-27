@@ -22,7 +22,7 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0923/_0923_0923_lr0.005_adam_640-360-bs16-ep100-focal1.5-noceleba_best_iou.h5')
+                    help="Saved model weights directory", default='/0926/_0926_0923_lr0.005_adam_640-360-bs16-ep100-focal1.5-noceleba-v2-cosineDecay_best_iou.h5')
 
 args = parser.parse_args()
 
@@ -54,7 +54,9 @@ if __name__ == '__main__':
 
     while cv2.waitKey(1) < 0:
         ret, frame = capture.read()
-        
+        print(frame.shape)
+        frame = frame[40: 40+640, 640-180:640+180]
+        print(frame.shape)
         start_t = timeit.default_timer()
         
         # frame = frame[0:640, 120:120+360]
@@ -64,7 +66,8 @@ if __name__ == '__main__':
         img = tf.image.resize(img, size=args.image_size,
                 method=tf.image.ResizeMethod.BILINEAR)
         img = tf.cast(img, tf.float32)
-        img = preprocess_input(x=img, mode='torch')
+        # img = preprocess_input(x=img, mode='torch')
+        img /= 255
         
         img = tf.expand_dims(img, axis=0)
 
@@ -72,7 +75,7 @@ if __name__ == '__main__':
 
         semantic_output = tf.math.argmax(output, axis=-1)
         semantic_output = tf.expand_dims(semantic_output, axis=-1)
-        semantic_output = tf.image.resize(semantic_output, (640, 360)).numpy().astype(np.uint8)
+        # semantic_output = tf.image.resize(semantic_output, (640, 360)).numpy().astype(np.uint8)
         
         # resize_shape = frame.shape
         # semantic_output = tf.expand_dims(semantic_output, axis=-1)
@@ -113,10 +116,10 @@ if __name__ == '__main__':
         semantic_output = semantic_output[0]
 
         
-        semantic_output = tf.image.resize(semantic_output, (720, 1280), tf.image.ResizeMethod.NEAREST_NEIGHBOR).numpy()
+        semantic_output = tf.image.resize(semantic_output, (640, 360), tf.image.ResizeMethod.NEAREST_NEIGHBOR).numpy().astype(np.uint8)
         frame *= semantic_output
 
-        cv2.putText(frame, str(FPS),(50, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.2,
+        cv2.putText(frame, 'FPS : {0}'.format(str(FPS)),(50, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.2,
                         (200, 50, 0), 3, cv2.LINE_AA)
         cv2.imshow("VideoFrame", frame)
 

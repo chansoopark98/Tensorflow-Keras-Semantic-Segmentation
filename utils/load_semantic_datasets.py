@@ -76,7 +76,7 @@ class DataLoadHandler:
 
     def __load_custom_dataset(self):
         train_data = tfds.load(self.dataset_name,
-                               data_dir=self.data_dir, split='train[10%:]')
+                               data_dir=self.data_dir, split='train[90%:]')
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         
         valid_data = tfds.load(self.dataset_name,
@@ -137,7 +137,9 @@ class SemanticGenerator(DataLoadHandler):
         # img = preprocess_input(img, mode='torch')
         img /= 255
 
-        labels = tf.where(labels>=1, 1, 0)
+        if self.dataset_name == 'human_segmentation':
+            labels = tf.where(labels>=1, 1, 0)
+
         labels = tf.cast(labels, dtype=tf.int32)
         
         # img = tfa.image.rotate(img, 1.59, interpolation='bilinear')
@@ -245,7 +247,10 @@ class SemanticGenerator(DataLoadHandler):
         img /= 255.
 
         # convert to integer label
-        labels = tf.where(labels>=1, 1, 0)
+        if self.dataset_name == 'human_segmentation':
+            labels = tf.where(labels>=1, 1, 0)
+        # elif self.dataset_name == 'full_semantic':
+        #     labels 
         labels = tf.cast(labels, dtype=tf.int32)
 
         return (img, labels)
@@ -269,7 +274,9 @@ class SemanticGenerator(DataLoadHandler):
         img /= 255.
 
         # convert to integer label
-        labels = tf.where(labels>=1, 1, 0)
+        if self.dataset_name == 'human_segmentation':
+            labels = tf.where(labels>=1, 1, 0)
+        
         labels = tf.cast(labels, dtype=tf.int32)
 
         return (img, labels)

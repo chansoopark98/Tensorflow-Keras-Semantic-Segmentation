@@ -30,9 +30,7 @@ class RequestRestApi(object):
 async def async_function_sample(image: np.ndarray):
     async with RequestRestApi('0.0.0.0:8500', 'test_model2') as session:
 	    output = await session.predict(image=image)
-
         # 'output' is your graph model's last layer name
         # output = output.outputs['output'].float_val
         # output = np.array(output)
-        # output = np.reshape(output, (224, 224, 3))        
-
+        # output = np.reshape(output, (224, 224, 3))

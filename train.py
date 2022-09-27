@@ -15,11 +15,11 @@ parser = argparse.ArgumentParser()
 # Set Convert to SavedMoel
 parser.add_argument("--saved_model",  help="SavedModel.pb 변환", action='store_true')
 parser.add_argument("--saved_model_path", type=str,   help="Saved model weight path",
-                    default='./checkpoints/0722/_0722__0722_B8_E200_LR0.001_320-240_MultiGPU_sigmoid_activation_EFFV2S_scale_train100%_best_iou.h5')
+                    default='./checkpoints/0927/_0927_test_pid_eager_best_loss.h5')
 
 # Set Training Options
 parser.add_argument("--model_prefix",     type=str,    help="Model name",
-                    default='0923_lr0.005_adam_640-360-bs16-ep100-focal1.5-noceleba-v2-cosineDecay')
+                    default='test_pid_eager')
 parser.add_argument("--batch_size",       type=int,    help="Batch size per each GPU",
                     default=16)
 parser.add_argument("--epoch",            type=int,    help="Training epochs",

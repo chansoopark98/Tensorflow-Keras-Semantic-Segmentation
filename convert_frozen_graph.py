@@ -2,6 +2,7 @@ import tensorflow as tf
 from models.model_builder import ModelBuilder
 from tensorflow.keras.models import Model
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
+from models.model_zoo.pidnet.pidnet import PIDNet
 import argparse 
 
 # ONNX Convert
@@ -19,11 +20,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights", type=str,     help="Saved model weights directory",
-                    default='/0905/_0905_PID_FIRST_TEST_E100_B16_SINGLE_NO-AUGMENT_640-480_best_iou.h5')
+                    default='./checkpoints/0927/_0927_test_pid_eager_best_loss.h5')
 parser.add_argument("--num_classes",          type=int,    help="Set num classes for model and post-processing",
-                    default=4)  
+                    default=2)  
 parser.add_argument("--image_size",          type=tuple,    help="Set image size for priors and post-processing",
-                    default=(640, 480))
+                    default=(640, 360))
 parser.add_argument("--gpu_num",          type=int,    help="Set GPU number to use(When without distribute training)",
                     default=0)
 parser.add_argument("--frozen_dir",   type=str,    help="Path to save frozen graph transformation result",
@@ -35,22 +36,30 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
     tf.config.set_soft_device_placement(True)
-
+    # tf.config.run_functions_eagerly(True)
     gpu_number = '/device:GPU:' + str(args.gpu_num)
     with tf.device(gpu_number):
 
-    
-        # model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
         from models.model_zoo.PIDNet import PIDNet
-        
         model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
-                       planes=32, ppm_planes=96, head_planes=128, augment=False).build()
-        model.load_weights(args.checkpoint_dir + args.model_weights, by_name=True)
+                       planes=32, ppm_planes=96, head_planes=128, augment=False, training=False).build()
+
+        # model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
+        #                planes=32, ppm_planes=96, head_planes=128, augment=False)
+        # model.build((None, *args.image_size, 3))
+        
 
         
+        model.load_weights(args.model_weights)
+        # model = tf.keras.models.load_model('./checkpoints/export_path/1/')
+
+        # input_arr = tf.random.uniform((1, *args.image_size, 3))
+        # outputs = model(input_arr)
 
         model.summary()
-
+        
+        
+        print(model)
         #path of the directory where you want to save your model
         frozen_out_path = args.frozen_dir
         # name of the .pb file

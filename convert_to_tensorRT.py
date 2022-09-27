@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 # Set Convert to TensorRT
 parser = argparse.ArgumentParser()
 parser.add_argument("--image_size",     type=tuple,
-                    help="Model image size (input resolution)", default=(320, 240))
+                    help="Model image size (input resolution)", default=(640, 360))
 parser.add_argument("--input_saved_model_dir",    type=str,
                     help="Dataset directory", default='./checkpoints/export_path/1/')
 parser.add_argument("--output_saved_model_dir", type=str,

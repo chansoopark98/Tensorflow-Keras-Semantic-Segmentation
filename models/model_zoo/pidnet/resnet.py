@@ -16,11 +16,13 @@ bn_mom = 0.1
 def basic_block(x_in, planes, stride=1, downsample=None, no_relu=False):
     residual = x_in
 
-    x = conv3x3(planes, stride)(x_in)
+    # x = conv3x3(planes, stride)(x_in)
+    x = layers.Conv2D(kernel_size=(3, 3), filters=planes, strides=stride, padding="same", use_bias=False)(x_in)
     x = layers.BatchNormalization(momentum=bn_mom)(x)
     x = layers.Activation("relu")(x)
 
-    x = conv3x3(planes,)(x)
+    # x = conv3x3(planes,)(x)
+    x = layers.Conv2D(kernel_size=(3, 3), filters=planes, strides=1, padding="same", use_bias=False)(x)
     x = layers.BatchNormalization(momentum=bn_mom)(x)
 
     if downsample is not None:
