@@ -8,7 +8,7 @@ bn_mom = 0.1
 
 class PIDNet(object):
     def __init__(self, input_shape=(640, 360, 3), m=2,
-                n=3, num_classes=2, planes=64, ppm_planes=96, head_planes=128, augment=True):
+                n=3, num_classes=2, planes=64, ppm_planes=96, head_planes=128, augment=True, training=True):
         self.input_shape = input_shape
         self.m = m
         self.n = n
@@ -17,6 +17,7 @@ class PIDNet(object):
         self.ppm_planes = ppm_planes
         self.head_planes = head_planes
         self.augment = augment
+        self.training = training
 
     
     def make_layer(self, x_in, block, inplanes, planes, blocks_num, stride=1, expansion=1, prefix='layer_name'):
@@ -148,14 +149,15 @@ class PIDNet(object):
             model_output = x_
 
         model = models.Model(inputs=x_in, outputs=model_output)
-
-        # # set weight initializers
-        # for layer in model.layers:
-        #     if hasattr(layer, 'kernel_initializer'):
-        #         layer.kernel_initializer = tf.keras.initializers.he_normal()
-        #     if hasattr(layer, 'beta_initializer'):  # for BatchNormalization
-        #         layer.beta_initializer = "zeros"
-        #         layer.gamma_initializer = "ones"
+        
+        if self.training == True:
+            # set weight initializers
+            for layer in model.layers:
+                if hasattr(layer, 'kernel_initializer'):
+                    layer.kernel_initializer = tf.keras.initializers.he_normal()
+                if hasattr(layer, 'beta_initializer'):  # for BatchNormalization
+                    layer.beta_initializer = "zeros"
+                    layer.gamma_initializer = "ones"
 
         return model
 

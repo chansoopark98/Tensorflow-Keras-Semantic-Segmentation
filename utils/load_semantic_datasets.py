@@ -76,7 +76,7 @@ class DataLoadHandler:
 
     def __load_custom_dataset(self):
         train_data = tfds.load(self.dataset_name,
-                               data_dir=self.data_dir, split='train[90%:]')
+                               data_dir=self.data_dir, split='train[10%:]')
         number_train = train_data.reduce(0, lambda x, _: x + 1).numpy()
         
         valid_data = tfds.load(self.dataset_name,
