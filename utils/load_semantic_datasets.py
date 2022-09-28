@@ -251,7 +251,7 @@ class SemanticGenerator(DataLoadHandler):
         else:
             # Normalize the input image (0 ~ 1)
             img /= 255.
-
+        
         # Covnert to float32 label to int32 label
         labels = tf.cast(labels, dtype=tf.int32)
 

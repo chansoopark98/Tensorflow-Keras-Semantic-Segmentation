@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tensorflow.keras.layers as layers
+from tensorflow.keras import layers
 
 bn_mom = 0.1
 # pytorch bn_mom = 0.1 -> tensorflow bn_mom = 0.9
@@ -9,7 +9,7 @@ bn_mom = 0.1
 Segmentation head
 3*3 -> 1*1 -> rescale
 """
-def segmentation_head(x_in, interplanes, outplanes, scale_factor=None):
+def segmentation_head(x_in, interplanes, outplanes, scale_factor=None, prefix='layer_name'):
     
     x = layers.BatchNormalization(momentum=bn_mom)(x_in)
     x = layers.Activation("relu")(x)
@@ -20,11 +20,13 @@ def segmentation_head(x_in, interplanes, outplanes, scale_factor=None):
     x = layers.Conv2D(outplanes, kernel_size=(1, 1), use_bias=range, padding="valid")(x)  # bias difference
 
     if scale_factor is not None:
-        input_shape = tf.keras.backend.int_shape(x)
+        # input_shape = tf.keras.backend.int_shape(x)
         
-        height2 = input_shape[1] * scale_factor
-        width2 = input_shape[2] * scale_factor
-        x = tf.image.resize(x, size=(height2, width2), method='bilinear', name='output')
+        # height2 = input_shape[1] * scale_factor
+        # width2 = input_shape[2] * scale_factor
+        # x = tf.image.resize(x, size=(height2, width2), method='bilinear', name='output')
+        # x = layers.Resizing(height=height2, width=width2, interpolation='bilinear', name='output')(x)
+        x = layers.UpSampling2D(size=(scale_factor, scale_factor), interpolation='bilinear', name=prefix)(x)
 
     return x
 

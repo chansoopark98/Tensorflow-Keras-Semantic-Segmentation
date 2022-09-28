@@ -29,13 +29,13 @@ class PIDNet(object):
             # So commenting out for now
             # downsample = layers.Activation("relu")(downsample)
 
-        x = block(x_in, planes, stride, downsample)
+        x = block(x_in, planes, stride, downsample, prefix=prefix+'_basic_0')
         for i in range(1, blocks_num):
             
             if i == (blocks_num - 1):
-                x = block(x, planes, stride=1, no_relu=True)
+                x = block(x, planes, stride=1, no_relu=True, prefix=prefix+'_basic_{0}'.format(i))
             else:
-                x = block(x, planes, stride=1, no_relu=False)
+                x = block(x, planes, stride=1, no_relu=False, prefix=prefix+'_basic_{0}'.format(i))
 
         return x
         
@@ -137,29 +137,21 @@ class PIDNet(object):
             x = tf.image.resize(spp, size=(height_output, width_output), method='bilinear')
             dfm = Bag(x_, x, x_d, self.planes * 4)  # dfm
 
-        x_ = segmentation_head(dfm, self.head_planes, self.num_classes, 8)  # final_layer
+        x_ = segmentation_head(dfm, self.head_planes, self.num_classes, 8, prefix='main')  # final_layer
 
         # Prediction Head
         if self.augment:
-            seghead_p = segmentation_head(temp_p, self.head_planes, self.num_classes)
-            seghead_d = segmentation_head(temp_d, self.planes, 1)
-            model_output = [seghead_p, x_, seghead_d]
+            # aux loss
+            seghead_p = segmentation_head(temp_p, self.head_planes, self.num_classes, 8, prefix='aux')
+
+            # boundary loss
+            seghead_d = segmentation_head(temp_d, self.planes, 1, 8, prefix='boundary')
+            model_outputs = [seghead_p, x_, seghead_d]
+
+            return models.Model(inputs=x_in, outputs=model_outputs)
         else:
-            # model_output = tf.cast(x_, tf.float32)
-            model_output = x_
 
-        model = models.Model(inputs=x_in, outputs=model_output)
-        
-        if self.training == True:
-            # set weight initializers
-            for layer in model.layers:
-                if hasattr(layer, 'kernel_initializer'):
-                    layer.kernel_initializer = tf.keras.initializers.he_normal()
-                if hasattr(layer, 'beta_initializer'):  # for BatchNormalization
-                    layer.beta_initializer = "zeros"
-                    layer.gamma_initializer = "ones"
-
-        return model
+            return models.Model(inputs=x_in, outputs=x_)
 
 
 if __name__ == '__main__':

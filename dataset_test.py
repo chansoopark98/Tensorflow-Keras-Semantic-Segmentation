@@ -19,17 +19,26 @@ if __name__ == "__main__":
     tf.config.run_functions_eagerly(True)
     # human_segmentation
     # full_semantic
-    train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, batch_size=1, dataset_name='full_semantic')
+    train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, batch_size=1, dataset_name='human_segmentation')
     train_data = train_dataset_config.get_testData(train_dataset_config.train_data)
 
     rows = 1
-    cols = 3
+    cols = 4
 
     for img, mask, original in train_data.take(DATASET_NUMS):
 
         img = img[0]
 
         mask = mask[0]
+        
+        expand_mask = tf.cast(tf.expand_dims(mask, axis=0), dtype=tf.float32)
+        grad_components = tf.image.sobel_edges(expand_mask)
+        grad_mag_components = grad_components ** 2
+
+        grad_mag_square = tf.math.reduce_sum(grad_mag_components, axis=-1)
+
+        edge = tf.sqrt(grad_mag_square)[0]
+
         original = original[0]
 
         print(original.shape)
@@ -53,5 +62,11 @@ if __name__ == "__main__":
         ax0.imshow(masking_image)
         ax0.set_title('masking image')
         ax0.axis("off")
+
+        ax0 = fig.add_subplot(rows, cols, 4)
+        ax0.imshow(edge)
+        ax0.set_title('edge')
+        ax0.axis("off")
+
         plt.show()
         plt.close()

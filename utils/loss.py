@@ -6,12 +6,116 @@ from typing import Any, Optional
 
 _EPSILON = tf.keras.backend.epsilon()
 
+
+@tf.keras.utils.register_keras_serializable()
+class BoundaryLoss(tf.keras.losses.Loss):
+    def __init__(self, from_logits: bool = False, use_multi_gpu: bool = False,
+                 global_batch_size: int = 16, num_classes: int = 1,
+                  **kwargs):
+        """
+        Args:
+            BoundaryLoss is the sum of semantic segmentation loss.
+            The BoundaryLoss loss is a binary cross entropy loss.
+            
+            from_logits       (bool) : When softmax is not applied to the activation
+                                        layer of the last layer of the model.
+            use_multi_gpu     (bool) : To calculate the loss for each gpu when using distributed training.
+            global_batch_size (int)  : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
+            num_classes       (int)  : Number of classes to classify (must be equal to number of last filters in the model)
+        """
+        super().__init__(**kwargs)
+        self.from_logits = from_logits
+        self.use_multi_gpu = use_multi_gpu
+        self.global_batch_size = global_batch_size
+        self.num_classes = num_classes
+    
+        if self.use_multi_gpu:
+            self.loss_reduction = losses.Reduction.NONE
+        else:
+            self.loss_reduction = losses.Reduction.AUTO
+
+    def get_config(self):
+        config = super().get_config()
+        config.update(from_logits=self.from_logits, use_multi_gpu=self.use_multi_gpu,
+                      global_batch_size=self.global_batch_size, num_classes=self.num_classes)
+        return config
+
+
+    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor):
+        # Calc bce loss                
+        edge_map = tf.cast(y_true, dtype=tf.float32)
+        grad_components = tf.image.sobel_edges(edge_map)
+        grad_mag_components = grad_components ** 2
+
+        grad_mag_square = tf.math.reduce_sum(grad_mag_components, axis=-1)
+
+        edge = tf.sqrt(grad_mag_square)
+        edge = tf.where(edge != 0, 1, 0)
+
+        loss = losses.BinaryCrossentropy(from_logits=True, reduction=self.loss_reduction)(y_true=edge, y_pred=y_pred)
+
+        # Reduce loss to scalar
+        if self.use_multi_gpu:
+            loss = tf.reduce_mean(loss)
+
+        return loss
+
+
+
+@tf.keras.utils.register_keras_serializable()
+class AuxiliaryLoss(tf.keras.losses.Loss):
+    def __init__(self, from_logits: bool = False, use_multi_gpu: bool = False,
+                 global_batch_size: int = 16, num_classes: int = 1,
+                  **kwargs):
+        """
+        Args:
+            AuxiliaryLoss is the sum of semantic segmentation loss.
+            The AuxiliaryLoss loss is a cross entropy loss.
+              
+            from_logits       (bool) : When softmax is not applied to the activation
+                                        layer of the last layer of the model.
+            use_multi_gpu     (bool) : To calculate the loss for each gpu when using distributed training.
+            global_batch_size (int)  : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
+            num_classes       (int)  : Number of classes to classify (must be equal to number of last filters in the model)
+        """
+        super().__init__(**kwargs)
+        self.from_logits = from_logits
+        self.use_multi_gpu = use_multi_gpu
+        self.global_batch_size = global_batch_size
+        self.num_classes = num_classes
+    
+        if self.use_multi_gpu:
+            self.loss_reduction = losses.Reduction.NONE
+        else:
+            self.loss_reduction = losses.Reduction.AUTO
+
+    def get_config(self):
+        config = super().get_config()
+        config.update(from_logits=self.from_logits, use_multi_gpu=self.use_multi_gpu,
+                      global_batch_size=self.global_batch_size, num_classes=self.num_classes)
+        return config
+
+
+    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor):
+        loss = losses.SparseCategoricalCrossentropy(
+            from_logits=True, reduction=self.loss_reduction)(y_true=y_true, y_pred=y_pred)
+             
+        if self.use_multi_gpu:
+            loss = tf.reduce_mean(loss)
+        
+        return loss
+
+
+
+
+
 @tf.keras.utils.register_keras_serializable()
 class SemanticLoss(tf.keras.losses.Loss):
     def __init__(self, gamma, class_weight: Optional[Any] = None,
                  from_logits: bool = False, use_multi_gpu: bool = False,
                  global_batch_size: int = 16, num_classes: int = 3,
-                 dataset_name: str ='cityscapes',
+                 dataset_name: str = 'cityscapes',
+                 loss_type: str = 'focal',
                   **kwargs):
         """
         Args:
@@ -27,6 +131,7 @@ class SemanticLoss(tf.keras.losses.Loss):
             global_batch_size (int)  : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
             num_classes       (int)  : Number of classes to classify (must be equal to number of last filters in the model)
             dataset_type      (str)  : Train dataset type. For Cityscapes, the process of excluding ignore labels is included.
+            loss_type         (str)  : Train loss function type.
         """
         super().__init__(**kwargs)
         self.gamma = gamma
@@ -36,6 +141,12 @@ class SemanticLoss(tf.keras.losses.Loss):
         self.global_batch_size = global_batch_size
         self.num_classes = num_classes
         self.dataset_name = dataset_name
+        self.loss_type = loss_type
+
+        if self.use_multi_gpu:
+            self.loss_reduction = losses.Reduction.NONE
+        else:
+            self.loss_reduction = losses.Reduction.AUTO
 
 
     def get_config(self):
@@ -62,35 +173,30 @@ class SemanticLoss(tf.keras.losses.Loss):
             y_pred = tf.gather(y_pred, indices)
 
         
-        # semantic_loss = self.sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
-        #                                      class_weight=self.class_weight,
-        #                                      gamma=self.gamma,
-        #                                      from_logits=self.from_logits,
-        #                                      use_multi_gpu=self.use_multi_gpu,
-        #                                      global_batch_size=self.global_batch_size)
+        if self.loss_type == 'focal':
+            semantic_loss = self.sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
+                                                class_weight=self.class_weight,
+                                                gamma=self.gamma,
+                                                from_logits=self.from_logits,
+                                                use_multi_gpu=self.use_multi_gpu,
+                                                global_batch_size=self.global_batch_size)
+        elif self.loss_type == 'ce':
+            semantic_loss = self.sparse_categorical_cross_entropy(y_true=y_true,
+                                                                  y_pred=y_pred,
+                                                                  use_multi_gpu=self.use_multi_gpu)
 
-        # semantic_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        #     labels=y_true,
-        #     logits=y_pred)                                             
-
-        semantic_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(y_true=y_true, y_pred=y_pred)
         return semantic_loss
 
 
-    def confidence_loss(self, y_true, y_pred,
-                        global_batch_size: int = 16, use_multi_gpu: bool = False):
-        # Calc bce loss                
-        loss = losses.binary_crossentropy(y_true=y_true, y_pred=y_pred, from_logits=False)
-
-        # Reduce loss to scalar
+    def sparse_categorical_cross_entropy(self, y_true, y_pred, use_multi_gpu):
+        ce_loss = losses.SparseCategoricalCrossentropy(
+            from_logits=True, reduction=self.loss_reduction)(y_true=y_true, y_pred=y_pred)
+             
         if use_multi_gpu:
-            loss = tf.reduce_sum(loss) * (1. / global_batch_size)
-            loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)
-        else:
-            loss = tf.reduce_mean(loss)
-
-        return loss
-
+            ce_loss = tf.reduce_mean(ce_loss)
+        
+        return ce_loss
+        
     
     def sparse_categorical_focal_loss(self, y_true, y_pred, gamma, *,
                                   class_weight: Optional[Any] = None,
@@ -145,9 +251,13 @@ class SemanticLoss(tf.keras.losses.Loss):
             probs = y_pred
             logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
 
-        xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=y_true,
-            logits=logits)
+        xent_loss = losses.SparseCategoricalCrossentropy(
+            from_logits=True,
+            reduction=self.loss_reduction)(y_true=y_true, y_pred=logits)
+
+        if use_multi_gpu:
+            xent_loss = tf.reduce_mean(xent_loss)
+        
 
         y_true_rank = y_true.shape.rank
         probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
@@ -158,9 +268,7 @@ class SemanticLoss(tf.keras.losses.Loss):
 
         loss = focal_modulation * xent_loss
 
-        # if use_multi_gpu:
-        #     loss = tf.reduce_sum(loss) * (1. / global_batch_size)
-        #     loss /= tf.cast(tf.reduce_prod(tf.shape(y_true)[1:]), tf.float32)
+
 
         if class_weight is not None:
             class_weight = tf.gather(class_weight, y_true, axis=0,

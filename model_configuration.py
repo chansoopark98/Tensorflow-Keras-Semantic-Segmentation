@@ -3,7 +3,7 @@ from tensorflow.keras import mixed_precision
 from models.model_zoo.pidnet.pidnet import PIDNet
 from models.model_builder import ModelBuilder
 from utils.load_semantic_datasets import SemanticGenerator
-from utils.loss import SemanticLoss
+from utils.loss import SemanticLoss, BoundaryLoss, AuxiliaryLoss
 from utils.metrics import MIoU, CityMIoU
 import os
 import tensorflow as tf
@@ -55,9 +55,11 @@ class ModelConfiguration(SemanticGenerator):
         self.EPOCHS = self.args.epoch
         self.INIT_LR = self.args.lr
         self.INPUT_NORM_TYPE = self.args.image_norm_type
+        self.NETWORK_NAME = self.args.network_name
         self.SAVE_MODEL_NAME = self.args.model_name + '_' + self.args.model_prefix
         self.DATASET_DIR = self.args.dataset_dir
         self.DATASET_NAME = self.args.dataset_name
+        self.LOSS_TYPE = self.args.loss_type
         self.CHECKPOINT_DIR = self.args.checkpoint_dir
         self.TENSORBOARD_DIR = self.args.tensorboard_dir
         self.IMAGE_SIZE = self.args.image_size
@@ -146,7 +148,7 @@ class ModelConfiguration(SemanticGenerator):
 
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
                                   num_classes=self.NUM_CLASSES, use_weight_decay=self.USE_WEIGHT_DECAY, weight_decay=self.WEIGHT_DECAY)
-        self.model = self.model.build_model(model_name='pidnet', training=True)
+        self.model = self.model.build_model(model_name=self.NETWORK_NAME, training=True)
 
 
 
@@ -162,10 +164,10 @@ class ModelConfiguration(SemanticGenerator):
         else:
             print('custom dataset miou')
             mIoU = MIoU(self.NUM_CLASSES)
-            self.miou_name = 'm_io_u'
+            self.miou_name = 'main_m_io_u:'
         
         # You can add here custom metrics.
-        self.metrics = [mIoU]
+        self.metric_list = [mIoU]
 
 
     def train(self):
@@ -179,14 +181,31 @@ class ModelConfiguration(SemanticGenerator):
         self.__configuration_model()
         self.__configuration_metric()
         self.__set_callbacks()
+        
+        main_loss = SemanticLoss(gamma=2.0, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
+                              dataset_name=self.DATASET_NAME, loss_type=self.LOSS_TYPE)
+
+        boundary_loss = BoundaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
+
+        auxilary_loss = AuxiliaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
+
+        losses = {
+            'main': main_loss,
+            'boundary': boundary_loss,
+            'aux': auxilary_loss
+        }
+        metrics = {
+            'main': self.metric_list[0]
+        }
 
         self.model.compile(
             optimizer=self.optimizer,
-            loss=SemanticLoss(gamma=1.5, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
-                              dataset_name=self.DATASET_NAME),
-            metrics=self.metrics)
-        # self.model.summary()
+            loss=losses,
+            metrics=metrics)
+        self.model.summary()
         self.model.fit(self.train_data,
                        validation_data=self.valid_data,
                        steps_per_epoch=self.steps_per_epoch,
@@ -208,7 +227,7 @@ class ModelConfiguration(SemanticGenerator):
 
         from models.model_zoo.PIDNet import PIDNet
         self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
-                       planes=32, ppm_planes=96, head_planes=128, augment=False, training=False).build()
+                       planes=32, ppm_planes=96, head_planes=128, augment=True, training=False).build()
         
         self.model.load_weights(self.args.saved_model_path)
 
