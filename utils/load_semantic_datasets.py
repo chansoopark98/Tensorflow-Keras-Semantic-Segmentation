@@ -1,15 +1,14 @@
+from utils.predict_utils import PrepareCityScapesLabel
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import tensorflow_datasets as tfds
 import tensorflow as tf
-from utils.predict_utils import PrepareCityScapesLabel
 import tensorflow_addons as tfa
 from typing import Union
 import os
 
 AUTO = tf.data.experimental.AUTOTUNE
 
-
-class DataLoadHandler:
+class DataLoadHandler(object):
     def __init__(self, data_dir: str, dataset_name: str):
         """
         This class performs pre-process work for each dataset and load tfds.
@@ -53,7 +52,6 @@ class DataLoadHandler:
 
 
     def __load_cityscapes(self):
-        
         if os.path.isfile(self.data_dir + 'downloads/manual/leftImg8bit_trainvaltest.zip') == False:
             raise Exception('Download the \'leftImg8bit_trainvaltest.zip\' and \'gtFine_trainvaltest.zip\'' +
                             ' files from the Cityscape homepage and move the two compressed files to the' + 
@@ -91,60 +89,53 @@ class DataLoadHandler:
 
 class SemanticGenerator(DataLoadHandler):
     def __init__(self, data_dir: str, image_size: tuple, batch_size: int,
-                 dataset_name: str = 'cityscapes'):
+                 dataset_name: str = 'cityscapes', norm_type: str ='div'):
         """
         Args:
             data_dir     (str)   : Dataset relative path ( default : './datasets/' )
             image_size   (tuple) : Model input image resolution 
             batch_size   (int)   : Batch size
             dataset_name (str)   : Tensorflow dataset name (e.g: 'cityscapes')
+            norm_type    (str)   : Set input image normalization type (e.g: 'torch')
         """
         # Configuration
         self.data_dir = data_dir
         self.image_size = image_size
         self.batch_size = batch_size
         self.dataset_name = dataset_name
+        self.norm_type = norm_type
         self.pi = 3.14
         super().__init__(data_dir=self.data_dir, dataset_name=self.dataset_name)
 
 
-    def load_test(self, sample: dict):
+    def load_test(self, sample: dict) -> Union[tf.Tensor, tf.Tensor]:
         """
-        Load functions for data set validation and testing tasks
-        Args:
-            sample       (dict)  : Dataset loaded through tfds.load().
+            Load functions for data set validation and testing tasks
+            Args:
+                sample       (dict)  : Dataset loaded through tfds.load().
         """
         img = tf.cast(sample[self.train_key], tf.float32)
         labels = tf.cast(sample[self.label_key], dtype=tf.int32)
         
         original_img = img
 
-        # img = tf.image.resize(img, size=(self.image_size[0], self.image_size[1]),
-        #                       method=tf.image.ResizeMethod.BILINEAR)
-
-        # labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
-        #                          method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
-        # original_img = tf.image.resize(original_img, size=(self.image_size[0], self.image_size[1]),
-        #                       method=tf.image.ResizeMethod.BILINEAR)
-
         if self.dataset_name == 'cityscapes':
             labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
-
-
-        
-
-        # img = preprocess_input(img, mode='torch')
-        img /= 255
-
-        if self.dataset_name == 'human_segmentation':
+        elif self.dataset_name == 'human_segmentation':
             labels = tf.where(labels>=1, 1, 0)
 
+        if self.norm_type == 'tf':
+            # Normalize the input image to 'tf' style (-1 ~ 1)
+            img = preprocess_input(img, mode='tf')
+        elif self.norm_type == 'torch':
+            # Normalize the input image to 'torch' style (0 ~ 1 with mean, std)
+            img = preprocess_input(img, mode='torch')
+        else:
+            # Normalize the input image (0 ~ 1)
+            img /= 255.
+
+        # Convert int type
         labels = tf.cast(labels, dtype=tf.int32)
-        
-        # img = tfa.image.rotate(img, 1.59, interpolation='bilinear')
-        # labels = tfa.image.rotate(labels, 1.59, interpolation='nearest')
-        # original_img = tfa.image.rotate(original_img, 1.59)
         
         return (img, labels, original_img)
 
@@ -152,23 +143,18 @@ class SemanticGenerator(DataLoadHandler):
     @tf.function    
     def prepare_data(self, sample: dict) -> Union[tf.Tensor, tf.Tensor]:
         """
-        Load RGB images and segmentation labels from the dataset.
-        Options: 
-            (1)   For cityscapes, convert 35 classes to 19 foreground classes
-                  and 1 background class (total: 20).
-        Args:
-            sample    (dict)  : Dataset loaded through tfds.load().
+            Load RGB images and segmentation labels from the dataset.
+            Options: 
+                (1)   For cityscapes, convert 35 classes to 19 foreground classes
+                    and 1 background class (total: 20).
+            Args:
+                sample    (dict)  : Dataset loaded through tfds.load().
+
+            Returns:
+                (img, labels) (dict) : Returns the image and label extracted from sample as a key value.
         """
-        img = sample[self.train_key]
-        labels = tf.cast(sample[self.label_key], dtype=tf.int32)
-        
-        if self.dataset_name == 'cityscapes':
-            # encode cityscapes data
-            labels = self.cityscapes_tools.encode_cityscape_label(label=labels)
-        
-        # convert to data type
-        img = tf.cast(img, dtype=tf.float32)
-        labels = tf.cast(labels, dtype=tf.float32)
+        img = tf.cast(sample[self.train_key], dtype=tf.float32)
+        labels = tf.cast(sample[self.label_key], dtype=tf.float32)
         
         return (img, labels)
 
@@ -176,10 +162,13 @@ class SemanticGenerator(DataLoadHandler):
     @tf.function
     def preprocess(self, sample: dict) -> Union[tf.Tensor, tf.Tensor]:
         """
-        Dataset mapping function to apply to the train dataset.
-        Various methods can be applied here, such as image resizing, random cropping, etc.
-        Args:
-            sample    (dict)  : Dataset loaded through tfds.load().
+            Dataset mapping function to apply to the train dataset.
+            Various methods can be applied here, such as image resizing, random cropping, etc.
+            Args:
+                sample    (dict)  : Dataset loaded through tfds.load().
+            
+            Returns:
+                (img, labels) (dict) : tf.Tensor
         """
         img, labels = self.prepare_data(sample)
     
@@ -214,18 +203,21 @@ class SemanticGenerator(DataLoadHandler):
     @tf.function
     def augmentation(self, img: tf.Tensor, labels: tf.Tensor) -> Union[tf.Tensor, tf.Tensor]: 
         """
-        This is a data augmentation function to be applied to the train dataset.
-        You can add a factor or augmentation method to be applied to each batch.     
-        Args:
-            img       (tf.Tensor)  : tf.Tensor data (shape=H,W,3)
-            labels    (tf.Tensor)  : tf.Tensor data (shape=H,W,1)
+            This is a data augmentation function to be applied to the train dataset.
+            You can add a factor or augmentation method to be applied to each batch.     
+            Args:
+                img       (tf.Tensor)  : tf.Tensor data (shape=H,W,3)
+                labels    (tf.Tensor)  : tf.Tensor data (shape=H,W,1)
+
+            Returns:
+                img       (tf.Tensor)  : tf.Tensor data (shape=H,W,3)
+                labels    (tf.Tensor)  : tf.Tensor data (shape=H,W,1)
         """
         if tf.random.uniform([]) > 0.2:
-            # degrees -> radian
+            # Degrees to Radian
             upper = 40 * (self.pi/180.0)
-            lower = 0.
 
-            rand_degree = tf.random.uniform([], minval=lower, maxval=upper)
+            rand_degree = tf.random.uniform([], minval=0., maxval=upper)
 
             img = tfa.image.rotate(img, rand_degree, interpolation='bilinear')
             labels = tfa.image.rotate(labels, rand_degree, interpolation='nearest')
@@ -242,15 +234,25 @@ class SemanticGenerator(DataLoadHandler):
         if tf.random.uniform([]) > 0.3:
             channels = tf.unstack (img, axis=-1)
             img = tf.stack([channels[2], channels[1], channels[0]], axis=-1)
-
-        # img = preprocess_input(img, mode='torch')
-        img /= 255.
-
-        # convert to integer label
-        if self.dataset_name == 'human_segmentation':
+        
+        # Label normalization (adjust to number of classes to classify)
+        if self.dataset_name == 'cityscapes':
+            labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
+        elif self.dataset_name == 'human_segmentation':
             labels = tf.where(labels>=1, 1, 0)
-        # elif self.dataset_name == 'full_semantic':
-        #     labels 
+
+        # Input image normalization
+        if self.norm_type == 'tf':
+            # Normalize the input image to 'tf' style (-1 ~ 1)
+            img = preprocess_input(img, mode='tf')
+        elif self.norm_type == 'torch':
+            # Normalize the input image to 'torch' style (0 ~ 1 with mean, std)
+            img = preprocess_input(img, mode='torch')
+        else:
+            # Normalize the input image (0 ~ 1)
+            img /= 255.
+
+        # Covnert to float32 label to int32 label
         labels = tf.cast(labels, dtype=tf.int32)
 
         return (img, labels)
@@ -259,9 +261,13 @@ class SemanticGenerator(DataLoadHandler):
     @tf.function
     def preprocess_valid(self, sample: dict) -> Union[tf.Tensor, tf.Tensor]:
         """
-        This is a data processing mapping function to be used in the validation step during training.
-        Args:
-            sample    (dict)  : Dataset loaded through tfds.load().
+            This is a data processing mapping function to be used in the validation step during training.
+            Args:
+                sample    (dict)  : Dataset loaded through tfds.load().
+
+            Returns:
+                img       (tf.Tensor)  : tf.Tensor data (shape=H,W,3)
+                labels    (tf.Tensor)  : tf.Tensor data (shape=H,W,1)
         """     
         img, labels = self.prepare_data(sample)
 
@@ -270,38 +276,70 @@ class SemanticGenerator(DataLoadHandler):
         labels = tf.image.resize(labels, size=(self.image_size[0], self.image_size[1]),
                                  method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        # img = preprocess_input(img, mode='torch')
-        img /= 255.
-
-        # convert to integer label
-        if self.dataset_name == 'human_segmentation':
+        # Label normalization (adjust to number of classes to classify)
+        if self.dataset_name == 'cityscapes':
+            labels = self.cityscapes_tools.encode_cityscape_label(label=labels, mode='test')
+        elif self.dataset_name == 'human_segmentation':
             labels = tf.where(labels>=1, 1, 0)
-        
+
+        # Input image normalization
+        if self.norm_type == 'tf':
+            # Normalize the input image to 'tf' style (-1 ~ 1)
+            img = preprocess_input(img, mode='tf')
+        elif self.norm_type == 'torch':
+            # Normalize the input image to 'torch' style (0 ~ 1 with mean, std)
+            img = preprocess_input(img, mode='torch')
+        else:
+            # Normalize the input image (0 ~ 1)
+            img /= 255.
+
+        # Covnert to float32 label to int32 label
         labels = tf.cast(labels, dtype=tf.int32)
 
         return (img, labels)
 
 
-    def get_trainData(self, train_data):
+    def get_trainData(self, train_data: tf.data.Dataset) -> tf.data.Dataset:
+        """
+            Prepare the Tensorflow dataset (tf.data.Dataset)
+            Args:
+                train_data    (tf.data.Dataset)  : Dataset loaded through tfds.load().
+
+            Returns:
+                train_data    (tf.data.Dataset)  : Apply data augmentation, batch, and shuffling
+        """    
         train_data = train_data.shuffle(256)
         train_data = train_data.map(self.preprocess, num_parallel_calls=AUTO)
         train_data = train_data.map(self.augmentation, num_parallel_calls=AUTO)
         train_data = train_data.padded_batch(self.batch_size)
         train_data = train_data.prefetch(AUTO)
         train_data = train_data.repeat()
-
         return train_data
 
 
-    def get_validData(self, valid_data):
+    def get_validData(self, valid_data: tf.data.Dataset) -> tf.data.Dataset:
+        """
+            Prepare the Tensorflow dataset (tf.data.Dataset)
+            Args:
+                valid_data    (tf.data.Dataset)  : Dataset loaded through tfds.load().
+
+            Returns:
+                valid_data    (tf.data.Dataset)  : Apply data resize, batch, and shuffling
+        """    
         valid_data = valid_data.map(self.preprocess_valid, num_parallel_calls=AUTO)
         valid_data = valid_data.padded_batch(self.batch_size).prefetch(AUTO)
-
         return valid_data
 
 
-    def get_testData(self, valid_data):
+    def get_testData(self, valid_data: tf.data.Dataset) -> tf.data.Dataset:
+        """
+            Prepare the Tensorflow dataset (tf.data.Dataset)
+            Args:
+                valid_data    (tf.data.Dataset)  : Dataset loaded through tfds.load().
+
+            Returns:
+                valid_data    (tf.data.Dataset)  : Apply data resize, batch, and shuffling
+        """    
         valid_data = valid_data.map(self.load_test)
         valid_data = valid_data.batch(self.batch_size).prefetch(AUTO)
-
         return valid_data
