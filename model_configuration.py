@@ -54,6 +54,7 @@ class ModelConfiguration(SemanticGenerator):
         self.BATCH_SIZE = self.args.batch_size
         self.EPOCHS = self.args.epoch
         self.INIT_LR = self.args.lr
+        self.INPUT_NORM_TYPE = self.args.image_norm_type
         self.SAVE_MODEL_NAME = self.args.model_name + '_' + self.args.model_prefix
         self.DATASET_DIR = self.args.dataset_dir
         self.DATASET_NAME = self.args.dataset_name
@@ -79,14 +80,11 @@ class ModelConfiguration(SemanticGenerator):
             so you must specify the name of the custom metric.
         """
         # Set training keras callbacks
-        reduce_lr = ReduceLROnPlateau(
-            monitor='val_loss', factor=0.9, patience=3, min_lr=1e-5, verbose=1)
-        
         checkpoint_val_loss = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name + '/_' + self.SAVE_MODEL_NAME + '_best_loss.h5',
                                               monitor='val_loss', save_best_only=True, save_weights_only=True, verbose=1)
         
         checkpoint_val_iou = ModelCheckpoint(self.CHECKPOINT_DIR + self.args.model_name + '/_' + self.SAVE_MODEL_NAME + '_best_iou.h5',
-                                             monitor=self.miou_name, save_best_only=True, save_weights_only=True,
+                                             monitor='val_' + self.miou_name, save_best_only=True, save_weights_only=True,
                                              verbose=1, mode='max')
 
         tensorboard = tf.keras.callbacks.TensorBoard(
@@ -135,9 +133,9 @@ class ModelConfiguration(SemanticGenerator):
         """
             Build a deep learning model.
         """
-        from models.model_zoo.PIDNet import PIDNet
-        self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
-                       planes=32, ppm_planes=96, head_planes=128, augment=False, training=True).build()
+        # from models.model_zoo.PIDNet import PIDNet
+        # self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
+        #                planes=32, ppm_planes=96, head_planes=128, augment=False, training=True).build()
 
 
         
@@ -146,8 +144,9 @@ class ModelConfiguration(SemanticGenerator):
         # self.model.build((None, *self.IMAGE_SIZE, 3))
 
 
-        # self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
-        #                           num_classes=self.NUM_CLASSES).build_model()
+        self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
+                                  num_classes=self.NUM_CLASSES, use_weight_decay=self.USE_WEIGHT_DECAY, weight_decay=self.WEIGHT_DECAY)
+        self.model = self.model.build_model(model_name='pidnet', training=True)
 
 
 

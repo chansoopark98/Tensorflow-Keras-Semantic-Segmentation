@@ -3,7 +3,7 @@ import argparse
 import tensorflow as tf
 from tensorflow.python.saved_model import tag_constants
 
-from utils.predict_utils import get_color_map
+
 import numpy as np
 from models.model_builder import ModelBuilder
 import timeit
@@ -42,7 +42,6 @@ if __name__ == '__main__':
     print(outputs)
     output = outputs['tf.image.resize_11']
 
-    color_map = get_color_map(num_classes=args.num_classes)
 
     # Camera
     frame_width = 1280
@@ -76,7 +75,7 @@ if __name__ == '__main__':
         
         start_t = timeit.default_timer()
         outputs = infer(img)
-        print(outputs)
+        
         output = outputs['tf.image.resize_11']
         terminate_t = timeit.default_timer()
         

@@ -3,7 +3,7 @@ import argparse
 import tensorflow as tf
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 
-from utils.predict_utils import get_color_map
+\
 import numpy as np
 from models.model_builder import ModelBuilder
 import timeit
@@ -22,28 +22,29 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0926/_0926_0923_lr0.005_adam_640-360-bs16-ep100-focal1.5-noceleba-v2-cosineDecay_best_iou.h5')
+                    help="Saved model weights directory", default='/0927/_0927_new_pid_same_train_options_best_loss.h5')
 
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
     # model = ModelBuilder(image_size=args.image_size, num_classes=args.num_classes).build_model()
-    # from models.model_zoo.PIDNet import PIDNet
+    from models.model_zoo.PIDNet import PIDNet
 
-    # model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
-    #             planes=32, ppm_planes=96, head_planes=128, augment=False).build()
-    # model.load_weights(args.checkpoint_dir + args.model_weights, by_name=True)
-
-    from models.model_zoo.pidnet.pidnet import PIDNet
-        
     model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
-                       planes=32, ppm_planes=96, head_planes=128, augment=False)
-    model.build((None, *args.image_size, 3))
+                planes=32, ppm_planes=96, head_planes=128, augment=False).build()
+    
+
+    # from models.model_zoo.pidnet.pidnet import PIDNet
+        
+    # model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
+    #                    planes=32, ppm_planes=96, head_planes=128, augment=False)
+    # model.build((None, *args.image_size, 3))
+
+
     model.load_weights(args.checkpoint_dir + args.weight_name)
     model.summary()
 
-    color_map = get_color_map(num_classes=args.num_classes)
 
     # Camera
     frame_width = 1280

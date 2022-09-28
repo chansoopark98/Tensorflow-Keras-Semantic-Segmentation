@@ -39,7 +39,7 @@ class PIDNet(object):
 
         return x
         
-    def build(self):
+    def build(self) -> models.Model:
         
         x_in = layers.Input(self.input_shape)
 
