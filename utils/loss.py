@@ -1,4 +1,3 @@
-from os import posix_fadvise
 from tensorflow.keras import losses
 import tensorflow as tf
 import itertools
@@ -6,22 +5,22 @@ from typing import Any, Optional
 
 _EPSILON = tf.keras.backend.epsilon()
 
-
 @tf.keras.utils.register_keras_serializable()
 class BoundaryLoss(tf.keras.losses.Loss):
     def __init__(self, from_logits: bool = False, use_multi_gpu: bool = False,
                  global_batch_size: int = 16, num_classes: int = 1,
-                  **kwargs):
+                 boundary_alpha: float = 20., **kwargs):
         """
         Args:
             BoundaryLoss is the sum of semantic segmentation loss.
             The BoundaryLoss loss is a binary cross entropy loss.
             
-            from_logits       (bool) : When softmax is not applied to the activation
+            from_logits       (bool)  : When softmax is not applied to the activation
                                         layer of the last layer of the model.
-            use_multi_gpu     (bool) : To calculate the loss for each gpu when using distributed training.
-            global_batch_size (int)  : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
-            num_classes       (int)  : Number of classes to classify (must be equal to number of last filters in the model)
+            use_multi_gpu     (bool)  : To calculate the loss for each gpu when using distributed training.
+            global_batch_size (int)   : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
+            num_classes       (int)   : Number of classes to classify (must be equal to number of last filters in the model)
+            boundary_alpha    (float) : Boundary loss alpha
         """
         super().__init__(**kwargs)
         self.from_logits = from_logits
@@ -52,37 +51,42 @@ class BoundaryLoss(tf.keras.losses.Loss):
         edge = tf.sqrt(grad_mag_square)
         edge = tf.where(edge != 0, 1, 0)
 
-        loss = losses.BinaryCrossentropy(from_logits=True, reduction=self.loss_reduction)(y_true=edge, y_pred=y_pred)
-
+        # loss = losses.BinaryCrossentropy(from_logits=True, reduction=self.loss_reduction)(y_true=edge, y_pred=y_pred)
+        loss = losses.BinaryFocalCrossentropy(
+            from_logits=True, reduction=self.loss_reduction, apply_class_balancing=True)(y_true=edge, y_pred=y_pred)
+        
         # Reduce loss to scalar
         if self.use_multi_gpu:
             loss = tf.reduce_mean(loss)
-
+        
+        loss *= 20
         return loss
-
 
 
 @tf.keras.utils.register_keras_serializable()
 class AuxiliaryLoss(tf.keras.losses.Loss):
     def __init__(self, from_logits: bool = False, use_multi_gpu: bool = False,
                  global_batch_size: int = 16, num_classes: int = 1,
+                 aux_alpha: float = 0.4,
                   **kwargs):
         """
         Args:
             AuxiliaryLoss is the sum of semantic segmentation loss.
             The AuxiliaryLoss loss is a cross entropy loss.
               
-            from_logits       (bool) : When softmax is not applied to the activation
+            from_logits       (bool)  : When softmax is not applied to the activation
                                         layer of the last layer of the model.
-            use_multi_gpu     (bool) : To calculate the loss for each gpu when using distributed training.
-            global_batch_size (int)  : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
-            num_classes       (int)  : Number of classes to classify (must be equal to number of last filters in the model)
+            use_multi_gpu     (bool)  : To calculate the loss for each gpu when using distributed training.
+            global_batch_size (int)   : Global batch size (Batch_size = GLOBAL_BATCH_SIZE / GPUs)
+            num_classes       (int)   : Number of classes to classify (must be equal to number of last filters in the model)
+            aux_alpha         (float) : Aux loss alpha.
         """
         super().__init__(**kwargs)
         self.from_logits = from_logits
         self.use_multi_gpu = use_multi_gpu
         self.global_batch_size = global_batch_size
         self.num_classes = num_classes
+        self.aux_alpha = aux_alpha
     
         if self.use_multi_gpu:
             self.loss_reduction = losses.Reduction.NONE
@@ -102,11 +106,8 @@ class AuxiliaryLoss(tf.keras.losses.Loss):
              
         if self.use_multi_gpu:
             loss = tf.reduce_mean(loss)
-        
+        loss *= self.aux_alpha
         return loss
-
-
-
 
 
 @tf.keras.utils.register_keras_serializable()

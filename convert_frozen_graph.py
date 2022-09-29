@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights", type=str,     help="Saved model weights directory",
-                    default='./checkpoints/0927/_0927_test_pid_eager_best_loss.h5')
+                    default='./checkpoints//0928/_0928_Multi-adam-b16-e100-lr0.005-focal2.0-augment_best_loss.h5')
 parser.add_argument("--num_classes",          type=int,    help="Set num classes for model and post-processing",
                     default=2)  
 parser.add_argument("--image_size",          type=tuple,    help="Set image size for priors and post-processing",
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         
 
         
-        model.load_weights(args.model_weights)
+        model.load_weights(args.model_weights, by_name=True)
         # model = tf.keras.models.load_model('./checkpoints/export_path/1/')
 
         # input_arr = tf.random.uniform((1, *args.image_size, 3))

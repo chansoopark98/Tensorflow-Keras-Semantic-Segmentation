@@ -31,11 +31,11 @@ parser.add_argument('--saved_model_path', type=str,   help='Saved model weight p
 
 # Set Training Options
 parser.add_argument('--model_prefix',     type=str,    help='Model name',
-                    default='Multi-adam-b16-e100-lr0.005-focal2.0-augment')
+                    default='Multi-adam-b8-e150-lr0.005-focal2.0-augment-boundary20_aux0.4-weightDecay')
 parser.add_argument('--batch_size',       type=int,    help='Batch size per each GPU',
-                    default=16)
+                    default=8)
 parser.add_argument('--epoch',            type=int,    help='Training epochs',
-                    default=100)
+                    default=150)
 parser.add_argument('--lr',               type=float,  help='Initial learning rate',
                     default=0.005)
 parser.add_argument('--weight_decay',     type=float,  help='Set Weight Decay',

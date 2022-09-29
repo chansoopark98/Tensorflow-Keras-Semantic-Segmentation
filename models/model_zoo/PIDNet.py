@@ -150,7 +150,8 @@ class PIDNet(object):
 
             return models.Model(inputs=x_in, outputs=model_outputs)
         else:
-
+            if self.training == False:
+                x_ = tf.math.argmax(x_, axis=-1)
             return models.Model(inputs=x_in, outputs=x_)
 
 

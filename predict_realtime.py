@@ -3,7 +3,6 @@ import argparse
 import tensorflow as tf
 from tensorflow.keras.applications.imagenet_utils import preprocess_input
 
-\
 import numpy as np
 from models.model_builder import ModelBuilder
 import timeit
@@ -22,7 +21,7 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/0928/_0928_Multi-adam-b16-e100-lr0.005-focal1.5_best_loss.h5')
+                    help="Saved model weights directory", default='/0928/_0928_Multi-adam-b16-e100-lr0.005-focal2.0-augment_best_loss.h5')
 
 args = parser.parse_args()
 
@@ -74,8 +73,8 @@ if __name__ == '__main__':
 
         output = model.predict_on_batch(img)
 
-        semantic_output = tf.math.argmax(output, axis=-1)
-        semantic_output = tf.expand_dims(semantic_output, axis=-1)
+        # semantic_output = tf.math.argmax(output, axis=-1)
+        semantic_output = tf.expand_dims(output, axis=-1)
         # semantic_output = tf.image.resize(semantic_output, (640, 360)).numpy().astype(np.uint8)
         
         # resize_shape = frame.shape
