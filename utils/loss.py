@@ -27,6 +27,7 @@ class BoundaryLoss(tf.keras.losses.Loss):
         self.use_multi_gpu = use_multi_gpu
         self.global_batch_size = global_batch_size
         self.num_classes = num_classes
+        self.boundary_alpha = boundary_alpha
     
         if self.use_multi_gpu:
             self.loss_reduction = losses.Reduction.NONE
@@ -59,7 +60,7 @@ class BoundaryLoss(tf.keras.losses.Loss):
         if self.use_multi_gpu:
             loss = tf.reduce_mean(loss)
         
-        loss *= 20
+        loss *= self.boundary_alpha
         return loss
 
 
