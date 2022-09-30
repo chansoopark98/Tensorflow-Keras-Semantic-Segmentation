@@ -50,15 +50,30 @@ class BoundaryLoss(tf.keras.losses.Loss):
         grad_mag_square = tf.math.reduce_sum(grad_mag_components, axis=-1)
 
         edge = tf.sqrt(grad_mag_square)
-        edge = tf.where(edge != 0, 1, 0)
+        edge = tf.cast(tf.where(edge != 0, 1., 0.), dtype=tf.float32)
 
-        # loss = losses.BinaryCrossentropy(from_logits=True, reduction=self.loss_reduction)(y_true=edge, y_pred=y_pred)
-        loss = losses.BinaryFocalCrossentropy(
-            from_logits=True, reduction=self.loss_reduction, apply_class_balancing=True)(y_true=edge, y_pred=y_pred)
+        edge = tf.reshape(edge, [-1])
+        y_pred = tf.reshape(y_pred, [-1])
+
+        pos_index = (edge==1.)
+        neg_index = (edge==0.)
+
+        weight = tf.zeros_like(edge, dtype=tf.float32)
         
+        pos_num = tf.reduce_sum(tf.cast(pos_index, dtype=tf.float32))
+        neg_num = tf.reduce_sum(tf.cast(neg_index, dtype=tf.float32))
+        
+        sum_num = pos_num + neg_num
+        
+        weight = tf.where(pos_index, neg_num * 1.0 / sum_num, pos_num * 1.0 / sum_num)
+        
+        bce_loss = tf.nn.weighted_cross_entropy_with_logits(labels=edge, logits=y_pred, pos_weight=weight)
+
         # Reduce loss to scalar
         if self.use_multi_gpu:
-            loss = tf.reduce_mean(loss)
+            loss = tf.reduce_sum(bce_loss) * (1.0 / self.global_batch_size)
+        else:
+            loss = tf.reduce_mean(bce_loss)
         
         loss *= self.boundary_alpha
         return loss
@@ -88,7 +103,7 @@ class AuxiliaryLoss(tf.keras.losses.Loss):
         self.global_batch_size = global_batch_size
         self.num_classes = num_classes
         self.aux_alpha = aux_alpha
-    
+        
         if self.use_multi_gpu:
             self.loss_reduction = losses.Reduction.NONE
         else:
@@ -106,7 +121,8 @@ class AuxiliaryLoss(tf.keras.losses.Loss):
             from_logits=True, reduction=self.loss_reduction)(y_true=y_true, y_pred=y_pred)
              
         if self.use_multi_gpu:
-            loss = tf.reduce_mean(loss)
+            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
+
         loss *= self.aux_alpha
         return loss
 
@@ -194,8 +210,8 @@ class SemanticLoss(tf.keras.losses.Loss):
         ce_loss = losses.SparseCategoricalCrossentropy(
             from_logits=True, reduction=self.loss_reduction)(y_true=y_true, y_pred=y_pred)
              
-        if use_multi_gpu:
-            ce_loss = tf.reduce_mean(ce_loss)
+        if self.use_multi_gpu:
+            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
         
         return ce_loss
         
@@ -257,9 +273,8 @@ class SemanticLoss(tf.keras.losses.Loss):
             from_logits=True,
             reduction=self.loss_reduction)(y_true=y_true, y_pred=logits)
 
-        if use_multi_gpu:
-            xent_loss = tf.reduce_mean(xent_loss)
-        
+        if self.use_multi_gpu:
+            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
 
         y_true_rank = y_true.shape.rank
         probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
@@ -269,8 +284,6 @@ class SemanticLoss(tf.keras.losses.Loss):
         focal_modulation = (1 - probs) ** gamma
 
         loss = focal_modulation * xent_loss
-
-
 
         if class_weight is not None:
             class_weight = tf.gather(class_weight, y_true, axis=0,

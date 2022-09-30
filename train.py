@@ -30,8 +30,9 @@ parser.add_argument('--saved_model_path', type=str,   help='Saved model weight p
                     default='./checkpoints/0927/_0927_new_pid_same_train_options_best_iou.h5')
 
 # Set Training Options
+# Multi-adam-b16-e150-lr0.005-focal2.0-augment-boundary20_aux0.4-weightDecay
 parser.add_argument('--model_prefix',     type=str,    help='Model name',
-                    default='Multi-adam-b16-e150-lr0.005-focal2.0-augment-boundary20_aux0.4-weightDecay')
+                    default='weight_bce_test')
 parser.add_argument('--batch_size',       type=int,    help='Batch size per each GPU',
                     default=16)
 parser.add_argument('--epoch',            type=int,    help='Training epochs',
