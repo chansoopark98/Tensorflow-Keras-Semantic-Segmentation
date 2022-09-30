@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights", type=str,     help="Saved model weights directory",
-                    default='./checkpoints//0928/_0928_Multi-adam-b16-e100-lr0.005-focal2.0-augment_best_loss.h5')
+                    default='./checkpoints//0929/_0929_Multi-adam-b16-e150-lr0.005-focal2.0-augment-boundary20_aux0.4-weightDecay_best_loss.h5')
 parser.add_argument("--num_classes",          type=int,    help="Set num classes for model and post-processing",
                     default=2)  
 parser.add_argument("--image_size",          type=tuple,    help="Set image size for priors and post-processing",

@@ -67,13 +67,14 @@ class BoundaryLoss(tf.keras.losses.Loss):
         
         weight = tf.where(pos_index, neg_num * 1.0 / sum_num, pos_num * 1.0 / sum_num)
         
-        bce_loss = tf.nn.weighted_cross_entropy_with_logits(labels=edge, logits=y_pred, pos_weight=weight)
+        loss = tf.nn.weighted_cross_entropy_with_logits(labels=edge, logits=y_pred, pos_weight=weight)
 
         # Reduce loss to scalar
         if self.use_multi_gpu:
-            loss = tf.reduce_sum(bce_loss) * (1.0 / self.global_batch_size)
+            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
+            # loss = tf.reduce_mean(loss)
         else:
-            loss = tf.reduce_mean(bce_loss)
+            loss = tf.reduce_mean(loss)
         
         loss *= self.boundary_alpha
         return loss
@@ -122,6 +123,7 @@ class AuxiliaryLoss(tf.keras.losses.Loss):
              
         if self.use_multi_gpu:
             loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
+            # loss = tf.reduce_mean(loss)
 
         loss *= self.aux_alpha
         return loss
@@ -195,23 +197,21 @@ class SemanticLoss(tf.keras.losses.Loss):
             semantic_loss = self.sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
                                                 class_weight=self.class_weight,
                                                 gamma=self.gamma,
-                                                from_logits=self.from_logits,
-                                                use_multi_gpu=self.use_multi_gpu,
-                                                global_batch_size=self.global_batch_size)
+                                                from_logits=self.from_logits)
         elif self.loss_type == 'ce':
             semantic_loss = self.sparse_categorical_cross_entropy(y_true=y_true,
-                                                                  y_pred=y_pred,
-                                                                  use_multi_gpu=self.use_multi_gpu)
+                                                                  y_pred=y_pred)
 
         return semantic_loss
 
 
-    def sparse_categorical_cross_entropy(self, y_true, y_pred, use_multi_gpu):
+    def sparse_categorical_cross_entropy(self, y_true, y_pred):
         ce_loss = losses.SparseCategoricalCrossentropy(
             from_logits=True, reduction=self.loss_reduction)(y_true=y_true, y_pred=y_pred)
              
         if self.use_multi_gpu:
             loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
+            # loss = tf.reduce_mean(loss)
         
         return ce_loss
         
@@ -219,8 +219,6 @@ class SemanticLoss(tf.keras.losses.Loss):
     def sparse_categorical_focal_loss(self, y_true, y_pred, gamma, *,
                                   class_weight: Optional[Any] = None,
                                   from_logits: bool = False, axis: int = -1,
-                                  use_multi_gpu: bool = False,
-                                  global_batch_size: int = 8,
                                   ) -> tf.Tensor:
         # Process focusing parameter
         gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)
@@ -273,9 +271,6 @@ class SemanticLoss(tf.keras.losses.Loss):
             from_logits=True,
             reduction=self.loss_reduction)(y_true=y_true, y_pred=logits)
 
-        if self.use_multi_gpu:
-            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
-
         y_true_rank = y_true.shape.rank
         probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
 
@@ -285,12 +280,18 @@ class SemanticLoss(tf.keras.losses.Loss):
 
         loss = focal_modulation * xent_loss
 
+        if self.use_multi_gpu:
+            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
+            # loss = tf.reduce_mean(loss)
+
         if class_weight is not None:
             class_weight = tf.gather(class_weight, y_true, axis=0,
                                     batch_dims=y_true_rank)
             loss *= class_weight
 
-        if reshape_needed:
-            loss = tf.reshape(loss, y_pred_shape[:-1])
+        # if reshape_needed:
+        #     print('y_pred_shape', y_pred_shape)
+        #     print('loss_shape', loss)
+        #     loss = tf.reshape(loss, y_pred_shape[:-1])
 
         return loss
