@@ -12,10 +12,10 @@ import math
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./raw_data/choose/human_segmentation_dataset_5_dance/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./raw_data/choose/human_segmentation_dataset_5_dance/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./raw_data/choose/human_fashion_2_dataset/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./raw_data/choose/human_fashion_2_dataset/mask/')
 parser.add_argument("--test",     type=str, default=False)
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./raw_data/choose/human_segmentation_dataset_5_dance/select/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./raw_data/choose/human_fashion_2_dataset/select/')
 
 args = parser.parse_args()
 
@@ -39,7 +39,7 @@ class ImageAugmentationLoader():
         os.makedirs(self.OUT_MASK_PATH, exist_ok=True)
         
 
-        self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.png'))
+        self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.jpg'))
         self.rgb_list = natsort.natsorted(self.rgb_list,reverse=True)
 
         self.mask_list = glob.glob(os.path.join(self.MASK_PATH+'*.png'))
@@ -92,13 +92,37 @@ if __name__ == '__main__':
                 original_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
 
+        # 컨투어 전체 병합
         contour_list = []
         len_contour = len(contours)
         for i in range(len_contour):
             drawing = np.zeros_like(original_mask, np.uint8)  # create a black image
             img_contour = cv2.drawContours(drawing, contours, i, (255, 255, 255), -1)
-            contour_list.append(img_contour)
+            contour_list.append(img_contour)  
         original_mask = sum(contour_list)
+        
+        kernel_size_row = 3
+        kernel_size_col = 3
+        kernel = np.ones((kernel_size_row, kernel_size_col), np.uint8)
+        original_mask = cv2.dilate(original_mask, kernel, iterations=1)  #// make dilation image
+
+        
+
+        # 병합된 컨투어 마스크에서 외부 노이즈 제거
+        compose_contours, _ = cv2.findContours(
+                original_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # 컨투어가 두 개 이상일 때만
+        if len(compose_contours) >= 2:
+            for i in range(len(compose_contours)):
+                contour_area = cv2.contourArea(compose_contours[i])
+                
+                if contour_area >= 50:
+                    original_mask = cv2.drawContours(original_mask, compose_contours, i, (255, 255, 255), -1)
+
+                # 넓이가 50 이하의 작은 컨투어만 0으로 칠함
+                else:
+                    original_mask = cv2.drawContours(original_mask, compose_contours, i, (0, 0, 0), -1)
+
 
 
         # zero_maks = np.zeros(original_mask.shape, np.uint8)
@@ -118,4 +142,4 @@ if __name__ == '__main__':
             cv2.imshow('test', concat_img)
             cv2.waitKey(0)
 
-        image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_5_dance_{0}'.format(idx))
+        image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_fashion_2_dataset_{0}'.format(idx))

@@ -71,8 +71,7 @@ class BoundaryLoss(tf.keras.losses.Loss):
 
         # Reduce loss to scalar
         if self.use_multi_gpu:
-            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
-            # loss = tf.reduce_mean(loss)
+            loss = tf.reduce_mean(loss)
         else:
             loss = tf.reduce_mean(loss)
         
@@ -122,8 +121,7 @@ class AuxiliaryLoss(tf.keras.losses.Loss):
             from_logits=True, reduction=self.loss_reduction)(y_true=y_true, y_pred=y_pred)
              
         if self.use_multi_gpu:
-            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
-            # loss = tf.reduce_mean(loss)
+            loss = tf.reduce_mean(loss)
 
         loss *= self.aux_alpha
         return loss
@@ -210,8 +208,7 @@ class SemanticLoss(tf.keras.losses.Loss):
             from_logits=True, reduction=self.loss_reduction)(y_true=y_true, y_pred=y_pred)
              
         if self.use_multi_gpu:
-            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
-            # loss = tf.reduce_mean(loss)
+            loss = tf.reduce_mean(loss)
         
         return ce_loss
         
@@ -281,8 +278,7 @@ class SemanticLoss(tf.keras.losses.Loss):
         loss = focal_modulation * xent_loss
 
         if self.use_multi_gpu:
-            loss = tf.reduce_sum(loss) * (1.0 / self.global_batch_size)
-            # loss = tf.reduce_mean(loss)
+            loss = tf.reduce_mean(loss)
 
         if class_weight is not None:
             class_weight = tf.gather(class_weight, y_true, axis=0,

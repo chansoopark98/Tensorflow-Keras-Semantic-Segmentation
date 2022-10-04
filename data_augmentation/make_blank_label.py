@@ -5,7 +5,7 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/bg_img/select/select_rgb_2/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/bg_img/select/total/')
 # parser.add_argument("--mask_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/bg_img/select/select_rgb/')
 # parser.add_argument("--obj_mask_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/obj_mask/')
 # parser.add_argument("--bg_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/bg_img/select/select_rgb/')
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     
     os.makedirs(args.output_path, exist_ok=True)
 
-    rgb_path = os.path.join(args.rgb_path, '*.png')
+    rgb_path = os.path.join(args.rgb_path, '*.jpg')
     rgb_list = glob.glob(rgb_path)
 
     idx = 0

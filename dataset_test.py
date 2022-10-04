@@ -17,6 +17,7 @@ IMAGE_SIZE = (640, 360)
 
 if __name__ == "__main__":
     tf.config.run_functions_eagerly(True)
+    tf.data.experimental.enable_debug_mode()
     # human_segmentation
     # full_semantic
     train_dataset_config = SemanticGenerator(DATASET_DIR, IMAGE_SIZE, batch_size=1, dataset_name='human_segmentation')
@@ -26,9 +27,7 @@ if __name__ == "__main__":
     cols = 4
 
     for img, mask, original in train_data.take(DATASET_NUMS):
-
         img = img[0]
-
         mask = mask[0]
         
         expand_mask = tf.cast(tf.expand_dims(mask, axis=0), dtype=tf.float32)
