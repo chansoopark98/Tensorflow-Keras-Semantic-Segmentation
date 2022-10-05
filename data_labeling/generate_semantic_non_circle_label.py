@@ -10,6 +10,7 @@ import natsort
 import re 
 
 file_pattern = re.compile(r'.*?(\d+).*?')
+
 def get_order(file):
     match = file_pattern.match(Path(file).name)
     if not match:
@@ -22,7 +23,6 @@ def onMouse(event, x, y, flags, param):
     filled = 5
     
     if event==cv2.EVENT_LBUTTONDOWN: # 마우스 왼쪽 버튼 클릭 
-    
         rgb_x = param[2]
         rgb_y = param[3]
         # param[0][y, x] = (0, 255, 0)

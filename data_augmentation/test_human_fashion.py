@@ -11,11 +11,13 @@ import tensorflow_addons as tfa
 import math
 import random
 
+name = 'human_segmentation_dataset_5_dance'
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./raw_data/choose/human_fashion_2_dataset/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./raw_data/choose/human_fashion_2_dataset/mask/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./raw_data/raw_datasets/{0}/rgb/'.format(name))
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./raw_data/raw_datasets/{0}/mask/'.format(name))
 parser.add_argument("--test",     type=str, default=False)
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./raw_data/choose/human_fashion_2_dataset/select/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./raw_data/raw_datasets/{0}/select/'.format(name))
 
 args = parser.parse_args()
 
@@ -39,7 +41,7 @@ class ImageAugmentationLoader():
         os.makedirs(self.OUT_MASK_PATH, exist_ok=True)
         
 
-        self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.jpg'))
+        self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.png'))
         self.rgb_list = natsort.natsorted(self.rgb_list,reverse=True)
 
         self.mask_list = glob.glob(os.path.join(self.MASK_PATH+'*.png'))
@@ -81,9 +83,22 @@ if __name__ == '__main__':
 
     # for idx in range(len(rgb_list)):
     for idx in tqdm(range(len(rgb_list)), total=len(rgb_list)):
-        
+
         original_rgb = cv2.imread(rgb_list[idx])
         original_mask = cv2.imread(mask_list[idx])
+        # original_mask = np.where(original_mask==(90, 6 ,69), 0, original_mask)
+        
+
+        original_rgb_shape = original_rgb.shape[:2]
+        original_mask_shape = original_mask.shape[:2]
+
+        if original_rgb_shape != original_mask_shape:
+            
+            
+            h, w = original_rgb_shape
+            original_mask = cv2.resize(original_mask, (w, h), interpolation=cv2.INTER_NEAREST)
+        
+
 
         original_mask = cv2.cvtColor(original_mask, cv2.COLOR_BGR2GRAY)
         original_mask = np.where(original_mask >= 1, 1, 0).astype(np.uint8)

@@ -12,9 +12,9 @@ import math
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/celebahq/rgb/')
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/celebahq/mask/')
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/celebahq/select/')
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./data_augmentation/raw_data/raw_datasets/human_segmentation_dataset_2/rgb/')
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./data_augmentation/raw_data/raw_datasets/human_segmentation_dataset_2/mask/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./data_augmentation/raw_data/raw_datasets/human_segmentation_dataset_2/select/')
 
 args = parser.parse_args()
 
@@ -43,8 +43,8 @@ class ImageAugmentationLoader():
         self.rgb_list = glob.glob(os.path.join(self.RGB_PATH+'*.jpg'))
         self.rgb_list = natsort.natsorted(self.rgb_list,reverse=True)
 
-        # self.mask_list = glob.glob(os.path.join(self.MASK_PATH+'*.png'))
-        # self.mask_list = natsort.natsorted(self.mask_list,reverse=True)
+        self.mask_list = glob.glob(os.path.join(self.MASK_PATH+'*.png'))
+        self.mask_list = natsort.natsorted(self.mask_list,reverse=True)
 
 
     def image_resize(self, rgb: np.ndarray, mask: np.ndarray, size=(1600, 900)) -> Union[np.ndarray, np.ndarray]:
@@ -65,7 +65,7 @@ class ImageAugmentationLoader():
         return resized_rgb, resized_mask
 
     def save_images(self, rgb, mask, prefix):
-        mask = np.where(mask>=1, 1, 0).astype(np.uint8)
+        
         cv2.imwrite(self.OUT_RGB_PATH + prefix +'_rgb.jpg', rgb)
         cv2.imwrite(self.OUT_MASK_PATH + prefix + '_mask.png', mask)
 
@@ -78,25 +78,29 @@ if __name__ == '__main__':
 
     image_loader = ImageAugmentationLoader(args=args)
     rgb_list = image_loader.rgb_list
-
+    mask_list = image_loader.mask_list
 
     # for idx in range(len(rgb_list)):
     for idx in tqdm(range(len(rgb_list)), total=len(rgb_list)):
         rgb_name = rgb_list[idx]
         
-        print(rgb_name)
-        mask_name = rgb_name.split('/')[5].split('.')[0] + '.png'
-        mask_name = mask_name.replace('rgb', 'mask')
-        print(mask_name)
         original_rgb = cv2.imread(rgb_list[idx])
+        original_mask = cv2.imread(mask_list[idx])
 
-        
-        original_mask = cv2.imread(image_loader.MASK_PATH + mask_name)
+        original_rgb_shape = original_rgb.shape[:2]
+        original_mask_shape = original_mask.shape[:2]
+
+        if original_rgb_shape != original_mask_shape:
+            
+            
+            h, w = original_rgb_shape
+            original_mask = cv2.resize(original_mask, (w, h), interpolation=cv2.INTER_NEAREST)
+
 
         original_mask = cv2.cvtColor(original_mask, cv2.COLOR_BGR2GRAY)
         original_mask = np.where(original_mask >= 1, 1, 0).astype(np.uint8)
 
-
+    
         contours, _ = cv2.findContours(
                 original_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
@@ -134,10 +138,10 @@ if __name__ == '__main__':
         q : 113 -> 그냥 저장
         1 : 49 -> roi 선택 후 저장
         """
-
+        print(key)
         if key == 113:
             print('바로 저장')
-            image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_1{0}_'.format(idx))
+            image_loader.save_images(rgb=original_rgb, mask=original_mask, prefix='human_segmentation_dataset_1_{0}_'.format(idx))
         
         elif key == 49:
             try:
@@ -149,7 +153,7 @@ if __name__ == '__main__':
             cropped_rgb = original_rgb[y:y+h, x:x+w]
             cropped_mask = original_mask[y:y+h, x:x+w]
             
-            image_loader.save_images(rgb=cropped_rgb, mask=cropped_mask, prefix='human_segmentation_dataset_1{0}_crop_'.format(idx))
+            image_loader.save_images(rgb=cropped_rgb, mask=cropped_mask, prefix='human_segmentation_dataset_1_{0}_crop_'.format(idx))
 
         else:
             print('key 입력 오류')

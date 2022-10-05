@@ -13,7 +13,7 @@ parser.add_argument("--batch_size",     type=int,
 parser.add_argument("--num_classes",     type=int,
                     help="Model num classes", default=2)
 parser.add_argument("--image_size",     type=tuple,
-                    help="Model image size (input resolution)", default=(384, 216))
+                    help="Model image size (input resolution)", default=(640, 360))
 parser.add_argument("--video_dir",    type=str,
                     help="Dataset directory", default='/home/park/0708_capture/videos')
 parser.add_argument("--video_result_dir", type=str,
@@ -21,7 +21,7 @@ parser.add_argument("--video_result_dir", type=str,
 parser.add_argument("--checkpoint_dir", type=str,
                     help="Setting the model storage directory", default='./checkpoints/')
 parser.add_argument("--weight_name", type=str,
-                    help="Saved model weights directory", default='/1004/_1004_r384x216_b16_e100_lr0.005_adam_best_loss.h5')
+                    help="Saved model weights directory", default='/1004/_1004_r640x360_b16_e100_lr0.005_adam_best_loss.h5')
 
 args = parser.parse_args()
 
@@ -54,8 +54,9 @@ if __name__ == '__main__':
 
     while cv2.waitKey(1) < 0:
         ret, frame = capture.read()
-        print(frame.shape)
-        frame = frame[40: 40+384, 200:200+216]
+        
+        h, w = args.image_size
+        frame = frame[40: 40+h, 200:200+w]
         print(frame.shape)
         start_t = timeit.default_timer()
         
@@ -116,7 +117,7 @@ if __name__ == '__main__':
         semantic_output = semantic_output[0]
 
         
-        semantic_output = tf.image.resize(semantic_output, (384, 216), tf.image.ResizeMethod.NEAREST_NEIGHBOR).numpy().astype(np.uint8)
+        semantic_output = tf.image.resize(semantic_output, (h, w), tf.image.ResizeMethod.NEAREST_NEIGHBOR).numpy().astype(np.uint8)
         frame *= semantic_output
 
         cv2.putText(frame, 'FPS : {0}'.format(str(FPS)),(50, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.2,

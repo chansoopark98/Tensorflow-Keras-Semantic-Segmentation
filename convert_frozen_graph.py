@@ -5,6 +5,7 @@ from tensorflow.python.framework.convert_to_constants import convert_variables_t
 from models.model_zoo.pidnet.pidnet import PIDNet
 import argparse 
 
+
 # ONNX Convert
 # 1. pip install tf2onnx
 # (Frozen graph)
@@ -20,7 +21,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_dir",   type=str,    help="Set the model storage directory",
                     default='./checkpoints/')
 parser.add_argument("--model_weights", type=str,     help="Saved model weights directory",
-                    default='./checkpoints//0929/_0929_Multi-adam-b16-e150-lr0.005-focal2.0-augment-boundary20_aux0.4-weightDecay_best_loss.h5')
+                    default='./checkpoints/1004/_1004_r640x360_b16_e100_lr0.005_adam_best_loss.h5')
 parser.add_argument("--num_classes",          type=int,    help="Set num classes for model and post-processing",
                     default=2)  
 parser.add_argument("--image_size",          type=tuple,    help="Set image size for priors and post-processing",
@@ -41,8 +42,9 @@ if __name__ == '__main__':
     with tf.device(gpu_number):
 
         from models.model_zoo.PIDNet import PIDNet
-        model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
-                       planes=32, ppm_planes=96, head_planes=128, augment=False, training=False).build()
+        model = ModelBuilder(image_size=args.image_size,
+                                  num_classes=args.num_classes, use_weight_decay=False, weight_decay=0)
+        model = model.build_model(model_name='pidnet', training=False)
 
         # model = PIDNet(input_shape=(*args.image_size, 3), m=2, n=3, num_classes=args.num_classes,
         #                planes=32, ppm_planes=96, head_planes=128, augment=False)

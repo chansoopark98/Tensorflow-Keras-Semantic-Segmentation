@@ -179,23 +179,28 @@ class SemanticGenerator(DataLoadHandler):
                                     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
         else:
-            scale = tf.random.uniform([], 1.05, 1.3)
+            if tf.random.uniform([]) > 0.2:
+                img = tf.image.resize_with_crop_or_pad(img, self.image_size[0], self.image_size[1])
+                labels = tf.image.resize_with_crop_or_pad(labels, self.image_size[0], self.image_size[1])
 
-            new_h = self.image_size[0] * scale
-            new_w = self.image_size[1] * scale
+            else:
+                scale = tf.random.uniform([], 1.05, 1.3)
 
-            img = tf.image.resize(img, size=(new_h, new_w),
-                                method=tf.image.ResizeMethod.BILINEAR)
-            labels = tf.image.resize(labels, size=(new_h, new_w),
-                                    method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+                new_h = self.image_size[0] * scale
+                new_w = self.image_size[1] * scale
 
-            
-            concat_img = tf.concat([img, labels], axis=-1)
-            concat_img = tf.image.random_crop(
-                concat_img, (self.image_size[0], self.image_size[1], 4))
+                img = tf.image.resize(img, size=(new_h, new_w),
+                                    method=tf.image.ResizeMethod.BILINEAR)
+                labels = tf.image.resize(labels, size=(new_h, new_w),
+                                        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-            img = concat_img[:, :, :3]
-            labels = concat_img[:, :, 3:]
+                
+                concat_img = tf.concat([img, labels], axis=-1)
+                concat_img = tf.image.random_crop(
+                    concat_img, (self.image_size[0], self.image_size[1], 4))
+
+                img = concat_img[:, :, :3]
+                labels = concat_img[:, :, 3:]
 
         return (img, labels)
         
@@ -213,9 +218,12 @@ class SemanticGenerator(DataLoadHandler):
                 img       (tf.Tensor)  : tf.Tensor data (shape=H,W,3)
                 labels    (tf.Tensor)  : tf.Tensor data (shape=H,W,1)
         """
+        if tf.random.uniform([]) > 0.5:
+            img = tf.image.random_jpeg_quality(img, 30, 100)
+
         if tf.random.uniform([]) > 0.2:
             # Degrees to Radian
-            upper = 40 * (self.pi/180.0)
+            upper = 35 * (self.pi/180.0)
 
             rand_degree = tf.random.uniform([], minval=0., maxval=upper)
 
@@ -231,7 +239,7 @@ class SemanticGenerator(DataLoadHandler):
         if tf.random.uniform([]) > 0.5:
             img = tf.image.flip_left_right(img)
             labels = tf.image.flip_left_right(labels)
-        if tf.random.uniform([]) > 0.3:
+        if tf.random.uniform([]) > 0.1:
             channels = tf.unstack (img, axis=-1)
             img = tf.stack([channels[2], channels[1], channels[0]], axis=-1)
         
@@ -253,7 +261,8 @@ class SemanticGenerator(DataLoadHandler):
             img /= 255.
         
         # Covnert to float32 label to int32 label
-        labels = tf.cast(labels, dtype=tf.int32)
+        # labels = tf.cast(labels, dtype=tf.int32)
+        labels = tf.cast(labels, dtype=tf.float32)
 
         return (img, labels)
 
@@ -294,7 +303,8 @@ class SemanticGenerator(DataLoadHandler):
             img /= 255.
 
         # Covnert to float32 label to int32 label
-        labels = tf.cast(labels, dtype=tf.int32)
+        # labels = tf.cast(labels, dtype=tf.int32)
+        labels = tf.cast(labels, dtype=tf.float32)
 
         return (img, labels)
 

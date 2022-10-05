@@ -9,13 +9,13 @@ import tensorflow as tf
 import random
 import albumentations as A
 
-name = 'human_segmentation_dataset_5_dance'
+name = 'human_segmentation_dataset_4_tiktok'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./raw_data/choose/{0}/select/rgb/'.format(name))
-parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./raw_data/choose/{0}/select/gt/'.format(name))
-parser.add_argument("--bg_path",     type=str,   help="bg image path, Convert raw rgb image using mask area", default='./raw_data/bg_img/save_bg/rgb/')
-parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./raw_data/choose/{0}/augmented/'.format(name))
+parser.add_argument("--rgb_path",     type=str,   help="raw image path", default='./raw_data/raw_datasets/{0}/select/rgb/'.format(name))
+parser.add_argument("--mask_path",     type=str,   help="raw mask path", default='./raw_data/raw_datasets/{0}/select/gt/'.format(name))
+parser.add_argument("--bg_path",     type=str,   help="bg image path, Convert raw rgb image using mask area", default='./raw_data/raw_datasets/bg_img/save_bg/rgb/')
+parser.add_argument("--output_path",     type=str,   help="Path to save the conversion result", default='./raw_data/raw_datasets/{0}/augmented/'.format(name))
 
 args = parser.parse_args()
 
@@ -182,6 +182,7 @@ if __name__ == '__main__':
         original_rgb = cv2.imread(rgb_list[idx])
         
         original_mask = cv2.imread(mask_list[idx])
+        
         original_mask = np.where(original_mask>=1, 255, 0).astype(np.uint8)
 
         original_rgb_shape = original_rgb.shape[:2]
@@ -198,6 +199,11 @@ if __name__ == '__main__':
         # aug_rgb = transformed['image']
         # aug_mask = transformed['mask']
         image_loader.save_images(rgb=original_rgb.copy(), mask=original_mask.copy(), prefix='{0}_idx_{1}_rgb_original_'.format(name, idx))
+
+
+        # erode mask
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        original_mask = cv2.erode(original_mask, kernel)
 
         """1. change only bg"""
         # get random background idx
@@ -216,33 +222,34 @@ if __name__ == '__main__':
 
         """2. change augmented bg (color aug + rgb shift)"""
         # random shift original rgb and mask
-        h, w = original_rgb_shape
-        max_dx = int(w/2)
-        max_dy = int(h/3)
-        sift_rgb, sift_mask = image_loader.image_random_translation(rgb=original_rgb.copy(), mask=original_mask.copy(),min_dx=30, min_dy=30, max_dx=max_dx, max_dy=max_dy)
+        for compose_aug in range(1):
+            h, w = original_rgb_shape
+            max_dx = int(w/2)
+            max_dy = int(h/1.7)
+            sift_rgb, sift_mask = image_loader.image_random_translation(rgb=original_rgb.copy(), mask=original_mask.copy(), min_dx=0, min_dy=0, max_dx=max_dx, max_dy=max_dy)
 
-        sift_rgb = cv2.flip(sift_rgb, 1)
-        sift_mask = cv2.flip(sift_mask, 1)
+            sift_rgb = cv2.flip(sift_rgb, 1)
+            sift_mask = cv2.flip(sift_mask, 1)
 
-        # get random background idx
-        bg_rnd_idx = random.randint(0, len(bg_list)-1)
-        # load bg img
-        original_bg = cv2.imread(bg_list[bg_rnd_idx])
-        # resize bg img
-        bg_image = image_loader.resize_bg_image(bg_image=original_bg, rgb_shape=original_rgb.shape)
-        
-        # bg image color augment
-        transformed = bg_aug(image=bg_image.copy())
-        bg_aug_rgb = transformed['image']
-        
-        bg_img_whitout_rgb = np.where(
-                    sift_mask == 255, 0, bg_aug_rgb)
+            # get random background idx
+            bg_rnd_idx = random.randint(0, len(bg_list)-1)
+            # load bg img
+            original_bg = cv2.imread(bg_list[bg_rnd_idx])
+            # resize bg img
+            bg_image = image_loader.resize_bg_image(bg_image=original_bg, rgb_shape=original_rgb.shape)
+            
+            # bg image color augment
+            transformed = bg_aug(image=bg_image.copy())
+            bg_aug_rgb = transformed['image']
+            
+            bg_img_whitout_rgb = np.where(
+                        sift_mask == 255, 0, bg_aug_rgb)
 
-        rgb_img_only_object = np.where(sift_mask == 255, sift_rgb, 0)
+            rgb_img_only_object = np.where(sift_mask == 255, sift_rgb, 0)
 
-        compose_aug_rgb = cv2.add(bg_img_whitout_rgb, rgb_img_only_object)
+            compose_aug_rgb = cv2.add(bg_img_whitout_rgb, rgb_img_only_object)
 
-        image_loader.save_images(rgb=compose_aug_rgb, mask=sift_mask.copy(), prefix='{0}_idx_{1}_change_bg_augmented_'.format(name, idx))
+            image_loader.save_images(rgb=compose_aug_rgb, mask=sift_mask.copy(), prefix='{0}_idx_{1}_{2}_change_bg_augmented'.format(name, idx, compose_aug))
 
 
 

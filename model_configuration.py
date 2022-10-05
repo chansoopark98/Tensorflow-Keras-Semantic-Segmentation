@@ -3,7 +3,8 @@ from tensorflow.keras import mixed_precision
 from models.model_zoo.pidnet.pidnet import PIDNet
 from models.model_builder import ModelBuilder
 from utils.load_semantic_datasets import SemanticGenerator
-from utils.loss import SemanticLoss, BoundaryLoss, AuxiliaryLoss
+from utils.semantic_loss import SemanticLoss, BoundaryLoss, AuxiliaryLoss
+from utils.binary_loss import BinaryAuxiliaryLoss, BinaryBoundaryLoss, BinarySegmentationLoss
 from utils.metrics import MIoU, CityMIoU
 import os
 import tensorflow as tf
@@ -156,18 +157,26 @@ class ModelConfiguration(SemanticGenerator):
         """
             Configure metrics for use in training and evaluation.
         """
-        if self.DATASET_NAME == 'cityscapes':
-            print('cityscapes dataset miou')
-            mIoU = CityMIoU(self.NUM_CLASSES+1)
-            self.miou_name = 'city_m_io_u'
-            
-        else:
-            print('custom dataset miou')
-            mIoU = MIoU(self.NUM_CLASSES)
-            self.miou_name = 'main_m_io_u:'
+        self.metric_list = []
+
+        if self.NUM_CLASSES != 1:
+            if self.DATASET_NAME == 'cityscapes':
+                print('cityscapes dataset miou')
+                mIoU = CityMIoU(self.NUM_CLASSES+1)
+                self.miou_name = 'city_m_io_u'
+                
+            else:
+                print('custom dataset miou')
+                mIoU = MIoU(self.NUM_CLASSES)
+                self.miou_name = 'main_m_io_u:'
         
-        # You can add here custom metrics.
-        self.metric_list = [mIoU]
+            # You can add here custom metrics.
+            self.metric_list.append(mIoU)
+
+        else:
+            acc = tf.keras.metrics.Accuracy()
+            self.miou_name = 'accuracy'
+            self.metric_list.append(acc)
 
 
     def train(self):
@@ -182,14 +191,27 @@ class ModelConfiguration(SemanticGenerator):
         self.__configuration_metric()
         self.__set_callbacks()
         
-        main_loss = SemanticLoss(gamma=2.0, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+        if self.NUM_CLASSES != 1:
+
+            main_loss = SemanticLoss(gamma=2.0, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                                global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
+                                dataset_name=self.DATASET_NAME, loss_type=self.LOSS_TYPE)
+
+            boundary_loss = BoundaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                                global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
+
+            auxilary_loss = AuxiliaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                                global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
+
+        else:
+            main_loss = BinarySegmentationLoss(gamma=2.0, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
                               global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
                               dataset_name=self.DATASET_NAME, loss_type=self.LOSS_TYPE)
 
-        boundary_loss = BoundaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+            boundary_loss = BinaryBoundaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
                               global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
 
-        auxilary_loss = AuxiliaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+            auxilary_loss = BinaryAuxiliaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
                               global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
 
         losses = {

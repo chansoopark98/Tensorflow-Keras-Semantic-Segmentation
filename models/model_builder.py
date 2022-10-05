@@ -61,8 +61,13 @@ class ModelBuilder(object):
         # Load and Build model
         if model_name == 'pidnet':
             from models.model_zoo.PIDNet import PIDNet
+            if training:
+                augment_mode = True
+            else:
+                augment_mode = False
+                
             model = PIDNet(input_shape=(*self.image_size, 3), m=2, n=3, num_classes=self.num_classes,
-                           planes=32, ppm_planes=96, head_planes=128, augment=True, training=True).build()
+                           planes=32, ppm_planes=96, head_planes=128, augment=augment_mode, training=training).build()
         
         # Initialize weights and set attenuation when set to training mode is activate.
         if training:
