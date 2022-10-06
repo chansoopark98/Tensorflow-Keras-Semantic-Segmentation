@@ -4,7 +4,6 @@ from models.model_zoo.pidnet.pidnet import PIDNet
 from models.model_builder import ModelBuilder
 from utils.load_semantic_datasets import SemanticGenerator
 from utils.semantic_loss import SemanticLoss, BoundaryLoss, AuxiliaryLoss
-from utils.binary_loss import BinaryAuxiliaryLoss, BinaryBoundaryLoss, BinarySegmentationLoss
 from utils.metrics import MIoU, CityMIoU
 import os
 import tensorflow as tf
@@ -128,7 +127,6 @@ class ModelConfiguration(SemanticGenerator):
             # mixed_precision.set_global_policy('mixed_float16')
 
             policy = mixed_precision.Policy('mixed_float16')
-            
             self.optimizer = mixed_precision.LossScaleOptimizer(self.optimizer)
 
     
@@ -136,17 +134,6 @@ class ModelConfiguration(SemanticGenerator):
         """
             Build a deep learning model.
         """
-        # from models.model_zoo.PIDNet import PIDNet
-        # self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
-        #                planes=32, ppm_planes=96, head_planes=128, augment=False, training=True).build()
-
-
-        
-        # self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
-        #                planes=32, ppm_planes=96, head_planes=128, augment=False)
-        # self.model.build((None, *self.IMAGE_SIZE, 3))
-
-
         self.model = ModelBuilder(image_size=self.IMAGE_SIZE,
                                   num_classes=self.NUM_CLASSES, use_weight_decay=self.USE_WEIGHT_DECAY, weight_decay=self.WEIGHT_DECAY)
         self.model = self.model.build_model(model_name=self.NETWORK_NAME, training=True)
@@ -159,24 +146,19 @@ class ModelConfiguration(SemanticGenerator):
         """
         self.metric_list = []
 
-        if self.NUM_CLASSES != 1:
-            if self.DATASET_NAME == 'cityscapes':
-                print('cityscapes dataset miou')
-                mIoU = CityMIoU(self.NUM_CLASSES+1)
-                self.miou_name = 'city_m_io_u'
-                
-            else:
-                print('custom dataset miou')
-                mIoU = MIoU(self.NUM_CLASSES)
-                self.miou_name = 'main_m_io_u:'
-        
-            # You can add here custom metrics.
-            self.metric_list.append(mIoU)
 
+        if self.DATASET_NAME == 'cityscapes':
+            print('cityscapes dataset miou')
+            mIoU = CityMIoU(self.NUM_CLASSES+1)
+            self.miou_name = 'city_m_io_u'
+            
         else:
-            acc = tf.keras.metrics.Accuracy()
-            self.miou_name = 'accuracy'
-            self.metric_list.append(acc)
+            print('custom dataset miou')
+            mIoU = MIoU(self.NUM_CLASSES)
+            self.miou_name = 'main_m_io_u:'
+    
+        # You can add here custom metrics.
+        self.metric_list.append(mIoU)
 
 
     def train(self):
@@ -191,28 +173,16 @@ class ModelConfiguration(SemanticGenerator):
         self.__configuration_metric()
         self.__set_callbacks()
         
-        if self.NUM_CLASSES != 1:
+        main_loss = SemanticLoss(gamma=2.0, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                            global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
+                            dataset_name=self.DATASET_NAME, loss_type=self.LOSS_TYPE)
 
-            main_loss = SemanticLoss(gamma=2.0, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                                global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
-                                dataset_name=self.DATASET_NAME, loss_type=self.LOSS_TYPE)
+        boundary_loss = BoundaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                            global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
 
-            boundary_loss = BoundaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                                global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
+        auxilary_loss = AuxiliaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
+                            global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
 
-            auxilary_loss = AuxiliaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                                global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
-
-        else:
-            main_loss = BinarySegmentationLoss(gamma=2.0, from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES,
-                              dataset_name=self.DATASET_NAME, loss_type=self.LOSS_TYPE)
-
-            boundary_loss = BinaryBoundaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
-
-            auxilary_loss = BinaryAuxiliaryLoss(from_logits=True, use_multi_gpu=self.DISTRIBUTION_MODE,
-                              global_batch_size=self.BATCH_SIZE, num_classes=self.NUM_CLASSES)
 
         losses = {
             'main': main_loss,
@@ -240,20 +210,11 @@ class ModelConfiguration(SemanticGenerator):
         """
             Convert it to a graph model (.pb) using the learned weights.
         """
-
-        # self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
-        #                planes=32, ppm_planes=96, head_planes=128, augment=False)
-        # self.model.build((None, *self.IMAGE_SIZE, 3))
-        # input_arr = tf.random.uniform((1, *self.IMAGE_SIZE, 3))
-        # outputs = self.model(input_arr)
-
         from models.model_zoo.PIDNet import PIDNet
         self.model = PIDNet(input_shape=(*self.IMAGE_SIZE, 3), m=2, n=3, num_classes=self.NUM_CLASSES,
                        planes=32, ppm_planes=96, head_planes=128, augment=True, training=False).build()
         
         self.model.load_weights(self.args.saved_model_path)
-
-
 
         export_path = os.path.join(self.CHECKPOINT_DIR, 'export_path', '1')
         
